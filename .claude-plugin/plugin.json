@@ -1,0 +1,21 @@
+{
+  "name": "swift-skills",
+  "skills": [
+    "./skills/engineering/swift-architect",
+    "./skills/engineering/swift-audit",
+    "./skills/engineering/swift-cidi",
+    "./skills/engineering/swift-code-review",
+    "./skills/engineering/swift-concurrency",
+    "./skills/engineering/swift-concurrency-expert",
+    "./skills/engineering/swift-document",
+    "./skills/engineering/swift-engineer",
+    "./skills/engineering/swift-quality",
+    "./skills/engineering/swift-test-all",
+    "./skills/engineering/swift-testing",
+    "./skills/engineering/swift-tvos",
+    "./skills/engineering/swift-uitest",
+    "./skills/engineering/swiftopher-columbus",
+    "./skills/engineering/swiftui-liquid-glass",
+    "./skills/engineering/xcodebuildmcp-cli"
+  ]
+}
