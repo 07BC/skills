@@ -1,6 +1,6 @@
 # swift-skills
 
-A Claude Code plugin bundling my Swift, SwiftUI, and Xcode skills — focused on the MV (Model-View) pattern, Swift 6 concurrency, and iOS / tvOS work.
+A Claude Code plugin bundling my Swift/iOS and Obsidian skills.
 
 ## Install
 
@@ -61,12 +61,22 @@ bash ~/Developer/Personal/skills/scripts/link-skills.sh
 | [swift-cidi](./skills/engineering/swift-cidi/SKILL.md) | GitHub Actions CI/CD workflows for Kick iOS and tvOS Xcode projects. |
 | [xcodebuildmcp-cli](./skills/engineering/xcodebuildmcp-cli/SKILL.md) | Official skill for the XcodeBuildMCP CLI (build, test, run, debug, log, UI automation). |
 
+### Obsidian
+
+| Skill | What it does |
+|---|---|
+| [obsidian-audit](./skills/obsidian/obsidian-audit/SKILL.md) | Audits the Obsidian vault — fixes tags, frontmatter, and YAML properties with a per-run changelog. |
+| [obsidian-learn](./skills/obsidian/obsidian-learn/SKILL.md) | Extracts knowledge from the current session and writes it to the Obsidian knowledge base. |
+| [obsidian-manage](./skills/obsidian/obsidian-manage/SKILL.md) | Read, create, edit, search, and organise notes in the Obsidian vault at `~/raw`. |
+| [obsidian-rollover](./skills/obsidian/obsidian-rollover/SKILL.md) | Carries incomplete to-do items from recent past daily notes into today's daily note. |
+
 ## Layout
 
 ```
 .claude-plugin/plugin.json   # plugin manifest
 scripts/link-skills.sh       # symlink skills into ~/.claude/skills/
-skills/engineering/          # all shipped skills live here
+skills/engineering/          # Swift / iOS / Xcode skills
+skills/obsidian/             # Obsidian vault skills
 ```
 
 See [`CLAUDE.md`](./CLAUDE.md) for the bucket convention and how to add a new skill.
