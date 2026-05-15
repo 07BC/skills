@@ -1,2 +1,26 @@
+# macOS
 .DS_Store
-node_modules/
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Claude Code — local overrides (never commit)
+.claude/settings.local.json
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Scratch / temp
+*.log
+tmp/
+scratch/
