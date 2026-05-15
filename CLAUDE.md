@@ -6,6 +6,7 @@ This repo is a Claude Code plugin (`.claude-plugin/plugin.json`) holding my Swif
 
 Skills live under `skills/<bucket>/<skill-name>/SKILL.md`. Buckets keep the tree organised as it grows.
 
+- `git/` — generic git workflow: commit, push, PR creation.
 - `engineering/` — Swift, SwiftUI, Xcode, CI, testing, concurrency, architecture, code review.
 - `obsidian/` — Obsidian vault management, auditing, and knowledge extraction.
 - `personal/` — skills tied to my own setup; **not** listed in `plugin.json` or `README.md`, but symlinked locally by `link-skills.sh`.

@@ -87,6 +87,14 @@ Model and flow key from the broader skill library:
 | **Plan → Execute** | Enter plan mode first; Claude proposes an approach before touching files |
 | **Direct** | Invoke and go — the task is well-scoped |
 
+### Git workflow
+
+| Skill | What it does | Model · Flow |
+|---|---|---|
+| [git-commit](./skills/git/git-commit/SKILL.md) | Stages specific files and commits with a short imperative message. Extracts a ticket prefix from the branch name if present. | Sonnet · Direct |
+| [git-push](./skills/git/git-push/SKILL.md) | Runs the project formatter, commits, then pushes. Builds on git-commit. | Sonnet · Direct |
+| [git-pr](./skills/git/git-pr/SKILL.md) | Commits, pushes, runs tests and code review, then creates a PR with a summary and end-user test plan. Builds on git-push. | Sonnet · Direct |
+
 ### Building
 
 | Skill | What it does | Model · Flow |
