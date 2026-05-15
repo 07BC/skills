@@ -132,6 +132,12 @@ Model and flow key from the broader skill library:
 | [/j:obsidian-manage](./skills/obsidian/obsidian-manage/SKILL.md) | Read, create, edit, search, and organise notes in the Obsidian vault at `~/raw`. | Sonnet · Direct |
 | [/j:obsidian-rollover](./skills/obsidian/obsidian-rollover/SKILL.md) | Carries incomplete to-do items from recent past daily notes into today's daily note. | Sonnet · Direct |
 
+### Productivity
+
+| Skill | What it does | Model · Flow |
+|---|---|---|
+| [/j:plan-to-jira](./skills/productivity/plan-to-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Infers project, labels, and components from context, then asks via `AskUserQuestion` before creating. | Sonnet · Direct |
+
 ## Layout
 
 ```
@@ -139,7 +145,9 @@ Model and flow key from the broader skill library:
 .claude-plugin/marketplace.json — marketplace registration
 scripts/link-skills.sh          — symlinks skills into ~/.claude/skills/ (local dev)
 skills/engineering/             — Swift / iOS / Xcode / CI skills
+skills/git/                     — generic git workflow skills
 skills/obsidian/                — Obsidian vault management skills
+skills/productivity/            — cross-project productivity skills (Jira, planning, etc.)
 skills/in-progress/             — drafts; not auto-discovered
 skills/deprecated/              — retired skills; skipped by link-skills.sh
 ```
