@@ -17,9 +17,11 @@
     "./skills/engineering/swiftopher-columbus",
     "./skills/engineering/swiftui-liquid-glass",
     "./skills/engineering/xcodebuildmcp-cli",
+    "./skills/obsidian/daily-notes",
     "./skills/obsidian/obsidian-audit",
     "./skills/obsidian/obsidian-learn",
     "./skills/obsidian/obsidian-manage",
-    "./skills/obsidian/obsidian-rollover"
+    "./skills/obsidian/obsidian-rollover",
+    "./skills/obsidian/session-saver"
   ]
 }
