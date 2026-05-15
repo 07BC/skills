@@ -8,6 +8,7 @@ Skills live under `skills/<bucket>/<skill-name>/SKILL.md`. Buckets keep the tree
 
 - `engineering/` — Swift, SwiftUI, Xcode, CI, testing, concurrency, architecture, code review.
 - `obsidian/` — Obsidian vault management, auditing, and knowledge extraction.
+- `personal/` — skills tied to my own setup; **not** listed in `plugin.json` or `README.md`, but symlinked locally by `link-skills.sh`.
 - `in-progress/` — drafts not ready to ship; **not** listed in `plugin.json`.
 - `deprecated/` — kept for reference; **not** listed in `plugin.json` and skipped by `link-skills.sh`.
 

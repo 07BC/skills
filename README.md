@@ -16,6 +16,29 @@ Claude Code loads skills from `~/.claude/skills/`. Each skill is a directory con
 
 The broader skill library (git, PM, GitNexus, prompting, daily notes, etc.) lives in [`~/Developer/myzsh`](https://github.com/jamiels/myzsh) alongside the install scripts that wire everything together. This repo contributes the Swift engineering and Obsidian buckets to that library.
 
+## My Workflow
+
+### Model and flow key
+
+| Symbol | Meaning |
+|---|---|
+| **Opus** | Use Opus 4 (`/model opus`). Better for deep reasoning, architectural judgment, and multi-step synthesis. |
+| **Sonnet** | Use Sonnet 4 (default). Faster for well-defined execution tasks. |
+| **Plan → Execute** | Enter plan mode first (the ↗ button or `/plan`). Claude proposes an approach before touching any files — essential when the wrong move is expensive. |
+| **Direct** | Just invoke it. The task is well-scoped enough to execute without a planning phase. |
+
+---
+
+### Swift development pipeline
+
+The five Swift skills below form a feature-development pipeline. Pick by
+**verb**, not by file type.
+
+```
+swift:architect ──► swift:engineer ──► swift:quality ──► swift:code-review ──► swift:audit
+    (design)           (build)            (clean)             (review)              (audit)
+```
+
 ## Install
 
 ### Prerequisites
@@ -114,19 +137,16 @@ Model and flow key from the broader skill library:
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [daily-notes](./skills/obsidian/daily-notes/SKILL.md) | Generates daily work notes from git, Jira, and conversation activity. Appends a Work Log block to today's Obsidian daily note. | Sonnet · Direct |
 | [obsidian-audit](./skills/obsidian/obsidian-audit/SKILL.md) | Vault hygiene sweep — fixes tags, normalises frontmatter, lifts inline fields into YAML properties. | Sonnet · Direct |
 | [obsidian-learn](./skills/obsidian/obsidian-learn/SKILL.md) | Extracts durable knowledge from the current session and writes it to the Obsidian knowledge base. Run at end of session. | Sonnet · Direct |
 | [obsidian-manage](./skills/obsidian/obsidian-manage/SKILL.md) | Read, create, edit, search, and organise notes in the Obsidian vault at `~/raw`. | Sonnet · Direct |
 | [obsidian-rollover](./skills/obsidian/obsidian-rollover/SKILL.md) | Carries incomplete to-do items from recent past daily notes into today's daily note. | Sonnet · Direct |
-| [session-saver](./skills/obsidian/session-saver/SKILL.md) | Processes raw Claude Code session transcripts from `~/raw/sessions/` and extracts durable knowledge into `~/raw/knowledge/`. Requires the `hooks/session-saver` binary — see [`hooks/README.md`](./hooks/README.md). | Sonnet · Direct |
 
 ## Layout
 
 ```
 .claude-plugin/plugin.json   — plugin manifest (skills array)
 scripts/link-skills.sh       — symlinks skills into ~/.claude/skills/
-hooks/                       — hook binaries; see hooks/README.md for install steps
 skills/engineering/          — Swift / iOS / Xcode / CI skills
 skills/obsidian/             — Obsidian vault management skills
 skills/in-progress/          — drafts; not listed in plugin.json
