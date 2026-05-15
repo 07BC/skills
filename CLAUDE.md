@@ -1,6 +1,6 @@
 # swift-skills — internal notes
 
-This repo is a Claude Code plugin (`.claude-plugin/plugin.json`) holding my Swift / iOS / tvOS skills.
+This repo is a Claude Code plugin installed via `/plugin marketplace add 07BC/skills`. Skills are invoked with the `/j:` namespace prefix (e.g. `/j:swift-engineer`).
 
 ## Layout
 
@@ -9,23 +9,21 @@ Skills live under `skills/<bucket>/<skill-name>/SKILL.md`. Buckets keep the tree
 - `git/` — generic git workflow: commit, push, PR creation.
 - `engineering/` — Swift, SwiftUI, Xcode, CI, testing, concurrency, architecture, code review.
 - `obsidian/` — Obsidian vault management, auditing, and knowledge extraction.
-- `personal/` — skills tied to my own setup; **not** listed in `plugin.json` or `README.md`, but symlinked locally by `link-skills.sh`.
-- `in-progress/` — drafts not ready to ship; **not** listed in `plugin.json`.
-- `deprecated/` — kept for reference; **not** listed in `plugin.json` and skipped by `link-skills.sh`.
+- `personal/` — skills tied to my own setup; **not** in `README.md`, but symlinked locally by `link-skills.sh`.
+- `in-progress/` — drafts not ready to ship; not auto-discovered by the plugin.
+- `deprecated/` — kept for reference; skipped by `link-skills.sh` and not auto-discovered.
 
-Every shipped skill must be referenced in both:
+Skills are auto-discovered from the `skills/` directory — no enumeration needed in `plugin.json`.
 
-1. `.claude-plugin/plugin.json` — the `skills` array.
-2. `README.md` — the table of skills.
+Every shipped skill must be referenced in `README.md` using the `/j:<name>` prefix.
 
 ## Adding a new skill
 
-1. Create `skills/engineering/<name>/SKILL.md` (frontmatter: `name`, `description`).
-2. Add `./skills/engineering/<name>` to `plugin.json`.
-3. Add a row to the table in `README.md`, linking the name to its `SKILL.md`.
-4. Run `scripts/link-skills.sh` to expose it locally.
+1. Create `skills/<bucket>/<name>/SKILL.md` (frontmatter: `name`, `description`).
+2. Add a row to the table in `README.md` with `/j:<name>` as the skill label.
+3. Run `scripts/link-skills.sh` to expose it locally, or run `/plugin update j` if the plugin is installed.
 
 ## Removing or deprecating
 
-- Move the dir to `skills/deprecated/<name>/` and remove from `plugin.json` and `README.md`.
-- `link-skills.sh` already skips `deprecated/`.
+- Move the dir to `skills/deprecated/<name>/` and remove from `README.md`.
+- `link-skills.sh` already skips `deprecated/`, and the plugin system won't auto-discover it.
