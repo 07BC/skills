@@ -1,0 +1,12 @@
+{
+  "plugins": [
+    {
+      "name": "j",
+      "description": "Swift/iOS engineering and Obsidian skills for Claude Code",
+      "source": {
+        "source": "github",
+        "repo": "07BC/skills"
+      }
+    }
+  ]
+}
