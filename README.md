@@ -1,5 +1,10 @@
 # swift-skills
 
+> [!IMPORTANT]
+> **This is a personal project.** It reflects my workflow, my opinions, and my tooling — and it will keep changing as those evolve. It suits my purposes and will always be shaped by them first.
+>
+> Feedback, suggestions, issues, and PRs are welcome. But ultimately this is MY workflow, so I'll take what fits and leave what doesn't.
+
 ## Why this exists
 
 Claude Code's skill system lets you encode domain expertise into focused `SKILL.md` files rather than burying everything in a monolithic `CLAUDE.md`. Each skill is a self-contained module that tells Claude exactly how to approach a specific class of task — what to check, what to avoid, which model to reach for, and what a good outcome looks like.
@@ -156,6 +161,6 @@ skills/deprecated/              — retired skills; skipped by link-skills.sh
 
 1. Create `skills/<bucket>/<name>/SKILL.md` with `name:` and `description:` frontmatter.
 2. Add a row to the table above using the `/j:<name>` prefix.
-3. Run `scripts/link-skills.sh` to expose it locally, or reinstall the plugin.
+3. Run `make link` to expose it locally, or reinstall the plugin.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full bucket convention and the `in-progress` / `deprecated` lifecycle.
