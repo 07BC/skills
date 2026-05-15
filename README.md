@@ -12,8 +12,6 @@ This repo is the source of truth for those skills. It is also a Claude Code plug
 
 Claude Code loads skills from `~/.claude/skills/`. Each skill is a directory containing a `SKILL.md` file with a `name:` and `description:` in its frontmatter. Claude uses the description to decide when to trigger the skill automatically, and you can invoke any skill explicitly with `/<skill-name>`.
 
-The broader skill library (git, PM, GitNexus, prompting, daily notes, etc.) lives in [`~/Developer/myzsh`](https://github.com/jamiels/myzsh) alongside the install scripts that wire everything together. This repo contributes the Swift engineering and Obsidian buckets to that library.
-
 ## My Workflow
 
 ### Model and flow key
@@ -47,8 +45,9 @@ swift:architect ──► swift:engineer ──► swift:quality ──► swift
 ### Steps
 
 ```bash
-git clone <repo-url> ~/Developer/Personal/skills
-bash ~/Developer/Personal/skills/scripts/link-skills.sh
+git clone git@github.com:07BC/skills.git
+cd skills
+bash scripts/link-skills.sh
 ```
 
 `link-skills.sh` walks every `skills/*/` bucket, finds each `SKILL.md`, and symlinks its parent directory into `~/.claude/skills/` using the directory name as the skill name. It skips `deprecated/` automatically.
@@ -63,13 +62,13 @@ After install, verify the links:
 ls -la ~/.claude/skills/
 ```
 
-You should see one symlink per skill, each pointing into `~/Developer/Personal/skills/skills/`.
+You should see one symlink per skill, each pointing back into the cloned repo.
 
 ### Keeping skills up to date
 
 ```bash
-git -C ~/Developer/Personal/skills pull
-bash ~/Developer/Personal/skills/scripts/link-skills.sh
+git pull
+bash scripts/link-skills.sh
 ```
 
 The symlinks already point into the repo, so a `git pull` alone updates skill content. Re-run the script only when skills are added or removed.
