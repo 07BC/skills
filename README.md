@@ -1,7 +1,5 @@
 # swift-skills
 
-A Claude Code plugin that packages Swift/iOS and Obsidian skills as discrete, reusable prompt modules.
-
 ## Why this exists
 
 Claude Code's skill system lets you encode domain expertise into focused `SKILL.md` files rather than burying everything in a monolithic `CLAUDE.md`. Each skill is a self-contained module that tells Claude exactly how to approach a specific class of task — what to check, what to avoid, which model to reach for, and what a good outcome looks like.
