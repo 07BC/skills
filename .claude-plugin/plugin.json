@@ -1,30 +1,10 @@
 {
-  "name": "swift-skills",
-  "skills": [
-    "./skills/git/git-commit",
-    "./skills/git/git-push",
-    "./skills/git/git-pr",
-    "./skills/engineering/swift-architect",
-    "./skills/engineering/swift-audit",
-    "./skills/engineering/swift-cidi",
-    "./skills/engineering/swift-code-review",
-    "./skills/engineering/swift-concurrency",
-    "./skills/engineering/swift-concurrency-expert",
-    "./skills/engineering/swift-document",
-    "./skills/engineering/swift-engineer",
-    "./skills/engineering/swift-quality",
-    "./skills/engineering/swift-test-all",
-    "./skills/engineering/swift-testing",
-    "./skills/engineering/swift-tvos",
-    "./skills/engineering/swift-uitest",
-    "./skills/engineering/swiftopher-columbus",
-    "./skills/engineering/swiftui-liquid-glass",
-    "./skills/engineering/xcodebuildmcp-cli",
-    "./skills/obsidian/daily-notes",
-    "./skills/obsidian/obsidian-audit",
-    "./skills/obsidian/obsidian-learn",
-    "./skills/obsidian/obsidian-manage",
-    "./skills/obsidian/obsidian-rollover",
-    "./skills/obsidian/session-saver"
-  ]
+  "name": "j",
+  "description": "Swift/iOS engineering and Obsidian skills for Claude Code",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jamie Le Souëf"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/07BC/skills"
 }

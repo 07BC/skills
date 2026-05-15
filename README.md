@@ -40,38 +40,23 @@ swift:architect ──► swift:engineer ──► swift:quality ──► swift
 ### Prerequisites
 
 - [Claude Code](https://claude.ai/code) installed and authenticated
-- `~/.claude/skills/` either absent or a real directory (not a symlink)
 
 ### Steps
 
-```bash
-git clone git@github.com:07BC/skills.git
-cd skills
-bash scripts/link-skills.sh
+In any Claude Code session:
+
+```
+/plugin marketplace add 07BC/skills
+/plugin install j@07BC-skills
 ```
 
-`link-skills.sh` walks every `skills/*/` bucket, finds each `SKILL.md`, and symlinks its parent directory into `~/.claude/skills/` using the directory name as the skill name. It skips `deprecated/` automatically.
-
-Re-running the script is safe — it uses `ln -sfn` so existing symlinks are updated in place.
-
-**One-time safety check:** if `~/.claude/skills` is itself a symlink pointing back into this repo, the script aborts with a clear error. Remove the stale symlink (`rm ~/.claude/skills`) and re-run — it will recreate the target as a real directory.
-
-After install, verify the links:
-
-```bash
-ls -la ~/.claude/skills/
-```
-
-You should see one symlink per skill, each pointing back into the cloned repo.
+Skills are then available as `/j:<skill-name>` — e.g. `/j:swift-engineer`, `/j:swift-tvos`.
 
 ### Keeping skills up to date
 
-```bash
-git pull
-bash scripts/link-skills.sh
 ```
-
-The symlinks already point into the repo, so a `git pull` alone updates skill content. Re-run the script only when skills are added or removed.
+/plugin update j
+```
 
 ## Skills
 
