@@ -1,6 +1,9 @@
 {
   "name": "swift-skills",
   "skills": [
+    "./skills/git/git-commit",
+    "./skills/git/git-push",
+    "./skills/git/git-pr",
     "./skills/engineering/swift-architect",
     "./skills/engineering/swift-audit",
     "./skills/engineering/swift-cidi",
