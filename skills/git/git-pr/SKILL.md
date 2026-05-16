@@ -33,12 +33,10 @@ disable-model-invocation: true
 
    Apply the project's code review skill if available (e.g. `swift-code-review`), otherwise review for: correctness, security issues, obvious bugs, missing error handling at boundaries, and leftover debug code. Report any BLOCKER findings. If blockers exist, stop and ask the user to fix them before continuing.
 
-4. Summarise what is in this branch:
-
-   ```bash
-   git log main..HEAD --oneline
-   git diff main...HEAD --stat
-   ```
+4. Summarise what is in this branch by running `scripts/branch_summary.sh`
+   (defaults to `main` as the base; pass another branch name to override).
+   The script emits two labelled blocks: `=== commits (BASE..HEAD) ===` and
+   `=== diffstat (BASE...HEAD) ===`.
 
 5. Draft the PR title and body (see format below). Show the user the full draft and ask for confirmation before creating the PR.
 
