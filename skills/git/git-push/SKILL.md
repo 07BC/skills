@@ -1,6 +1,7 @@
 ---
 name: git-push
 description: Runs the project formatter (if configured), commits, then pushes to the remote branch. Use when the user says "commit and push", "push my changes", or "/git-push". Builds on git-commit. Does not create a PR — use git-pr for that.
+disable-model-invocation: true
 ---
 
 ## Rules
