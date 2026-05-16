@@ -50,11 +50,8 @@ $VAULT/daily/YYYY/MM-MMM/YY-MM-D.md
 - `YY`   — two-digit year (`26`)
 - `D`    — day **without** leading zero (`1`, `2`, …, `31`)
 
-Compute today's path in bash:
-```bash
-YEAR=$(date +%Y); MM=$(date +%m); MMM=$(date +%b); YY=$(date +%y); D=$(date +%-d)
-TODAY="$VAULT/daily/$YEAR/$MM-$MMM/$YY-$MM-$D.md"
-```
+Run `scripts/daily_note_path.sh` to get the path: no args for today, or pass
+`YYYY-MM-DD` for a specific date. The script honours the `VAULT` env var.
 
 ## Core workflows
 
@@ -90,14 +87,9 @@ of the frontmatter.
 
 ### 4. Daily notes
 
-Read today's note:
-```bash
-YEAR=$(date +%Y); MM=$(date +%m); MMM=$(date +%b); YY=$(date +%y); D=$(date +%-d)
-TODAY="$VAULT/daily/$YEAR/$MM-$MMM/$YY-$MM-$D.md"
-```
-Then `Read` `$TODAY`. If it does not exist, create it from
-`$VAULT/templates/daily-note.md`, substituting `{{date:YYYY-MM-DD}}` with
-today's ISO date.
+Resolve today's note path with `scripts/daily_note_path.sh`, then `Read` it.
+If it does not exist, create it from `$VAULT/templates/daily-note.md`,
+substituting `{{date:YYYY-MM-DD}}` with today's ISO date.
 
 The daily-note template has these sections — preserve order:
 1. **To-Do** — `- [ ]` checkboxes

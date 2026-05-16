@@ -13,16 +13,11 @@ disable-model-invocation: true
 
 ## Steps
 
-1. **Run the project formatter** if one is configured. Check in this order:
-
-   | Config file present | Command |
-   |---|---|
-   | `.swiftformat` | `swiftformat .` |
-   | `.prettierrc` / `prettier.config.*` | `npx prettier --write .` |
-   | `rustfmt.toml` | `cargo fmt` |
-   | `pyproject.toml` / `.flake8` | `ruff format .` or `black .` |
-
-   If no formatter config is found, skip this step. If the formatter is not installed, note it and continue.
+1. **Run the project formatter** if one is configured. Use `scripts/find_formatter.sh`
+   to detect it: invoked without args, the script prints the formatter command
+   (e.g. `swiftformat .`) or an empty line if no config file is present.
+   With `--apply`, the script runs the detected command against the working
+   tree. If the formatter binary is not installed, note it and continue.
    Include any files changed by the formatter when staging in the next step.
 
 2. **Read git-commit** and complete all commit steps (status → stage → commit).

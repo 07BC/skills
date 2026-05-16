@@ -9,17 +9,15 @@ Audit notes in the vault at `$HOME/raw`. For each candidate note, evaluate tags 
 
 ## Preconditions (check first, halt if any fail)
 
-```bash
-VAULT="$HOME/raw"
+Run `scripts/vault_preconditions.sh`. The script exits non-zero with a
+diagnostic on stderr if any of these fail:
 
-# 1. Vault is a git repo
-git -C "$VAULT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "Vault is not a git repo. Aborting."; exit 1; }
+- Vault directory missing
+- Vault is not a git repo
+- Vault has uncommitted changes (audit diff would be muddied)
 
-# 2. Vault has no uncommitted changes (otherwise the audit's diff is muddied)
-[ -z "$(git -C "$VAULT" status --porcelain)" ] || { echo "Vault has uncommitted changes. Commit or stash first."; exit 1; }
-```
-
-If any precondition fails, stop and report. Do not edit anything.
+`VAULT` env defaults to `$HOME/raw`. If any precondition fails, stop and
+report. Do not edit anything.
 
 The Obsidian CLI is **not** used by this skill — it is flaky and silently
 fails on path resolution. All edits are direct file operations on `$VAULT`.

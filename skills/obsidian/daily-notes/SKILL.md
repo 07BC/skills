@@ -29,6 +29,14 @@ Determine which environment you are in before doing anything else:
 
 ---
 
+## Optional vault preflight
+
+Before any vault write, `scripts/vault_preconditions.sh` is available to
+check that `$VAULT` exists, is a git repo, and has a clean working tree.
+Treat a failure as a soft warning — the user can decide to proceed or stash.
+
+---
+
 ## Claude.ai workflow
 
 ### Step 1 — Establish the time window
@@ -118,15 +126,9 @@ flaky and silently fails on path resolution.
 
 Vault root: `$HOME/raw`.
 
-Compute today's daily-note path:
-```bash
-VAULT="$HOME/raw"
-YEAR=$(date +%Y); MM=$(date +%m); MMM=$(date +%b); YY=$(date +%y); D=$(date +%-d)
-TODAY="$VAULT/daily/$YEAR/$MM-$MMM/$YY-$MM-$D.md"
-```
-
-Format: `daily/YYYY/MM-MMM/YY-MM-D.md` — the day is **not** zero-padded
-(`26-05-1.md`, not `26-05-01.md`).
+Resolve today's daily-note path with `scripts/daily_note_path.sh` (no args for
+today; honours `VAULT` env). Path format: `daily/YYYY/MM-MMM/YY-MM-D.md` —
+the day is **not** zero-padded (`26-05-1.md`, not `26-05-01.md`).
 
 Steps:
 1. Check whether `$TODAY` exists. If not, create the parent folder and write
@@ -233,14 +235,10 @@ location the user specifies.
 Append the generated notes to today's Obsidian daily note under the **Notes**
 section by editing the file directly. Do **not** use the Obsidian CLI.
 
-Vault root: `$HOME/raw`. Compute today's path with:
-```bash
-VAULT="$HOME/raw"
-YEAR=$(date +%Y); MM=$(date +%m); MMM=$(date +%b); YY=$(date +%y); D=$(date +%-d)
-TODAY="$VAULT/daily/$YEAR/$MM-$MMM/$YY-$MM-$D.md"
-```
+Vault root: `$HOME/raw`. Resolve today's path with
+`scripts/daily_note_path.sh` (honours `VAULT` env).
 
-If `$TODAY` does not exist, create it from the template (see Claude.ai
+If the file does not exist, create it from the template (see Claude.ai
 workflow Step 5 above for the template). Then use the `Edit` tool to append a
 `## Work Log` block under the existing `## Notes` section.
 
