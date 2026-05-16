@@ -12,10 +12,14 @@ description: >
   not attempt to write an architecture document from memory or filenames alone.
 ---
 
-# Swift Architect
+# Swiftopher Columbus
 
 Produces a living `docs/architecture.md` for a Swift/SwiftUI iOS codebase.
 **Read the codebase first. Write second. Never summarise from filenames alone.**
+
+**Scope boundary.** This skill *documents* an existing codebase. For
+*scaffolding* a new MV app skeleton or *auditing* an existing one for MVVM
+drift, use `swift-architect` instead.
 
 ---
 

@@ -68,4 +68,29 @@ override. Fixing the underlying drift is out of scope for this audit.
 
 ### Composability + prose
 
-(populated in commit 3)
+Three small prose edits to remove cross-skill overlap and a read-only health
+check on the one skill that lives outside the README.
+
+| Skill | Change | Rationale |
+|---|---|---|
+| `engineering/swift-quality` | Added a "Scope boundary" line: this skill **rewrites**, doesn't flag issues; for diagnosis with BLOCKER/WARNING/SUGGESTION severities use `swift-code-review`; for an exhaustive multi-section report use `swift-audit`. | The three skills' descriptions all "look at Swift code and apply rules", so the verb (rewrite vs. flag vs. audit) needs to be explicit in the body. Without this, casual triggers can land on the wrong skill. |
+| `engineering/swiftopher-columbus` | Changed the H1 from `# Swift Architect` to `# Swiftopher Columbus`. Added a "Scope boundary" line: this skill **documents** an existing codebase; for scaffolding/MVVM-drift auditing use `swift-architect`. | The previous H1 collided with the actual `swift-architect` skill — silent reader trap when grepping or scanning files. Now the name on the tin matches the name in the frontmatter. |
+| `personal/prompt:writer` | Read-only audit. Frontmatter parses; body is 320 lines and well-structured. No edit needed. Directory name carries a colon (`prompt:writer/`) — unusual on macOS but matches the convention already in use for other namespaced skills (`obsidian:audit`, `obsidian:learn`). | Listed in CLAUDE.md as intentionally hidden from `README.md`; sanity-check only. |
+
+### Skills NOT changed (and why)
+
+The audit walked every shipped skill; these were considered and skipped:
+
+- `engineering/swift-engineer` — no high-risk side effect (writes local Swift, easy git revert); no script-eligible deterministic blocks; no shared logic with another skill.
+- `engineering/swift-architect` — scaffolds + audits MV adherence. Judgment-heavy throughout; no fixed step that pays for extraction.
+- `engineering/swift-audit` — large skill with audit-report scaffolding. The file-discovery block (~5 lines of `find`) was a candidate for extraction in Q4 but the user picked option (ii) "all 9 from the table"; this one wasn't in the table. Left inline.
+- `engineering/swift-code-review` — pure judgment work; nothing to extract.
+- `engineering/swift-concurrency-expert` — action-shaped concurrency work; no deterministic block.
+- `engineering/swift-document` — DocC comment authoring; no fixed step.
+- `engineering/swift-test-all` — runs the test suite. Tiny and already deterministic-shaped (one command). No script needed.
+- `engineering/swift-testing` — test authoring; nothing to extract.
+- `engineering/swift-tvos` — focus-engine diagnosis; judgment work.
+- `engineering/swift-uitest` — XCUITest authoring; judgment work.
+- `engineering/swiftui-liquid-glass` — Liquid Glass API guidance; judgment work.
+- `engineering/swift-cidi` — CI/CD debugging; the deterministic parts (xcresult retrieval) vary too much between project shapes to extract usefully.
+- `engineering/xcodebuildmcp-cli` — wrapper for the XcodeBuildMCP CLI; nothing to extract that the CLI itself doesn't already do.
