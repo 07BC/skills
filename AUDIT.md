@@ -66,6 +66,16 @@ Reality is `$HOME/Developer/obsidian`. New scripts default to `$HOME/raw`
 to match the majority SKILL.md prose, but every script accepts a `VAULT` env
 override. Fixing the underlying drift is out of scope for this audit.
 
+**README link mismatch.** `README.md` links four obsidian skills with hyphens
+(`/j:obsidian-audit`, `/j:obsidian-learn`, `/j:obsidian-manage`,
+`/j:obsidian-rollover`) but each skill's `name:` frontmatter field uses a
+colon (`obsidian:audit`, etc.). The actual invocation is `/j:obsidian:audit`.
+Pre-existing inconsistency, surfaced by this audit's verification sweep but
+not changed. Fix is either (a) rename four README links to use colons, or
+(b) rename four skill `name:` fields to use hyphens — each has follow-on
+consequences (user muscle memory; cross-skill references) and warrants its
+own grilling pass.
+
 ### Composability + prose
 
 Three small prose edits to remove cross-skill overlap and a read-only health
