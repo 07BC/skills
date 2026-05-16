@@ -1,6 +1,7 @@
 ---
 name: git-pr
 description: Commits, pushes, and creates a pull request for the current branch. Runs code review before raising the PR and requires confirmation before creating it. Use when the user says "create a PR", "raise a PR", "open a pull request", or "/git-pr".
+disable-model-invocation: true
 ---
 
 ## Rules

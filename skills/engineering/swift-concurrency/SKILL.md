@@ -1,6 +1,7 @@
 ---
 name: swift-concurrency
 description: 'Conceptual guidance and reference for Swift Concurrency patterns — use for questions, explanations, and learning. For hands-on review and fixing of concrete concurrency bugs or compiler errors in existing code, use swift-concurrency-expert instead. Triggers when developers ask about: (1) async/await, actors, or tasks, (2) "how does Swift Concurrency work", (3) migrating to Swift 6, (4) data races or thread safety concepts, (5) @MainActor, Sendable, or actor isolation explained, (6) concurrent code architecture or performance.'
+user-invocable: false
 ---
 # Swift Concurrency
 
