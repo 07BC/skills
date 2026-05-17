@@ -407,6 +407,10 @@ Read every test file. Assess the suite as a whole.
 - Overuse of third-party mocking frameworks where simple fakes suffice
 - Fakes that are not maintained alongside the protocols they implement
 
+**First-pass coverage sweep**
+
+Run `bash scripts/test-gap.sh <prod-dir> <test-dir>` for a name-match heuristic that flags production Swift files with no corresponding `*Tests.swift` reference. False positives (type referenced but not exercised) and false negatives (test file uses a different name) are expected — for real line coverage use `xcrun xccov` against an xcresult bundle.
+
 ---
 
 ### Section 09 — Miscellaneous
