@@ -1,6 +1,7 @@
 ---
 name: git-commit
 description: Stages specific files and commits with a short imperative message. Extracts a ticket number from the branch name if one is present and prepends it to the message. Use when the user says "commit", "commit my changes", or "stage and commit". Builds on git-push and git-pr — do not invoke manually if those are running.
+disable-model-invocation: true
 ---
 
 ## Rules
@@ -15,16 +16,14 @@ description: Stages specific files and commits with a short imperative message. 
 
 ## Steps
 
-1. Run `git status` and `git diff` in parallel to show what has changed.
+1. Run `scripts/preflight.sh` to get the status, diff, and ticket extraction in
+   one call. The script emits three labelled blocks (`=== status ===`, `=== diff ===`,
+   `=== ticket ===`); the ticket block is either a `WORD-NUMBER` match from the
+   branch name (e.g. `NAT-1234`) or empty.
 
-2. Extract a ticket number from the current branch name. Match any `WORD-NUMBER` pattern (e.g. `PROJ-123`, `NAT-456`, `TICKET-789`):
-
-   ```bash
-   git rev-parse --abbrev-ref HEAD | grep -oE '[A-Z]+-[0-9]+' | head -1
-   ```
-
-   If a ticket number is found, prefix the commit message: `PROJ-123: short description`.
-   If no ticket is found, use a plain message: `short description`.
+2. If the ticket block is non-empty, prefix the commit message:
+   `PROJ-123: short description`. Otherwise use a plain message:
+   `short description`.
 
 3. If the user has not provided a commit message, ask for one. Keep it short and imperative (e.g. `fix logout bug`, `add stream health indicator`).
 

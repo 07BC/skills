@@ -126,6 +126,7 @@ Model and flow key from the broader skill library:
 | Skill | What it does | Model · Flow |
 |---|---|---|
 | [/j:swift-cidi](./skills/engineering/swift-cidi/SKILL.md) | Debug GitHub Actions CI for Kick iOS/tvOS projects — flaky tests, xcresult artefacts, xctestplan setup. | Sonnet · Direct (Opus for complex failures) |
+| [/j:swift-lint](./skills/engineering/swift-lint/SKILL.md) | Finds the nearest `.swiftlint.yml` and runs SwiftLint from the right directory. | Sonnet · Direct |
 | [/j:xcodebuildmcp-cli](./skills/engineering/xcodebuildmcp-cli/SKILL.md) | Use the XcodeBuildMCP CLI for iOS/macOS/watchOS/tvOS/visionOS work — build, test, run, debug, log, UI automation. | Sonnet · Direct |
 
 ### Obsidian
@@ -142,6 +143,9 @@ Model and flow key from the broader skill library:
 | Skill | What it does | Model · Flow |
 |---|---|---|
 | [/j:plan-to-jira](./skills/productivity/plan-to-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Infers project, labels, and components from context, then asks via `AskUserQuestion` before creating. | Sonnet · Direct |
+| [/j:jira-bulk](./skills/productivity/jira-bulk/SKILL.md) | Bulk Jira operations — set fix version, transition status — across multiple tickets in one invocation. | Sonnet · Direct |
+| [/j:yt-research](./skills/productivity/yt-research/SKILL.md) | Fetches transcripts and extracts prompts from a YouTube channel's recent videos, saving each as markdown. | Sonnet · Direct |
+| [/j:yt-distill](./skills/productivity/yt-distill/SKILL.md) | Distils a folder of YouTube transcript markdown files (output of yt-research) into a structured Obsidian reference library — skills, plugins, prompts, and techniques categories plus a master index. | Sonnet · Direct |
 
 ## Layout
 
@@ -152,7 +156,7 @@ scripts/link-skills.sh          — symlinks skills into ~/.claude/skills/ (loca
 skills/engineering/             — Swift / iOS / Xcode / CI skills
 skills/git/                     — generic git workflow skills
 skills/obsidian/                — Obsidian vault management skills
-skills/productivity/            — cross-project productivity skills (Jira, planning, etc.)
+skills/productivity/            — cross-project productivity skills (Jira, planning, YouTube research, etc.)
 skills/in-progress/             — drafts; not auto-discovered
 skills/deprecated/              — retired skills; skipped by link-skills.sh
 ```
@@ -161,6 +165,6 @@ skills/deprecated/              — retired skills; skipped by link-skills.sh
 
 1. Create `skills/<bucket>/<name>/SKILL.md` with `name:` and `description:` frontmatter.
 2. Add a row to the table above using the `/j:<name>` prefix.
-3. Run `make link` to expose it locally, or reinstall the plugin.
+3. Run `make link` to expose it locally, or `make unlink` to remove the symlinks. Reinstall the plugin after unlinking if needed.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full bucket convention and the `in-progress` / `deprecated` lifecycle.

@@ -24,3 +24,8 @@
 *.log
 tmp/
 scratch/
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
