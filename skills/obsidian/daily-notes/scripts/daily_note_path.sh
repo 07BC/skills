@@ -3,16 +3,13 @@
 # Usage: daily_note_path.sh [YYYY-MM-DD]
 #
 # Path format: $VAULT/daily/YYYY/MM-MMM/YY-MM-D.md
-# VAULT env defaults to "$HOME/raw" (matches the SKILL.md prose).
-#
-# DUPLICATE — canonical at:
-#   skills/obsidian/obsidian-rollover/scripts/daily_note_path.sh
-# Keep in sync with that file and with:
+# VAULT resolved via _lib/obsidian-path.sh
 #   skills/obsidian/obsidian-manage/scripts/daily_note_path.sh
 
 set -euo pipefail
 
-VAULT="${VAULT:-$HOME/raw}"
+LIB_DIR="$(cd "$(dirname "$0")/../.." && pwd)/_lib"
+VAULT=$(bash "$LIB_DIR/obsidian-path.sh")
 
 if [ -n "${1:-}" ]; then
   ISO="$1"

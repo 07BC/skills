@@ -7,18 +7,12 @@
 #   - vault is not a git repo
 #   - vault has uncommitted changes (audit diff would be muddied)
 #
-# VAULT env defaults to "$HOME/raw" (matches the SKILL.md prose).
-#
-# CANONICAL COPY. Duplicates live at:
-#   skills/obsidian/obsidian-rollover/scripts/vault_preconditions.sh
-#   skills/obsidian/daily-notes/scripts/vault_preconditions.sh
-#   skills/obsidian/obsidian-learn/scripts/vault_preconditions.sh
-#   skills/obsidian/session-saver/scripts/vault_preconditions.sh
-# Keep all five in sync.
+# VAULT resolved via _lib/obsidian-path.sh
 
 set -euo pipefail
 
-VAULT="${VAULT:-$HOME/raw}"
+LIB_DIR="$(cd "$(dirname "$0")/../.." && pwd)/_lib"
+VAULT=$(bash "$LIB_DIR/obsidian-path.sh")
 
 if [ ! -d "$VAULT" ]; then
   echo "Vault not found at $VAULT" >&2

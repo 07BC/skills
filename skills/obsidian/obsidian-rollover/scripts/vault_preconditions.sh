@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
 # Verify the Obsidian vault is a git repo with a clean working tree.
 # Usage: vault_preconditions.sh
-# VAULT env defaults to "$HOME/raw".
-#
-# DUPLICATE — canonical at:
-#   skills/obsidian/obsidian-audit/scripts/vault_preconditions.sh
-# Keep in sync with that file and with the other four copies:
-#   skills/obsidian/daily-notes/scripts/vault_preconditions.sh
-#   skills/obsidian/obsidian-learn/scripts/vault_preconditions.sh
-#   skills/obsidian/session-saver/scripts/vault_preconditions.sh
+# VAULT resolved via _lib/obsidian-path.sh
 
 set -euo pipefail
 
-VAULT="${VAULT:-$HOME/raw}"
+LIB_DIR="$(cd "$(dirname "$0")/../.." && pwd)/_lib"
+VAULT=$(bash "$LIB_DIR/obsidian-path.sh")
 
 if [ ! -d "$VAULT" ]; then
   echo "Vault not found at $VAULT" >&2

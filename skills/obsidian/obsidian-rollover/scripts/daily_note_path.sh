@@ -9,16 +9,12 @@
 #   YY    2-digit year       (e.g. 26)
 #   D     day, NO zero-pad   (e.g. 1, 16, 31)
 #
-# VAULT env defaults to "$HOME/raw" (matches the SKILL.md prose).
-#
-# CANONICAL COPY. Duplicates live at:
-#   skills/obsidian/daily-notes/scripts/daily_note_path.sh
-#   skills/obsidian/obsidian-manage/scripts/daily_note_path.sh
-# Keep all three in sync.
+# VAULT resolved via _lib/obsidian-path.sh
 
 set -euo pipefail
 
-VAULT="${VAULT:-$HOME/raw}"
+LIB_DIR="$(cd "$(dirname "$0")/../.." && pwd)/_lib"
+VAULT=$(bash "$LIB_DIR/obsidian-path.sh")
 
 if [ -n "${1:-}" ]; then
   ISO="$1"

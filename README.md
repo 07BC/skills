@@ -142,6 +142,7 @@ Model and flow key from the broader skill library:
 | Skill | What it does | Model · Flow |
 |---|---|---|
 | [/j:plan-to-jira](./skills/productivity/plan-to-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Infers project, labels, and components from context, then asks via `AskUserQuestion` before creating. | Sonnet · Direct |
+| [/j:jira-bulk](./skills/productivity/jira-bulk/SKILL.md) | Bulk Jira operations — set fix version, transition status — across multiple tickets in one invocation. | Sonnet · Direct |
 
 ## Layout
 
