@@ -37,8 +37,8 @@ def slugify(title: str, max_len: int = 80) -> str:
 def download_audio(video_id: str, work_dir: str) -> str:
     out_template = os.path.join(work_dir, "%(id)s.%(ext)s")
     cmd = [
-        sys.executable, "-m", "yt_dlp",
-        "--extractor-args", "youtube:player_client=android_vr,tv_embedded",
+        "yt-dlp",
+        "--extractor-args", "youtube:player_client=android_vr",
         "-x", "--audio-format", "wav",
         "--postprocessor-args", "ExtractAudio:-ar 16000 -ac 1",
         "--no-progress",

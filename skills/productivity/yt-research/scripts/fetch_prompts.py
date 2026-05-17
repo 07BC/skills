@@ -28,7 +28,7 @@ def slugify(title: str, max_len: int = 80) -> str:
 
 def fetch_description(video_id: str) -> str:
     result = subprocess.run(
-        [sys.executable, "-m", "yt_dlp", "--skip-download", "--print", "%(description)s",
+        ["yt-dlp", "--skip-download", "--print", "%(description)s",
          f"https://www.youtube.com/watch?v={video_id}"],
         capture_output=True, text=True, timeout=30,
     )
