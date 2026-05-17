@@ -1,6 +1,6 @@
 # swift-skills — internal notes
 
-This repo is a Claude Code plugin installed via `/plugin marketplace add 07BC/skills`. Skills are invoked with the `/j:` namespace prefix (e.g. `/j:swift-engineer`).
+This repo is a Claude Code plugin installed via `/plugin marketplace add 07BC/skills`. Skills are invoked with the `/jls:` namespace prefix (e.g. `/jls:swift-engineer`).
 
 ## Layout
 
@@ -15,12 +15,12 @@ Skills live under `skills/<bucket>/<skill-name>/SKILL.md`. Buckets keep the tree
 
 Skills are auto-discovered from the `skills/` directory — no enumeration needed in `plugin.json`.
 
-Every shipped skill must be referenced in `README.md` using the `/j:<name>` prefix.
+Every shipped skill must be referenced in `README.md` using the `/jls:<name>` prefix.
 
 ## Adding a new skill
 
 1. Create `skills/<bucket>/<name>/SKILL.md` (frontmatter: `name`, `description`).
-2. Add a row to the table in `README.md` with `/j:<name>` as the skill label.
+2. Add a row to the table in `README.md` with `/jls:<name>` as the skill label.
 3. Run `scripts/link-skills.sh` to expose it locally, or run `/plugin update j` if the plugin is installed.
 
 ## Removing or deprecating
