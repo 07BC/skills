@@ -8,7 +8,7 @@ help:
 	@echo "  install      full install — skills, hook binary, plugin"
 	@echo "  link         refresh skill symlinks in ~/.claude/skills/"
 	@echo "  unlink       remove all skill symlinks from ~/.claude/skills/ that point into this repo"
-	@echo "  hook         install session-saver hook binary to ~/.claude/hooks/"
+	@echo "  hook         install all hooks from hooks/ to ~/.claude/hooks/"
 	@echo "  plugin       install the j plugin via claude CLI"
 	@echo "  test         run all tests"
 	@echo "  test-python  run Python script tests"
@@ -32,9 +32,12 @@ unlink:
 
 hook:
 	@mkdir -p $(HOOKS_DEST)
-	@cp hooks/session-saver $(HOOKS_DEST)/session-saver
-	@chmod +x $(HOOKS_DEST)/session-saver
-	@echo "installed session-saver -> $(HOOKS_DEST)/session-saver"
+	@REPO="$$(cd . && pwd)"; \
+	for f in hooks/*; do \
+	  name=$$(basename "$$f"); \
+	  ln -sfn "$$REPO/$$f" "$(HOOKS_DEST)/$$name"; \
+	  echo "linked $$name -> $(HOOKS_DEST)/$$name"; \
+	done
 
 plugin:
 	claude plugin marketplace add 07BC/skills 2>/dev/null || true

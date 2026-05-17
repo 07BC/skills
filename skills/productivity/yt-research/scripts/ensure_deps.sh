@@ -5,15 +5,6 @@ WHISPER_MODEL_DIR="${WHISPER_MODEL_DIR:-$HOME/.cache/whisper-models}"
 WHISPER_MODEL_NAME="${WHISPER_MODEL_NAME:-ggml-base.en.bin}"
 WHISPER_MODEL_URL="${WHISPER_MODEL_URL:-https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_MODEL_NAME}}"
 
-check_python_pkg() {
-    local package="$1"
-    if python3 -c "import $package" 2>/dev/null; then
-        return 0
-    fi
-    echo "Installing $package..."
-    python3 -m pip install --quiet "$package"
-}
-
 check_bin() {
     local bin="$1"
     local hint="$2"
@@ -24,8 +15,10 @@ check_bin() {
     fi
 }
 
-check_python_pkg yt_dlp
-
+# yt-dlp must be the brew build (bundles deno for the JS challenge solver
+# that current YouTube bot-checks now require). The pip yt-dlp is older
+# and lacks this, so we deliberately don't fall back to `python -m yt_dlp`.
+check_bin yt-dlp "brew install yt-dlp"
 check_bin ffmpeg "brew install ffmpeg"
 check_bin whisper-cli "brew install whisper-cpp"
 

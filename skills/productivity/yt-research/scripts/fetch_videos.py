@@ -24,7 +24,7 @@ def main():
 
     result = subprocess.run(
         [
-            sys.executable, "-m", "yt_dlp",
+            "yt-dlp",
             "--flat-playlist",
             "--playlist-end", str(args.count),
             "--print", "%(id)s|||%(title)s",
