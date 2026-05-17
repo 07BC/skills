@@ -145,6 +145,7 @@ Model and flow key from the broader skill library:
 | [/j:plan-to-jira](./skills/productivity/plan-to-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Infers project, labels, and components from context, then asks via `AskUserQuestion` before creating. | Sonnet · Direct |
 | [/j:jira-bulk](./skills/productivity/jira-bulk/SKILL.md) | Bulk Jira operations — set fix version, transition status — across multiple tickets in one invocation. | Sonnet · Direct |
 | [/j:yt-research](./skills/productivity/yt-research/SKILL.md) | Fetches transcripts and extracts prompts from a YouTube channel's recent videos, saving each as markdown. | Sonnet · Direct |
+| [/j:yt-distill](./skills/productivity/yt-distill/SKILL.md) | Distils a folder of YouTube transcript markdown files (output of yt-research) into a structured Obsidian reference library — skills, plugins, prompts, and techniques categories plus a master index. | Sonnet · Direct |
 
 ## Layout
 
@@ -155,7 +156,7 @@ scripts/link-skills.sh          — symlinks skills into ~/.claude/skills/ (loca
 skills/engineering/             — Swift / iOS / Xcode / CI skills
 skills/git/                     — generic git workflow skills
 skills/obsidian/                — Obsidian vault management skills
-skills/productivity/            — cross-project productivity skills (Jira, planning, etc.)
+skills/productivity/            — cross-project productivity skills (Jira, planning, YouTube research, etc.)
 skills/in-progress/             — drafts; not auto-discovered
 skills/deprecated/              — retired skills; skipped by link-skills.sh
 ```
