@@ -1,4 +1,4 @@
-.PHONY: all help install link hook plugin test-python venv
+.PHONY: all help install link hook plugin test-python venv test
 
 HOOKS_DEST := $(HOME)/.claude/hooks
 
@@ -8,8 +8,11 @@ help:
 	@echo "  link         refresh skill symlinks in ~/.claude/skills/"
 	@echo "  hook         install session-saver hook binary to ~/.claude/hooks/"
 	@echo "  plugin       install the j plugin via claude CLI"
-	@echo "  venv         create .venv with pytest"
+	@echo "  test         run all tests"
 	@echo "  test-python  run Python script tests"
+	@echo "  venv         create .venv with pytest"
+
+test: test-python
 
 install: link hook
 
