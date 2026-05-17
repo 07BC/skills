@@ -12,37 +12,38 @@ description: >
   not attempt to write an architecture document from memory or filenames alone.
 ---
 
-# Swift Architect
+# Swiftopher Columbus
 
 Produces a living `docs/architecture.md` for a Swift/SwiftUI iOS codebase.
 **Read the codebase first. Write second. Never summarise from filenames alone.**
+
+**Scope boundary.** This skill *documents* an existing codebase. For
+*scaffolding* a new MV app skeleton or *auditing* an existing one for MVVM
+drift, use `swift-architect` instead.
 
 ---
 
 ## Phase 1 — Explore Before Writing
 
-Run these explorations in order before drafting any prose:
+Run `scripts/explore.sh` to emit raw observations about the codebase before
+drafting any prose. The script outputs newline-separated sections covering:
+
+- Top-level swift files (depth 3)
+- Directory listing
+- Package graph (`Package.swift` if present)
+- Xcode project settings (Swift version, deployment targets, bundle id)
+- Entry-point candidates (`*App.swift`, `AppDelegate.swift`)
+- Local packages (`LocalPackages/`, `Packages/`, or none)
+
+Then, separately, search for CI / deployment config (Fastfile, GitHub Actions
+workflows) — this is intentionally **not** part of `explore.sh` because the
+shape of CI config varies enough that synthesis is best done file-by-file:
 
 ```bash
-# 1. Top-level shape
-find . -maxdepth 3 -name "*.swift" | head -60
-ls -la
-
-# 2. Package graph
-cat Package.swift 2>/dev/null || true
-find . -name "project.pbxproj" | head -1 | xargs grep -E "SWIFT_VERSION|IPHONEOS_DEPLOYMENT_TARGET|PRODUCT_BUNDLE_IDENTIFIER" 2>/dev/null | sort -u
-
-# 3. Entry point
-find . -name "*App.swift" -o -name "AppDelegate.swift" | head -5
-
-# 4. Local packages
-ls LocalPackages/ 2>/dev/null || true
-
-# 5. CI / deployment config
 find . -name "Fastfile" -o -name "*.yml" -o -name "*.yaml" | grep -v ".build" | head -10
 ```
 
-Open and **read** every file you find above. Do not skip this step.
+Open and **read** every file the script surfaces. Do not skip this step.
 
 ---
 

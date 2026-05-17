@@ -31,18 +31,25 @@ where `YYYY` = full year, `MM` = zero-padded month (`05`), `MMM` = three-letter
 month (`May`), `YY` = two-digit year (`26`), `D` = day **without** leading zero
 (`1`, `2`, …, `31`).
 
-Compute today's path in bash:
-```bash
-YEAR=$(date +%Y); MM=$(date +%m); MMM=$(date +%b); YY=$(date +%y); D=$(date +%-d)
-TODAY="$VAULT/daily/$YEAR/$MM-$MMM/$YY-$MM-$D.md"
-```
+Use `scripts/daily_note_path.sh` to compute the path for today (no arg) or for
+a specific date (`scripts/daily_note_path.sh 2026-05-16`).
 
 ---
 
-## Step 1 — Locate today's note
+## Step 0 — (optional) Vault preflight
 
-Compute today's path (formula above). If the file does not exist, create it
-from the template at `$VAULT/templates/daily-note.md` using `Write`:
+If the user wants a clean baseline before the rollover edit, run
+`scripts/vault_preconditions.sh`. It exits non-zero if the vault is missing,
+not a git repo, or has uncommitted changes. Treat the failure as a soft
+warning — the user can decide to proceed or stash first.
+
+---
+
+## Step 1 — Ensure today's note exists
+
+Run `scripts/daily_note_path.sh` to get today's path. If the file does not
+exist, create it from the template at `$VAULT/templates/daily-note.md` using
+`Write`:
 
 ```
 ---
@@ -65,57 +72,32 @@ Substitute `{YYYY-MM-DD}` with today's ISO date.
 
 ---
 
-## Step 2 — Read today's existing todos
+## Step 2 — Roll over incomplete tasks
 
-`Read` today's file. Extract every line that begins with `- [ ]` from the
-`## To-Do` section. This is the **dedupe list** — any task whose text already
-appears here must not be added again (case-insensitive, strip markdown links to
-compare plain text).
+Run `scripts/rollover.py`. The script handles the full workflow:
 
----
+- Reads today's `## To-Do` section to build a dedupe list (case-insensitive,
+  markdown links stripped).
+- Walks back the last 7 days (override with `--days N`) and collects every
+  `- [ ]` line from any daily note that exists.
+- Filters out: empty placeholders, items already present in today's note, and
+  items that appear as `- [x]` anywhere in the scanned window.
+- Inserts survivors into today's `## To-Do` section, just before the `---`
+  divider that follows it, with a blank line separating them from the last
+  existing item.
 
-## Step 3 — Find recent past notes
+Use `--dry-run` first if you want to see what would change before writing.
 
-Calculate the last **7 days** of dates (excluding today) from `currentDate`.
-For each date, construct the path using the same formula and `Read` the file.
-Process in reverse chronological order (most recent first). Skip any date
-where the file does not exist.
-
----
-
-## Step 4 — Extract incomplete items
-
-For each past note (most recent first), collect lines matching `- [ ]` that:
-
-1. Are **not** already in today's dedupe list
-2. Are **not** blank placeholders (`- [ ]` alone or with only whitespace after)
-3. Have **not** been completed (do not appear as `- [x]` in any note being scanned)
-
-Deduplicate across source dates — if the same task appears in multiple past
-notes, only include it once. Stop scanning beyond 7 days.
-
----
-
-## Step 5 — Insert into today's note
-
-Use the `Edit` tool on today's file to insert the new incomplete items directly
-into the `## To-Do` section, immediately before the `---` divider that follows
-it (or above `## Meetings` if that section exists). No grouping labels, no
-headers — just plain `- [ ]` lines, with a blank line separating them from the
-last existing item.
-
----
-
-## Step 6 — Report
-
-Print a brief summary:
+Output on success:
 
 ```
 Rolled over N task(s):
   - task text
   - task text
-
-Nothing new to roll over.   ← use this if N = 0
 ```
 
-No extra output. No explanation of what the skill does.
+Or, if there is nothing to do:
+
+```
+Nothing new to roll over.
+```

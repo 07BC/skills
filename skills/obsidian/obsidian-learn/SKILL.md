@@ -29,7 +29,12 @@ Before doing anything, ensure the knowledge directory exists:
 mkdir -p ~/Developer/obsidian/knowledge
 ```
 
-Always succeeds — proceed to Step 1.
+If the user wants a clean vault baseline before write, also run
+`scripts/vault_preconditions.sh` — it exits non-zero if the vault is missing,
+not a git repo, or has uncommitted changes. Treat a failure as a soft
+warning, not a hard halt.
+
+Proceed to Step 1.
 
 ---
 
@@ -175,30 +180,21 @@ This is a fallback, not the primary dedup path. Prefer the index.
 
 ### 3a — Write category files
 
-For each category with new entries:
+For each category with new entries, write entries to a temp file (newline
+separated) and call `scripts/kb_append.py --target <path> <entries-file>`.
+Use `--dry-run` first to preview the change set. The script appends entries
+under a `## YYYY-MM-DD` heading, deduplicates against the existing file
+contents, and creates the parent directory if needed.
 
-**If the file exists**, use the `Edit` tool to append under a date heading:
+If a category file does not yet exist, the script creates it as a plain
+markdown file (no frontmatter). Add frontmatter manually the first time:
 
-```
-Edit ~/Developer/obsidian/knowledge/<category>.md
-— append: "## YYYY-MM-DD\n\n- <entry>\n- <entry>\n"
-```
-
-**If the file does not exist**, use the `Write` tool to create it:
-
-```
-Write ~/Developer/obsidian/knowledge/<category>.md
-content:
+```markdown
 ---
 tags: [ai-knowledge, <category>]
 ---
 
 # <Category Title>
-
-## YYYY-MM-DD
-
-- <entry>
-- <entry>
 ```
 
 ### File map

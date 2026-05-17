@@ -10,7 +10,8 @@
 
 set -euo pipefail
 
-VAULT="/Users/j.lesouef/Developer/obsidian"
+LIB_DIR="$(cd "$(dirname "$0")/../.." && pwd)/_lib"
+VAULT=$(bash "$LIB_DIR/obsidian-path.sh")
 STATE_FILE="$VAULT/.audit/state.json"
 
 if [ ! -d "$VAULT" ]; then

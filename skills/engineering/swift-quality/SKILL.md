@@ -16,6 +16,11 @@ according to the Google Swift Style Guide and this project's architecture rules.
 It does not change behaviour. It does not change public API surfaces or protocol
 conformances. It only improves structure, naming, and readability.
 
+**Scope boundary.** This skill *rewrites* — it does not flag issues or output
+severities. If you need diagnosis (BLOCKER / WARNING / SUGGESTION findings
+with file:line citations), use `swift-code-review` instead. If you need an
+exhaustive multi-section report, use `swift-audit`.
+
 ---
 
 ## Authority

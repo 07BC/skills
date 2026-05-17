@@ -24,13 +24,24 @@ extracts durable knowledge into `~/raw/knowledge/`.
 
 ---
 
+## Step 0 — (optional) Vault preflight
+
+`scripts/vault_preconditions.sh` is available to check that the vault is a
+clean git repo before processing sessions. Treat a failure as a soft warning
+— useful but not required to proceed.
+
+---
+
 ## Step 1 — Find unprocessed sessions
 
-List files in `~/raw/sessions/` that do not have a
-corresponding `processed: true` frontmatter flag.
+Run `scripts/find_unprocessed_sessions.py` to list session transcripts in
+`$VAULT/sessions/` whose frontmatter lacks `processed: true`. Where multiple
+snapshots exist for the same session ID, the script prefers the final save
+(no `-tN` suffix) over periodic snapshots; if only snapshots exist, it
+returns the latest one. Output is one absolute path per line — read-only,
+nothing is mutated.
 
-Prefer **final** saves (no `-tN` suffix) over periodic snapshots for the same
-session ID. If only periodic snapshots exist, use the highest `-tN` count.
+`VAULT` env defaults to `$HOME/raw`.
 
 ---
 
@@ -69,8 +80,13 @@ Example:
 
 ## Step 3 — Write to knowledge files
 
-Append extracted entries to the appropriate file in
-`~/raw/knowledge/`:
+For each category with extracted entries, write entries to a temp file
+(newline separated) and call `scripts/kb_append.py --target <path>
+<entries-file>`. The script appends under a `## YYYY-MM-DD` heading and
+deduplicates against the existing file contents. Use `--dry-run` first to
+preview the change set.
+
+Category → target file (inside `~/raw/knowledge/`):
 
 | Category | File |
 |---|---|
@@ -80,7 +96,9 @@ Append extracted entries to the appropriate file in
 | prompting | `prompting-patterns.md` |
 | style | `swift-style.md` |
 
-Create the file if it doesn't exist, with this header:
+If a category file does not yet exist, the script creates it as a plain
+markdown file (no frontmatter). The first time, add a frontmatter header
+manually:
 
 ```markdown
 ---
@@ -90,11 +108,7 @@ tags: [ai-knowledge, claude-code]
 # {Title}
 
 > Auto-generated from Claude Code sessions. Do not edit manually.
-
 ```
-
-Append new entries under a `## {YYYY-MM-DD}` heading for today's date.
-Do not duplicate entries already present.
 
 ---
 
