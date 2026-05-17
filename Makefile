@@ -1,11 +1,13 @@
-.PHONY: all help install link hook plugin test-python venv test
+.PHONY: all help install link unlink hook plugin test-python venv test
 
 HOOKS_DEST := $(HOME)/.claude/hooks
+SKILLS_DEST := $(HOME)/.claude/skills
 
 help:
 	@echo "Targets:"
 	@echo "  install      full install — skills, hook binary, plugin"
 	@echo "  link         refresh skill symlinks in ~/.claude/skills/"
+	@echo "  unlink       remove all skill symlinks from ~/.claude/skills/ that point into this repo"
 	@echo "  hook         install session-saver hook binary to ~/.claude/hooks/"
 	@echo "  plugin       install the j plugin via claude CLI"
 	@echo "  test         run all tests"
@@ -18,6 +20,15 @@ install: link hook
 
 link:
 	@bash scripts/link-skills.sh
+
+unlink:
+	@REPO="$$(cd . && pwd)"; \
+	find "$(SKILLS_DEST)" -maxdepth 1 -type l | while read -r sym; do \
+	  target="$$(readlink "$$sym")"; \
+	  case "$$target" in \
+	    "$$REPO"/skills/*) rm "$$sym" && echo "removed $$(basename $$sym)";; \
+	  esac; \
+	done
 
 hook:
 	@mkdir -p $(HOOKS_DEST)

@@ -144,6 +144,7 @@ Model and flow key from the broader skill library:
 |---|---|---|
 | [/j:plan-to-jira](./skills/productivity/plan-to-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Infers project, labels, and components from context, then asks via `AskUserQuestion` before creating. | Sonnet · Direct |
 | [/j:jira-bulk](./skills/productivity/jira-bulk/SKILL.md) | Bulk Jira operations — set fix version, transition status — across multiple tickets in one invocation. | Sonnet · Direct |
+| [/j:yt-research](./skills/productivity/yt-research/SKILL.md) | Fetches transcripts and extracts prompts from a YouTube channel's recent videos, saving each as markdown. | Sonnet · Direct |
 
 ## Layout
 
@@ -163,6 +164,6 @@ skills/deprecated/              — retired skills; skipped by link-skills.sh
 
 1. Create `skills/<bucket>/<name>/SKILL.md` with `name:` and `description:` frontmatter.
 2. Add a row to the table above using the `/j:<name>` prefix.
-3. Run `make link` to expose it locally, or reinstall the plugin.
+3. Run `make link` to expose it locally, or `make unlink` to remove the symlinks. Reinstall the plugin after unlinking if needed.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full bucket convention and the `in-progress` / `deprecated` lifecycle.
