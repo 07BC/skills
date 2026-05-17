@@ -126,6 +126,7 @@ Model and flow key from the broader skill library:
 | Skill | What it does | Model · Flow |
 |---|---|---|
 | [/j:swift-cidi](./skills/engineering/swift-cidi/SKILL.md) | Debug GitHub Actions CI for Kick iOS/tvOS projects — flaky tests, xcresult artefacts, xctestplan setup. | Sonnet · Direct (Opus for complex failures) |
+| [/j:swift-lint](./skills/engineering/swift-lint/SKILL.md) | Finds the nearest `.swiftlint.yml` and runs SwiftLint from the right directory. | Sonnet · Direct |
 | [/j:xcodebuildmcp-cli](./skills/engineering/xcodebuildmcp-cli/SKILL.md) | Use the XcodeBuildMCP CLI for iOS/macOS/watchOS/tvOS/visionOS work — build, test, run, debug, log, UI automation. | Sonnet · Direct |
 
 ### Obsidian

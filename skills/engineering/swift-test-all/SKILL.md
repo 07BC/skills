@@ -19,11 +19,12 @@ Read `CLAUDE.md` in the current working directory to extract:
 - Simulator destination (platform, OS, device)
 - Test target flag if any (`-only-testing:`)
 
-If CLAUDE.md does not specify, run:
+If CLAUDE.md does not specify, run `scripts/sim-list.sh` to see available
+simulators (marks the canonical device from CLAUDE.md), then:
+
 ```bash
 ls *.xcworkspace *.xcodeproj 2>/dev/null
 xcodebuild -list 2>/dev/null | head -30
-xcrun simctl list devices available 2>/dev/null | grep -E "Apple TV|iPhone" | tail -10
 ```
 
 ### 2. Run tests (once, single destination)
@@ -36,22 +37,18 @@ ToolSearch("select:mcp__xcode__RunAllTests,mcp__xcode__RunSomeTests,mcp__xcode__
 
 Then call `mcp__xcode__RunAllTests` (or `mcp__xcode__RunSomeTests` with `-only-testing:` equivalent) and `mcp__xcode__GetBuildLog` for the full output.
 
-**Fallback when Xcode is not open** — use raw xcodebuild with ONE `-destination` flag. Always skip UI test targets (any target whose name ends in `UITests`):
+**Fallback when Xcode is not open** — use `scripts/xc-test.sh`. It
+auto-detects workspace/scheme/destination from CLAUDE.md, validates the
+destination is available, skips UITests targets, and accepts an optional
+filter:
 
 ```bash
-xcodebuild test \
-  -workspace <workspace> \
-  -scheme <scheme> \
-  -destination '<destination>' \
-  -skip-testing:<SchemeUITests> \
-  2>&1 | tee /tmp/test-output.log
+bash scripts/xc-test.sh                          # full suite
+bash scripts/xc-test.sh MyTarget/MySuite/testFoo # filtered
 ```
 
-To discover which targets end in `UITests`, check the `.xctestplan` file or run:
-
-```bash
-xcodebuild test -workspace <workspace> -scheme <scheme> -destination '<destination>' -showTestPlans 2>/dev/null | grep UITests
-```
+The script exits 4 if the destination sim is not available — run
+`scripts/sim-list.sh` to see what is.
 
 ### 3. Check live navigator issues
 
@@ -75,12 +72,6 @@ Failing tests:
 
 Navigator issues (if any):
 - File.swift:42 — error/warning description
-```
-
-### 5. Cleanup (fallback path only)
-
-```bash
-rm -f /tmp/test-output.log
 ```
 
 ## Rules
