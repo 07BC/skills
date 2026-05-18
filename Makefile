@@ -35,9 +35,11 @@ hook:
 	@REPO="$$(cd . && pwd)"; \
 	for f in hooks/*; do \
 	  name=$$(basename "$$f"); \
+	  case "$$name" in *.md|*.json) continue;; esac; \
 	  ln -sfn "$$REPO/$$f" "$(HOOKS_DEST)/$$name"; \
 	  echo "linked $$name -> $(HOOKS_DEST)/$$name"; \
 	done
+	@bash scripts/register-hooks.sh
 
 plugin:
 	claude plugin marketplace add 07BC/skills 2>/dev/null || true
