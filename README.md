@@ -44,7 +44,12 @@ swift:architect ──► swift:engineer ──► swift:quality ──► swift
 
 ### Prerequisites
 
+- A [Mac](https://apple.com) - No chance I'm supporting Windows
+- [Brew](https://brew.sh)
 - [Claude Code](https://claude.ai/code) installed and authenticated
+
+> [!important]
+> Python that ships with xcodetools is a POS. Recommend installing Python via brew
 
 ### Steps
 
