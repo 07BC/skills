@@ -1,0 +1,21 @@
+## Audit: Chagi/Shared/Player/VODPlayerViewModel.swift
+
+**Surface:** `handleBackground()` and `handleForeground()` modified to capture `wasPlayingBeforeBackground` on background and gate `player.play()` on that flag on foreground. New private stored property `wasPlayingBeforeBackground: Bool` added.
+
+### 🔴 BLOCKER
+- `VODPlayerViewModel.swift:155-167` — The KVO observer on `player.currentItem?.status` calls `player.play()` unconditionally whenever the item transitions to `.readyToPlay`. When the app returns from background, the `AVPlayerItem` typically re-stabilises and re-enters `.readyToPlay`, causing this observer to restart playback regardless of the new `wasPlayingBeforeBackground` guard in `handleForeground()`. The fix is bypassed entirely — the bug will still reproduce. Either gate the `.readyToPlay` branch on the same `wasPlayingBeforeBackground` / user-intent flag, or remove the auto-play here and resume playback explicitly from `loadPlaybackUrl`/`handleForeground`.
+
+### 🟡 RISK
+- `VODPlayerViewModel.swift:170-180` — The second KVO observer on `timeControlStatus` flips `isPaused = false` and `hidePauseImage = false` whenever the player transitions out of `.paused`. If the BLOCKER above re-fires `play()` on background return, this observer will then clear the paused UI state the user explicitly set, leaving the pause overlay/icon hidden even though the user had paused. The visible regression isn't just "video resumes" — it's "UI state desynchronises from user intent". Confirm the pause overlay logic once the BLOCKER is fixed.
+- `VODPlayerViewModel.swift:108` — `loadPlaybackUrl(_:)`'s `getResolutions` failure branch calls `self?.player?.play()` unconditionally. If a resolution refresh is triggered after the user has paused (e.g. a retry, a stream switch via `openVod`), playback resumes without consulting user intent. Not introduced by this change, but it's a second bypass route around the new guard — worth flagging while the intent-tracking concept is fresh.
+- `VODPlayerViewModel.swift:216, 234` — `wasPlayingBeforeBackground` is never reset after `handleForeground()` runs. If `handleForeground()` fires twice (e.g. spurious scene-phase oscillation, or a future caller invokes it directly) the second call will still resume the player even if the user paused between the two foreground events. Reset to `false` after the resume, or recompute from `player.timeControlStatus` each time.
+
+### 🟢 NICE-TO-CHECK
+- `VODPlayerViewModel.swift:155, 170` — Neither KVO closure uses `[weak self]` for the status observer (it captures `player` directly) or escapes capture of `self`. The `timeControlStatus` observer does use `[weak self]`. Not a regression from this change, but if the BLOCKER is fixed by reading `self.wasPlayingBeforeBackground` inside the status observer, a `[weak self]` capture will be required and the retain-cycle behaviour needs verifying — `observations` is owned by `self`, so a strong capture there would cycle.
+- `VODPlayerViewModel.swift:224` — `player.timeControlStatus == .playing` excludes `.waitingToPlayAtSpecifiedRate`. A stream that is buffering or stalled at the moment the app backgrounds will be recorded as "not playing" and won't auto-resume on return, even though the user's intent was to play. Edge case, but worth confirming against the original bug report.
+
+### ✅ Cleared
+- `handleBackground()` / `handleForeground()` themselves: the flag is captured on the right transition and read on the right transition; `player.pause()` is called at the correct point; the early `guard let player` short-circuits correctly.
+- Caller blast radius: signatures of `handleBackground()` and `handleForeground()` are unchanged, so external lifecycle wiring (scenePhase / notification observers calling these) keeps compiling and behaves the same on the pause path.
+- Concurrency: no new `Task`, no new actor hop, no new shared mutable state crossing isolation boundaries. `wasPlayingBeforeBackground` is a private stored property on the same instance and isn't read off the main actor in any new code path.
+- `deinit` / `removeObservers()`: unchanged, still tears down `observations`. No new subscription added by this change, so no leak surface introduced.
