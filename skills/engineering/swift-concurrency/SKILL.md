@@ -211,6 +211,17 @@ Load these files as needed for specific topics:
 - **`testing.md`** - XCTest async patterns, Swift Testing, concurrency testing utilities
 - **`migration.md`** - Swift 6 migration strategy, closure-to-async conversion, @preconcurrency, FRP migration
 
+### Context7 References (Authoritative Sources)
+
+Query Context7 with `mcp__context7__query-docs` for current API details:
+
+| Library ID | Use for |
+|---|---|
+| `/swiftlang/swift` | Compiler-level isolation rules, evolution proposals (SE-0306, SE-0337, SE-0414…) |
+| `/websites/swift` | The official Swift Concurrency book and language guide |
+| `/pointfreeco/swift-concurrency-extras` | Testing async code: mock clocks, deterministic schedulers, `withMainSerialExecutor` |
+| `/twostraws/swift-concurrency-agent-skill` | Paul Hudson's agent-skill patterns for concurrency reviews |
+
 ## Best Practices Summary
 
 1. **Prefer structured concurrency** - Use task groups over unstructured tasks when possible
