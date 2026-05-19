@@ -1,0 +1,22 @@
+{
+  "eval_id": 0,
+  "eval_name": "kvo-observer-bypass",
+  "prompt": "I just modified handleBackground() and handleForeground() in VODPlayerViewModel.swift to fix a bug where the video player resumed playback after the app returned from background, even when the user had paused it. My fix adds a wasPlayingBeforeBackground flag that handleForeground() checks before calling player.play(). Audit my change for any side effects or regressions — is this fix actually complete?\n\nFile is at /Users/j.lesouef/.claude/skills/regression-check-workspace/iteration-1/eval-kvo-observer-bypass/fixture/VODPlayerViewModel.swift",
+  "assertions": [
+    {
+      "text": "Output identifies the KVO observer at lines ~155-167 as the root cause, flagging case .readyToPlay: player.play() as a BLOCKER or RISK that bypasses the wasPlayingBeforeBackground guard"
+    },
+    {
+      "text": "Output uses the BLOCKER / RISK / NICE-TO-CHECK severity structure from the skill"
+    },
+    {
+      "text": "Output explains *why* the observer fires on return from background (item re-stabilises, status transitions back to .readyToPlay)"
+    },
+    {
+      "text": "Output does NOT just praise the fix as complete — it identifies the change as insufficient"
+    },
+    {
+      "text": "Output cites specific file paths and line numbers in findings"
+    }
+  ]
+}
