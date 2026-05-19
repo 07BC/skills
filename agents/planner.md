@@ -6,6 +6,7 @@ description: >
   marked as new. Returns PLAN VALID or PLAN NEEDS AMENDMENT: <reason>. Never
   rewrites. Invoked by spec-pipeline-orchestrator as Stage 2. Invoke as:
   "planner: validate <plan path> against <spec path>".
+model: sonnet
 ---
 
 # Planner

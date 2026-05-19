@@ -8,6 +8,7 @@ description: >
   or BLOCKED with a blockers table. Invoked by swift-spec-implement after
   concurrency-auditor; never invoked directly. Invoke as: "task-reviewer:
   review task N against <spec path>".
+model: sonnet
 ---
 
 # Task Reviewer
