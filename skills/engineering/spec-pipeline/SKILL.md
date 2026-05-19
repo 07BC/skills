@@ -363,9 +363,7 @@ If `README.md` is absent, print the warning and continue. Do not halt.
 If `README.md` exists, read it. Look for sections that describe first-time or
 workspace setup — headings like **Setup**, **Getting Started**, **Development
 Setup**, **Prerequisites**, **Installation**, or **Configuration**. Under those
-sections, identify any shell commands or scripts to run (e.g. `python
-./Scripts/chagi-configuration.py`, `make setup`, `bundle install`,
-`./configure`).
+sections, identify any shell commands or scripts to run.
 
 If no setup commands are found, continue to Step 5 without action.
 
@@ -378,8 +376,9 @@ If setup commands are found, surface them to the user before running anything:
 
 README.md lists the following setup steps:
 
-  1. python ./Scripts/chagi-configuration.py
-  (... any others found ...)
+  1. <command>
+  2. <command>
+  ...
 
 Running now in: <worktree_path>
 ```
