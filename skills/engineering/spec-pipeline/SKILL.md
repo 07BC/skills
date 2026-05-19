@@ -338,6 +338,66 @@ cd "$worktree_path"
 
 ---
 
+## Step 4.5 — Workspace setup
+
+After the worktree is created (or resumed), before spawning the orchestrator,
+check for project setup instructions.
+
+```bash
+cd "$worktree_path"
+```
+
+### Check for README.md
+
+```bash
+if [[ ! -f README.md ]]; then
+  echo "⚠️  No README.md found in ${worktree_path}. Skipping workspace setup."
+  echo "    Projects should include a README.md with setup instructions."
+fi
+```
+
+If `README.md` is absent, print the warning and continue. Do not halt.
+
+### Read and extract setup steps
+
+If `README.md` exists, read it. Look for sections that describe first-time or
+workspace setup — headings like **Setup**, **Getting Started**, **Development
+Setup**, **Prerequisites**, **Installation**, or **Configuration**. Under those
+sections, identify any shell commands or scripts to run (e.g. `python
+./Scripts/chagi-configuration.py`, `make setup`, `bundle install`,
+`./configure`).
+
+If no setup commands are found, continue to Step 5 without action.
+
+### Run setup commands
+
+If setup commands are found, surface them to the user before running anything:
+
+```
+## Workspace setup
+
+README.md lists the following setup steps:
+
+  1. python ./Scripts/chagi-configuration.py
+  (... any others found ...)
+
+Running now in: <worktree_path>
+```
+
+Then run each command in order from the worktree root. If any command exits
+non-zero, halt:
+
+> Setup step failed: `<command>` exited with code <N>.
+> Fix the setup issue before the pipeline can continue.
+> Worktree is preserved at: <worktree_path>
+
+Do not proceed to Step 5 if setup fails — the engineer agents will build against
+an unconfigured workspace.
+
+If all setup commands succeed, print a one-line confirmation and continue.
+
+---
+
 ## Step 5 — Spawn the orchestrator
 
 Compose the orchestrator invocation prompt. It must contain:
