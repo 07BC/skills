@@ -1,11 +1,11 @@
 ---
 name: obsidian:audit
-description: Audits the Obsidian vault at ~/raw and auto-applies tag + property fixes with a per-run changelog. Use when the user asks to audit notes, clean up frontmatter, fix or normalise tags, add/update YAML properties, lift inline bullet fields into frontmatter, or run a vault hygiene sweep. Triggers on "audit my vault", "audit notes", "clean up frontmatter", "fix tags", "tag audit", "property audit", "/obsidian:audit". Changes are git-backed and fully revertible.
+description: Audits the Obsidian vault at ~/Developer/obsidian and auto-applies tag + property fixes with a per-run changelog. Use when the user asks to audit notes, clean up frontmatter, fix or normalise tags, add/update YAML properties, lift inline bullet fields into frontmatter, or run a vault hygiene sweep. Triggers on "audit my vault", "audit notes", "clean up frontmatter", "fix tags", "tag audit", "property audit", "/obsidian:audit". Changes are git-backed and fully revertible.
 ---
 
 # Obsidian Vault Audit
 
-Audit notes in the vault at `$HOME/raw`. For each candidate note, evaluate tags + properties against the rules in this skill, apply fixes, and write a changelog. Auto-apply only — vault is git-backed; revert via `git`.
+Audit notes in the vault at `$HOME/Developer/obsidian`. For each candidate note, evaluate tags + properties against the rules in this skill, apply fixes, and write a changelog. Auto-apply only — vault is git-backed; revert via `git`.
 
 ## Preconditions (check first, halt if any fail)
 
@@ -16,7 +16,7 @@ diagnostic on stderr if any of these fail:
 - Vault is not a git repo
 - Vault has uncommitted changes (audit diff would be muddied)
 
-`VAULT` env defaults to `$HOME/raw`. If any precondition fails, stop and
+`VAULT` env defaults to `$HOME/Developer/obsidian`. If any precondition fails, stop and
 report. Do not edit anything.
 
 The Obsidian CLI is **not** used by this skill — it is flaky and silently
@@ -31,7 +31,7 @@ Default scope priority:
 2. Else: audit files where any of these is true:
    - File has no frontmatter at all.
    - File has frontmatter but no `tags:` key.
-   - File `mtime` is newer than the last-audit timestamp in `~/raw/.audit/state.json`.
+   - File `mtime` is newer than the last-audit timestamp in `~/Developer/obsidian/.audit/state.json`.
 3. Always exclude: `templates/`, `assets/`, `.audit/`, `.obsidian/`, anything under `.git/`.
 
 Run `scripts/audit_candidates.sh [optional-path]` to get the candidate list. Output is one absolute path per line.
@@ -69,8 +69,8 @@ If any file edit fails, log the error in the changelog under a `## Errors` secti
 
 ### Step 5 — Write changelog and update state
 
-- Changelog path: `~/raw/.audit/YYYY-MM-DD-HHMM-audit.md` (format defined in [references/changelog-format.md](references/changelog-format.md)).
-- Update `~/raw/.audit/state.json` with:
+- Changelog path: `~/Developer/obsidian/.audit/YYYY-MM-DD-HHMM-audit.md` (format defined in [references/changelog-format.md](references/changelog-format.md)).
+- Update `~/Developer/obsidian/.audit/state.json` with:
   ```json
   { "last_audit_iso": "2026-04-29T15:42:00+10:00", "last_audit_changelog": ".audit/2026-04-29-1542-audit.md" }
   ```
@@ -82,9 +82,9 @@ Print exactly:
 
 ```
 Audit applied. To revert everything:
-  git -C ~/raw reset --hard HEAD
+  git -C ~/Developer/obsidian reset --hard HEAD
 To revert one file:
-  git -C ~/raw checkout HEAD -- <relative-path>
+  git -C ~/Developer/obsidian checkout HEAD -- <relative-path>
 Changelog: <changelog-path>
 ```
 

@@ -17,7 +17,7 @@ section. Never duplicates. Never carries forward completed items.
 ## Vault root
 
 ```
-VAULT="$HOME/raw"
+VAULT="$HOME/Developer/obsidian"
 ```
 
 The Obsidian CLI is flaky (silent path-resolution failures). Operate on the

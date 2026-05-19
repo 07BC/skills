@@ -124,7 +124,7 @@ Append the generated notes to today's Obsidian daily note under the **Notes**
 section by editing the file directly. Do **not** use the Obsidian CLI — it is
 flaky and silently fails on path resolution.
 
-Vault root: `$HOME/raw`.
+Vault root: `$HOME/Developer/obsidian`.
 
 Resolve today's daily-note path with `scripts/daily_note_path.sh` (no args for
 today; honours `VAULT` env). Path format: `daily/YYYY/MM-MMM/YY-MM-D.md` —
@@ -168,7 +168,7 @@ Steps:
 
 ### Step 6 — Output
 
-Save each file to `~/raw/daily-notes/` using the filename
+Save each file to `~/Developer/obsidian/daily-notes/` using the filename
 format `YYYY-MM-DD-weekday.md` (e.g. `2026-04-22-wednesday.md`).
 
 Present all files using the `present_files` tool.
@@ -235,7 +235,7 @@ location the user specifies.
 Append the generated notes to today's Obsidian daily note under the **Notes**
 section by editing the file directly. Do **not** use the Obsidian CLI.
 
-Vault root: `$HOME/raw`. Resolve today's path with
+Vault root: `$HOME/Developer/obsidian`. Resolve today's path with
 `scripts/daily_note_path.sh` (honours `VAULT` env).
 
 If the file does not exist, create it from the template (see Claude.ai

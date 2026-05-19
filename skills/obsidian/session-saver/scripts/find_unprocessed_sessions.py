@@ -14,7 +14,7 @@ Emits one absolute path per line. Read-only — does not mutate frontmatter
 or any session file. Intended as the first step of the session-saver
 workflow.
 
-VAULT env defaults to $HOME/raw.
+VAULT env defaults to $HOME/Developer/obsidian.
 """
 from __future__ import annotations
 import argparse
@@ -44,7 +44,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--vault",
-        default=os.environ.get("VAULT", str(Path.home() / "raw")),
+        default=os.environ.get("VAULT", str(Path.home() / "Developer" / "obsidian")),
     )
     args = ap.parse_args()
 

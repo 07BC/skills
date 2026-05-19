@@ -4,5 +4,5 @@
 # Capture: VAULT=$(bash _lib/obsidian-path.sh)
 # VAULT env var is honoured if already set.
 set -euo pipefail
-: "${VAULT:=$HOME/raw}"
+: "${VAULT:=$HOME/Developer/obsidian}"
 echo "$VAULT"

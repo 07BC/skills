@@ -11,8 +11,8 @@ description: >
 
 # Session Saver Skill
 
-Reads raw session transcripts from `~/raw/sessions/` and
-extracts durable knowledge into `~/raw/knowledge/`.
+Reads raw session transcripts from `~/Developer/obsidian/sessions/` and
+extracts durable knowledge into `~/Developer/obsidian/knowledge/`.
 
 ---
 
@@ -41,7 +41,7 @@ snapshots exist for the same session ID, the script prefers the final save
 returns the latest one. Output is one absolute path per line — read-only,
 nothing is mutated.
 
-`VAULT` env defaults to `$HOME/raw`.
+`VAULT` env defaults to `$HOME/Developer/obsidian`.
 
 ---
 
@@ -86,7 +86,7 @@ For each category with extracted entries, write entries to a temp file
 deduplicates against the existing file contents. Use `--dry-run` first to
 preview the change set.
 
-Category → target file (inside `~/raw/knowledge/`):
+Category → target file (inside `~/Developer/obsidian/knowledge/`):
 
 | Category | File |
 |---|---|

@@ -17,7 +17,7 @@ blank line separating new items from existing ones.
 
 `--dry-run` reports the plan without modifying anything.
 
-VAULT defaults to $HOME/raw (matches the obsidian-rollover SKILL.md prose),
+VAULT defaults to $HOME/Developer/obsidian (matches the obsidian-rollover SKILL.md prose),
 overridable via the VAULT env var or --vault.
 """
 from __future__ import annotations
@@ -95,7 +95,7 @@ def main() -> int:
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument(
         "--vault",
-        default=os.environ.get("VAULT", str(Path.home() / "raw")),
+        default=os.environ.get("VAULT", str(Path.home() / "Developer" / "obsidian")),
     )
     args = ap.parse_args()
 

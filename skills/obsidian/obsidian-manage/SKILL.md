@@ -1,11 +1,11 @@
 ---
 name: obsidian:manage
-description: Manage notes in the Obsidian vault at $HOME/raw using direct file operations. Use for reading, creating, editing, searching, or organising vault notes; working with daily notes; managing todos; browsing tags/properties/frontmatter; checking backlinks or orphans. Triggers on mentions of Obsidian, vault, daily note, knowledge base, second brain, or ~/raw paths. Not for vault-wide audits or tag taxonomy fixes — use obsidian:audit for those.
+description: Manage notes in the Obsidian vault at $HOME/Developer/obsidian using direct file operations. Use for reading, creating, editing, searching, or organising vault notes; working with daily notes; managing todos; browsing tags/properties/frontmatter; checking backlinks or orphans. Triggers on mentions of Obsidian, vault, daily note, knowledge base, second brain, or ~/Developer/obsidian paths. Not for vault-wide audits or tag taxonomy fixes — use obsidian:audit for those.
 ---
 
 # Obsidian Vault Management
 
-Manage the raw folder at `$HOME/raw` using direct file operations.
+Manage the raw folder at `$HOME/Developer/obsidian` using direct file operations.
 
 ## Why direct file ops, not the Obsidian CLI
 
@@ -19,7 +19,7 @@ The vault is plain markdown files on disk. Use `Read`, `Edit`, `Write`,
 ## Vault root
 
 ```bash
-VAULT="$HOME/raw"
+VAULT="$HOME/Developer/obsidian"
 ```
 
 ## Vault structure
