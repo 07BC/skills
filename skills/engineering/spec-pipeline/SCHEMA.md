@@ -36,7 +36,7 @@ The parser extracts the first ```` ```yaml ```` block that contains a top-level 
 | `scheme` | yes | string | — | Xcode scheme name (quote if contains spaces). |
 | `destination` | yes | string | — | Full `-destination` argument value (quote it). |
 | `tests_target` | yes | string | — | Unit test target name for `-only-testing:` filters. |
-| `target_architecture_doc` | recommended | string | (none) | Path to the project's architecture authority doc. Read by `spec-distiller` and `engineer`. |
+| `target_architecture_doc` | recommended | string | (none) | Path to the project's architecture authority doc. Read by `spec-distiller`, `planner`, and `engineer`. Generate with `/swiftopher-columbus` if you don't have one. |
 | `context_docs` | optional | string list | `[]` | Additional project context docs that agents should read on start. |
 | `spec_dir` | optional | string | `docs/specs` | Where `spec-distiller` writes specs. |
 | `plan_dir` | optional | string | `docs/plans` | Where `spec-distiller` writes plans. |
@@ -47,7 +47,10 @@ The parser extracts the first ```` ```yaml ```` block that contains a top-level 
 
 Hard requirements (pipeline refuses to start without these): `workspace`, `scheme`, `destination`, `tests_target`.
 
-Recommended (pipeline warns and asks once): `ticket_prefix`, `target_architecture_doc`.
+Recommended (pipeline warns and asks once):
+
+- `ticket_prefix` — for branch naming and commit prefixes.
+- `target_architecture_doc` — if the field is set but the file is missing, the pipeline prompts the user before Stage 1: generate it with `/swiftopher-columbus`, proceed without it (agents fall back to the `swift-engineer` skill body for architecture authority), or abort. Omitting the field entirely is treated as "no architecture doc available" and the pipeline runs without warning.
 
 Everything else has a sensible default.
 
