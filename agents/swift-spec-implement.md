@@ -7,6 +7,7 @@ description: >
   master-plan.md state. Halts on ambiguity, unfixable test failure, or
   unrecoverable BLOCKED. Invoked by spec-pipeline-orchestrator; never directly.
   Invoke as: "swift-spec-implement: task N from <plan path> against <spec path>".
+model: sonnet
 ---
 
 # Swift Spec Implement
