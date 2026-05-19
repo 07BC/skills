@@ -6,6 +6,7 @@ description: >
   Invoked by swift-spec-implement after engineer reports clean build. Never
   writes XCTest. Never writes UI tests (use swift-uitest skill for those).
   Invoke as: "test-writer: verify task N from <spec path>".
+model: sonnet
 ---
 
 # Test Writer

@@ -9,6 +9,7 @@ description: >
   as Stage 4; never invoked directly. Loops at most three times before the
   orchestrator escalates. Invoke as: "swift-spec-review: review branch
   against <spec path>".
+model: opus
 ---
 
 # Swift Spec Review (whole-diff)

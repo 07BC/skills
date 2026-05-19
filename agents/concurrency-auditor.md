@@ -8,6 +8,7 @@ description: >
   swift-concurrency-expert checklist and returns PASS or BLOCKED with a
   blockers table. Invoked by swift-spec-implement after test-writer; never
   invoked directly. Invoke as: "concurrency-auditor: review task N diff".
+model: opus
 ---
 
 # Concurrency Auditor
