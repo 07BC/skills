@@ -5,11 +5,23 @@ description: >
   codebase by systematically reading the project before writing anything.
   Use this skill whenever someone asks to "document the architecture",
   "map out how this app works", "understand the codebase", "create an
-  architecture doc", "explain the project structure", or wants an end-to-end
-  overview covering setup, code structure, and deployment. Also trigger when
-  onboarding a new engineer, preparing for a refactor, or when asked to
-  "explain this project" at any level of detail. Always use this skill — do
-  not attempt to write an architecture document from memory or filenames alone.
+  architecture doc", "create a target architecture doc", "produce
+  target-architecture.md", "produce docs/architecture.md", "write the
+  architecture authority", "create a canonical architecture reference",
+  "single source of truth for architecture", "spec the architecture",
+  "draft an architecture overview", "produce a layer map" or "layer model",
+  "explain the project structure", or wants an end-to-end overview covering
+  setup, code structure, and deployment. Also trigger when the user asks to
+  derive an architecture doc from the existing code ("based on the
+  application's architecture", "based on what's there"), to audit or blueprint
+  the architecture, when onboarding a new engineer, when preparing for a
+  refactor, or when asked to "explain this project" at any level of detail.
+  Trigger on implicit follow-ups too: "now create the doc", "execute the
+  prompt", "do it" after a prior prompt-writing turn. Always use this skill —
+  do not attempt to write an architecture document from memory or filenames
+  alone. The resulting doc may codify the current pattern as the target
+  (MVVM ratification) or describe a migration target (MV) — the skill body
+  guides the decision; the script suite produces a recommendation.
 ---
 
 # Swiftopher Columbus
@@ -25,6 +37,8 @@ drift, use `swift-architect` instead.
 
 ## Phase 1 — Explore Before Writing
 
+### 1.1 — Project shape
+
 Run `scripts/explore.sh` to emit raw observations about the codebase before
 drafting any prose. The script outputs newline-separated sections covering:
 
@@ -35,15 +49,43 @@ drafting any prose. The script outputs newline-separated sections covering:
 - Entry-point candidates (`*App.swift`, `AppDelegate.swift`)
 - Local packages (`LocalPackages/`, `Packages/`, or none)
 
-Then, separately, search for CI / deployment config (Fastfile, GitHub Actions
-workflows) — this is intentionally **not** part of `explore.sh` because the
-shape of CI config varies enough that synthesis is best done file-by-file:
+### 1.2 — Architectural pattern detection
+
+Run the inventory scripts to detect which architectural patterns are actually
+present in the code. This determines whether the resulting doc ratifies the
+current pattern or describes a migration target — do **not** infer this from
+filenames or memory.
+
+| Script | What it answers |
+|---|---|
+| `scripts/pattern-inventory.sh` | MV vs MVVM, `@Observable` vs `ObservableObject`, actor count, concurrency primitives, `@unchecked Sendable` flags |
+| `scripts/di-inventory.sh` | `@Entry` vs `EnvironmentKey`, `@StateObject`/`@ObservedObject`/`@EnvironmentObject` counts, singletons, DI containers, `@Inject` |
+| `scripts/persistence-inventory.sh` | SwiftData vs Core Data, `UserDefaults`, Keychain, `NSCoding`, image cache |
+| `scripts/networking-inventory.sh` | `*ClientProtocol` boundaries, `URLSession` layering, async API shape, WebSocket transport, auth headers |
+| `scripts/composition-root.sh` | `@main` entry, `WindowGroup` contents, the View struct that owns the most `@StateObject` declarations (the implicit DI root in MVVM apps) |
+| `scripts/drift-report.sh` | Runs all of the above and prints a single recommendation: "Codify MV", "Codify MVVM", "Mid-migration: take a stance", or "No clear pattern" |
+
+For a single-glance verdict run only `drift-report.sh`. For deep auditing run
+each inventory individually so the per-section output is preserved.
+
+When the drift report says **"Mid-migration: take a stance"**, stop and ask
+the user before writing — the target direction is not inferable from code
+alone in a mixed codebase.
+
+### 1.3 — CI and deployment
+
+Search for CI / deployment config (Fastfile, GitHub Actions workflows) —
+intentionally not part of `explore.sh` because the shape of CI config varies
+enough that synthesis is best done file-by-file:
 
 ```bash
 find . -name "Fastfile" -o -name "*.yml" -o -name "*.yaml" | grep -v ".build" | head -10
 ```
 
-Open and **read** every file the script surfaces. Do not skip this step.
+### 1.4 — Read what the scripts surface
+
+Open and **read** every file the scripts surface. Do not skip this step.
+Scripts emit counts; the doc must cite specific lines.
 
 ---
 
@@ -164,3 +206,34 @@ Before presenting the document, check:
 | `references/swiftdata.md` | Writing Layer 4 (persistence) |
 | `references/concurrency.md` | Writing Layer 5 (actors, Mutex, Swift 6) |
 | `references/testing.md` | Writing Layer 8 (Swift Testing, mocks, CI) |
+
+## Scripts
+
+All scripts are read-only, idempotent, and run from the repo root. Each
+emits sectioned plain-text output suitable for piping into the doc draft.
+
+| Script | Output |
+|---|---|
+| `scripts/explore.sh` | Project shape — top-level swift files, directory listing, package graph, Xcode project settings, entry points, local packages |
+| `scripts/pattern-inventory.sh` | MV vs MVVM verdict, `@Observable` / `ObservableObject` / `@Published` counts, named ViewModels, actor declarations, `@MainActor` annotations, `Mutex` / `NSLock` / `os_unfair_lock` usage, `@unchecked Sendable` flags |
+| `scripts/di-inventory.sh` | DI style verdict, `@Entry` vs `EnvironmentKey` counts, `@StateObject` / `@ObservedObject` / `@EnvironmentObject` counts, `.shared` singletons, `AppDependencies` / `@Inject` detection |
+| `scripts/persistence-inventory.sh` | Persistence verdict, SwiftData (`@Model`, `ModelContainer`, `@Query`), Core Data (`NSManagedObject`, `NSPersistentContainer`), `UserDefaults` / `@AppStorage`, Keychain, `NSCoding` legacy archival, image cache |
+| `scripts/networking-inventory.sh` | `*ClientProtocol` / `*APIProtocol` boundaries, `URLSession` references and layering check, decoding sites, `async throws` / `AsyncStream` / `AsyncThrowingStream` adoption, WebSocket transport, auth header usage |
+| `scripts/composition-root.sh` | `@main` entry, `WindowGroup` block, files with 3+ `@StateObject` (likely composition roots), the top candidate file with its `@StateObject` / `@State` / `@Environment` declarations |
+| `scripts/drift-report.sh` | Composite: runs all of the above and prints a single recommendation (ratify MV / ratify MVVM / mid-migration / unknown) plus concurrency-audit flags |
+
+**Recommended order for a fresh codebase:**
+
+```bash
+scripts/drift-report.sh > /tmp/arch-report.txt    # one-shot overview
+# read /tmp/arch-report.txt, then read the files the report cites
+# only then start drafting docs/architecture.md
+```
+
+**Recommended order for a known codebase you want to re-audit:**
+
+```bash
+scripts/pattern-inventory.sh   # has anything changed since last audit?
+scripts/composition-root.sh    # did the composition root move?
+# if either shows drift, re-read the relevant code before updating the doc
+```
