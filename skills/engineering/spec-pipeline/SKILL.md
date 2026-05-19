@@ -81,23 +81,28 @@ in this skill's directory.
 
 ## Resolving script paths
 
-The two scripts this skill ships (`read-pipeline-config.sh`,
-`derive-spec-id.sh`) live in this skill's `scripts/` directory. At runtime,
-that directory's absolute path depends on how the plugin was installed —
-typically `~/.claude/plugins/<plugin-id>/skills/engineering/spec-pipeline/scripts/`
-when installed via `/plugin install`, or symlinked into `~/.claude/skills/`
-by `scripts/link-skills.sh` in local dev.
+After `make install` (or `make link`), the scripts are always symlinked at:
 
-Before invoking either script, resolve the absolute path. If you don't know
-it, derive it from the SKILL.md you are reading (this file) — its directory
-is the skill root, and `scripts/` is its sibling. Export it once:
-
-```bash
-SKILL_DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || echo "<absolute path to this SKILL.md>")")"
+```
+$HOME/.claude/skills/spec-pipeline/scripts/read-pipeline-config.sh
+$HOME/.claude/skills/spec-pipeline/scripts/derive-spec-id.sh
 ```
 
-Then use `${SKILL_DIR}/scripts/read-pipeline-config.sh` etc. The examples
-below assume `SKILL_DIR` is already set.
+Use that path directly. Do not attempt to derive it from the SKILL.md's own
+location — that was unreliable. If the path doesn't exist (non-standard
+install), locate it with:
+
+```bash
+find "$HOME/.claude" -name "read-pipeline-config.sh" -maxdepth 5 2>/dev/null | head -1
+```
+
+Set once for the session:
+
+```bash
+SCRIPTS="$HOME/.claude/skills/spec-pipeline/scripts"
+```
+
+Then use `$SCRIPTS/read-pipeline-config.sh` etc. throughout.
 
 ---
 
