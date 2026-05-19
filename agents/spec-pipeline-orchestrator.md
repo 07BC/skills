@@ -9,6 +9,7 @@ description: >
   the invocation prompt — see the skill body. Invoke as: "spec-pipeline-
   orchestrator: drive spec-id=<id> source=<jira|spec|prompt> with input
   below".
+model: sonnet
 ---
 
 # Spec Pipeline Orchestrator

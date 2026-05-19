@@ -7,6 +7,7 @@ description: >
   Invoked by spec-pipeline-orchestrator after the input adapter resolves
   (raw_text, spec_id). Output files are gitignored per pipeline design. Invoke
   as: "spec-distiller: distil <spec_id> from input below — <raw_text>".
+model: opus
 ---
 
 # Spec Distiller
