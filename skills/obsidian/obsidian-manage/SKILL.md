@@ -5,22 +5,19 @@ description: Manage notes in the Obsidian vault at $HOME/Developer/obsidian usin
 
 # Obsidian Vault Management
 
-Manage the raw folder at `$HOME/Developer/obsidian` using direct file operations.
-
-## Why direct file ops, not the Obsidian CLI
-
-The Obsidian CLI (`obsidian` binary) has been observed to silently fail on
-path resolution — `vault=obsidian` does not always resolve to the actual vault
-location, and errors are emitted only on stderr (often suppressed by callers).
-
-The vault is plain markdown files on disk. Use `Read`, `Edit`, `Write`,
-`Glob`, `Grep`, and `Bash` for everything. No CLI binary required.
+Manage the Obsidian vault at `$HOME/Developer/obsidian` using the Obsidian CLI
+and direct file operations.
 
 ## Vault root
 
 ```bash
-VAULT="$HOME/Developer/obsidian"
+VAULT=$(obsidian vault info=path)   # resolves to $HOME/Developer/obsidian
 ```
+
+Prefer the Obsidian CLI (`obsidian`) for vault queries — task lists, tags,
+backlinks, search, daily-note path. Use direct file ops (`Read`, `Edit`,
+`Write`, `Glob`, `Grep`, `Bash`) when the CLI has no equivalent (e.g.
+section-targeted insertion, bulk renames, template substitution).
 
 ## Vault structure
 

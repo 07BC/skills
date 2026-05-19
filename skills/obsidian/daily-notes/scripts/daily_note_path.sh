@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
-# Emit the daily-note path inside the Obsidian vault for today or a given date.
-# Usage: daily_note_path.sh [YYYY-MM-DD]
-#
-# Path format: $VAULT/daily/YYYY/MM-MMM/YY-MM-D.md
-# VAULT resolved via _lib/obsidian-path.sh
-#   skills/obsidian/obsidian-manage/scripts/daily_note_path.sh
-
+# Emit the absolute daily-note path for today (no arg) or a given date (YYYY-MM-DD).
 set -euo pipefail
 
-LIB_DIR="$(cd "$(dirname "$0")/../.." && pwd)/_lib"
-VAULT=$(bash "$LIB_DIR/obsidian-path.sh")
+VAULT=$(obsidian vault info=path)
 
 if [ -n "${1:-}" ]; then
   ISO="$1"
@@ -18,12 +11,7 @@ if [ -n "${1:-}" ]; then
   MMM=$(/bin/date -j -f "%Y-%m-%d" "$ISO" +%b)
   YY=$(/bin/date -j -f "%Y-%m-%d" "$ISO" +%y)
   D=$(/bin/date -j -f "%Y-%m-%d" "$ISO" +%-d)
+  echo "$VAULT/daily/$YEAR/$MM-$MMM/$YY-$MM-$D.md"
 else
-  YEAR=$(/bin/date +%Y)
-  MM=$(/bin/date +%m)
-  MMM=$(/bin/date +%b)
-  YY=$(/bin/date +%y)
-  D=$(/bin/date +%-d)
+  echo "$VAULT/$(obsidian daily:path)"
 fi
-
-echo "$VAULT/daily/$YEAR/$MM-$MMM/$YY-$MM-$D.md"

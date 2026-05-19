@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
 # Verify the Obsidian vault is a git repo with a clean working tree.
 # Usage: vault_preconditions.sh
-#
 # Exits 0 if OK. Prints diagnostic to stderr and exits non-zero on:
 #   - vault directory missing
 #   - vault is not a git repo
 #   - vault has uncommitted changes (audit diff would be muddied)
-#
-# VAULT resolved via _lib/obsidian-path.sh
 
 set -euo pipefail
 
-LIB_DIR="$(cd "$(dirname "$0")/../.." && pwd)/_lib"
-VAULT=$(bash "$LIB_DIR/obsidian-path.sh")
+VAULT=$(obsidian vault info=path)
 
 if [ ! -d "$VAULT" ]; then
   echo "Vault not found at $VAULT" >&2

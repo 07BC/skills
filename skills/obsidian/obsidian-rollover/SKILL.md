@@ -16,23 +16,16 @@ section. Never duplicates. Never carries forward completed items.
 
 ## Vault root
 
-```
-VAULT="$HOME/Developer/obsidian"
+Resolved at runtime via the Obsidian CLI:
+
+```bash
+obsidian vault info=path   # → absolute vault root
+obsidian daily:path        # → today's note relative to vault root
 ```
 
-The Obsidian CLI is flaky (silent path-resolution failures). Operate on the
-vault as plain markdown files using `Read`, `Edit`, `Write`, `Glob`, `Grep`.
-
-Daily note path format:
-```
-$VAULT/daily/YYYY/MM-MMM/YY-MM-D.md
-```
-where `YYYY` = full year, `MM` = zero-padded month (`05`), `MMM` = three-letter
-month (`May`), `YY` = two-digit year (`26`), `D` = day **without** leading zero
-(`1`, `2`, …, `31`).
-
-Use `scripts/daily_note_path.sh` to compute the path for today (no arg) or for
-a specific date (`scripts/daily_note_path.sh 2026-05-16`).
+Use `scripts/daily_note_path.sh` to get the absolute path for today (no arg) or
+a specific date (`scripts/daily_note_path.sh 2026-05-16`). The script calls the
+CLI internally — no hardcoded path needed.
 
 ---
 
@@ -74,17 +67,12 @@ Substitute `{YYYY-MM-DD}` with today's ISO date.
 
 ## Step 2 — Roll over incomplete tasks
 
-Run `scripts/rollover.py`. The script handles the full workflow:
+Run `scripts/rollover.py`. The script uses the Obsidian CLI (`obsidian tasks todo/done`) for all task queries and handles the full workflow:
 
-- Reads today's `## To-Do` section to build a dedupe list (case-insensitive,
-  markdown links stripped).
-- Walks back the last 7 days (override with `--days N`) and collects every
-  `- [ ]` line from any daily note that exists.
-- Filters out: empty placeholders, items already present in today's note, and
-  items that appear as `- [x]` anywhere in the scanned window.
-- Inserts survivors into today's `## To-Do` section, just before the `---`
-  divider that follows it, with a blank line separating them from the last
-  existing item.
+- Queries today's `## To-Do` section via `obsidian tasks todo daily` to build a dedupe list (case-insensitive, markdown links stripped).
+- Walks back the last 7 days (override with `--days N`) and collects every `- [ ]` line via `obsidian tasks todo path=<rel>`.
+- Filters out: empty placeholders, items already present in today's note, and items that appear as `- [x]` anywhere in the scanned window.
+- Inserts survivors into today's `## To-Do` section, just before the `---` divider that follows it, with a blank line separating them from the last existing item.
 
 Use `--dry-run` first if you want to see what would change before writing.
 

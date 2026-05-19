@@ -1,67 +1,68 @@
 #!/usr/bin/env python3
 """Roll incomplete to-do items from recent past daily notes into today's note.
 
+Uses the Obsidian CLI (obsidian) for all vault and task queries.
+Writes the result directly to today's note, inserting into the ## To-Do section.
+
 Usage:
-    rollover.py [--dry-run] [--days N] [--vault PATH]
-
-Walks back N days (default 7) from today, collects every `- [ ]` line from
-the daily notes it finds, filters out:
-  - empty placeholders (`- [ ]` with no text after)
-  - items already present in today's `## To-Do` section (case-insensitive,
-    markdown links stripped)
-  - items that appear as `- [x] ...` anywhere in the scanned window
-
-then inserts the survivors into today's `## To-Do` section, just before the
-section's terminator (a `---` divider or the next `## ` heading), with a
-blank line separating new items from existing ones.
-
-`--dry-run` reports the plan without modifying anything.
-
-VAULT defaults to $HOME/Developer/obsidian (matches the obsidian-rollover SKILL.md prose),
-overridable via the VAULT env var or --vault.
+    rollover.py [--dry-run] [--days N]
 """
 from __future__ import annotations
 import argparse
 import datetime
-import os
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 
-def daily_path(vault: Path, date: datetime.date) -> Path:
+def _obsidian(*args: str) -> str:
+    result = subprocess.run(["obsidian", *args], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or f"obsidian {args[0]} failed")
+    return result.stdout.strip()
+
+
+def _vault() -> Path:
+    return Path(_obsidian("vault", "info=path"))
+
+
+def _daily_rel(date: datetime.date) -> str:
     return (
-        vault
-        / "daily"
-        / f"{date.year}"
-        / f"{date.month:02d}-{date.strftime('%b')}"
-        / f"{date.strftime('%y')}-{date.month:02d}-{date.day}.md"
+        f"daily/{date.year}"
+        f"/{date.month:02d}-{date.strftime('%b')}"
+        f"/{date.strftime('%y')}-{date.month:02d}-{date.day}.md"
     )
 
 
-_OPEN_TODO_RE = re.compile(r"^\s*-\s\[\s\]\s+(\S.*)$")
-_DONE_TODO_RE = re.compile(r"^\s*-\s\[[xX]\]\s+(\S.*)$")
+def _tasks(path_arg: str, done: bool = False) -> list[str]:
+    """Return full task lines (`- [ ] …` or `- [x] …`) from the vault CLI."""
+    cmd = "done" if done else "todo"
+    try:
+        out = _obsidian("tasks", cmd, path_arg, "format=json")
+    except RuntimeError:
+        return []
+    if not out or out.startswith("No tasks"):
+        return []
+    return [item["text"] for item in json.loads(out)]
 
 
-def extract_open_todos(text: str) -> list[str]:
-    return [m.group(1).strip() for line in text.splitlines() if (m := _OPEN_TODO_RE.match(line))]
+_OPEN_RE = re.compile(r"^\s*-\s\[\s\]\s+(\S.*)$")
+_DONE_RE = re.compile(r"^\s*-\s\[[xX]\]\s+(\S.*)$")
 
 
-def extract_done_todos(text: str) -> set[str]:
-    return {
-        _normalise(m.group(1))
-        for line in text.splitlines()
-        if (m := _DONE_TODO_RE.match(line))
-    }
+def _text(line: str, done: bool = False) -> str | None:
+    m = (_DONE_RE if done else _OPEN_RE).match(line)
+    return m.group(1).strip() if m else None
 
 
-def _normalise(s: str) -> str:
+def _norm(s: str) -> str:
     s = re.sub(r"\[(.*?)\]\([^)]+\)", r"\1", s)
-    s = re.sub(r"\s+", " ", s).strip().lower()
-    return s
+    return re.sub(r"\s+", " ", s).strip().lower()
 
 
-def insert_into_todo_section(content: str, new_items: list[str]) -> str:
+def _insert(content: str, new_items: list[str]) -> str:
     lines = content.splitlines()
     start: int | None = None
     for i, line in enumerate(lines):
@@ -93,41 +94,51 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--days", type=int, default=7)
-    ap.add_argument(
-        "--vault",
-        default=os.environ.get("VAULT", str(Path.home() / "Developer" / "obsidian")),
-    )
     args = ap.parse_args()
 
-    vault = Path(args.vault)
+    vault = _vault()
     today = datetime.date.today()
+    today_path = vault / _daily_rel(today)
 
-    today_path = daily_path(vault, today)
     if not today_path.exists():
         print(f"Today's note not found at {today_path}", file=sys.stderr)
         print("Create today's note first, then re-run.", file=sys.stderr)
         return 2
 
     today_text = today_path.read_text(encoding="utf-8")
-    already_open = {_normalise(t) for t in extract_open_todos(today_text)}
-    completed_anywhere: set[str] = set(extract_done_todos(today_text))
+
+    already_open: set[str] = set()
+    for line in _tasks("daily"):
+        t = _text(line)
+        if t:
+            already_open.add(_norm(t))
+
+    completed_anywhere: set[str] = set()
+    for line in _tasks("daily", done=True):
+        t = _text(line, done=True)
+        if t:
+            completed_anywhere.add(_norm(t))
 
     candidates: list[tuple[datetime.date, str]] = []
     for offset in range(1, args.days + 1):
         d = today - datetime.timedelta(days=offset)
-        p = daily_path(vault, d)
-        if not p.exists():
+        rel = _daily_rel(d)
+        if not (vault / rel).exists():
             continue
-        t = p.read_text(encoding="utf-8")
-        completed_anywhere.update(extract_done_todos(t))
-        for todo in extract_open_todos(t):
-            candidates.append((d, todo))
+        for line in _tasks(f"path={rel}", done=True):
+            t = _text(line, done=True)
+            if t:
+                completed_anywhere.add(_norm(t))
+        for line in _tasks(f"path={rel}"):
+            t = _text(line)
+            if t:
+                candidates.append((d, t))
 
-    seen: set[str] = set(already_open)
+    seen = set(already_open)
     to_add: list[str] = []
     sources: list[tuple[datetime.date, str]] = []
     for d, text in candidates:
-        norm = _normalise(text)
+        norm = _norm(text)
         if not norm or norm in seen or norm in completed_anywhere:
             continue
         seen.add(norm)
@@ -144,8 +155,7 @@ def main() -> int:
             print(f"  - [{d.isoformat()}] {text}")
         return 0
 
-    new_text = insert_into_todo_section(today_text, to_add)
-    today_path.write_text(new_text, encoding="utf-8")
+    today_path.write_text(_insert(today_text, to_add), encoding="utf-8")
     print(f"Rolled over {len(to_add)} task(s):")
     for _, text in sources:
         print(f"  - {text}")
