@@ -11,7 +11,7 @@ Claude Code's skill system lets you encode domain expertise into focused `SKILL.
 
 Without skills, Claude pattern-matches on its training data. That works for generic tasks, but it falls apart for domain-specific ones. The `swift-tvos` skill exists because tvOS focus engine bugs are a case where Claude confidently shuffles code around and declares the bug fixed when nothing has changed — the skill enforces the diagnostic discipline that prevents that failure mode. The `swift-engineer` skill locks in the MV (Model-View) pattern rather than defaulting to MVVM. The `swift-audit` skill knows to check Swift 6 concurrency, actor isolation, and `@unchecked Sendable` usage — not just style.
 
-This repo is the source of truth for those skills. It is also a Claude Code plugin, so it can be loaded project-by-project without touching the global `~/.claude/` setup.
+This repo is the source of truth for those skills. It installs via `make install`, which symlinks skills into `~/.claude/skills/` and agents into `~/.claude/agents/`.
 
 ## How skills work
 
@@ -53,19 +53,20 @@ swift:architect ──► swift:engineer ──► swift:quality ──► swift
 
 ### Steps
 
-In any Claude Code session:
-
+```bash
+git clone git@github.com:07BC/skills.git
+cd skills
+make install
 ```
-/plugin marketplace add 07BC/skills
-/plugin install jls@07BC-skills
-```
 
-Skills are then available as `/jls:<skill-name>` — e.g. `/jls:swift-engineer`, `/jls:swift-tvos`.
+Skills are then available as `/<skill-name>` — e.g. `/swift-engineer`, `/swift-tvos`.
+Agents are available automatically; Claude loads them by `name:` from `~/.claude/agents/`.
 
-### Keeping skills up to date
+### Keeping up to date
 
-```
-/plugin update jls
+```bash
+git pull
+make install
 ```
 
 ## Skills
@@ -83,87 +84,87 @@ Model and flow key from the broader skill library:
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:git-commit](./skills/git/git-commit/SKILL.md) | Stages specific files and commits with a short imperative message. Extracts a ticket prefix from the branch name if present. | Sonnet · Direct |
-| [/jls:git-push](./skills/git/git-push/SKILL.md) | Runs the project formatter, commits, then pushes. Builds on git-commit. | Sonnet · Direct |
-| [/jls:git-pr](./skills/git/git-pr/SKILL.md) | Commits, pushes, runs tests and code review, then creates a PR with a summary and end-user test plan. Builds on git-push. | Sonnet · Direct |
+| [/git-commit](./skills/git/git-commit/SKILL.md) | Stages specific files and commits with a short imperative message. Extracts a ticket prefix from the branch name if present. | Sonnet · Direct |
+| [/git-push](./skills/git/git-push/SKILL.md) | Runs the project formatter, commits, then pushes. Builds on git-commit. | Sonnet · Direct |
+| [/git-pr](./skills/git/git-pr/SKILL.md) | Commits, pushes, runs tests and code review, then creates a PR with a summary and end-user test plan. Builds on git-push. | Sonnet · Direct |
 
 ### End-to-end pipelines
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | One-shot pipeline from input (Jira ticket, markdown spec, or free prompt) all the way to PR. Each run gets its own git worktree. Drives the inner `engineer → test-writer → concurrency-auditor → task-reviewer` loop, runs a whole-diff `swift-spec-review`, then opens the PR via `/jls:git-pr`. Bounded retries; durable audit log in Obsidian. Project must declare a `spec_pipeline` YAML block in its CLAUDE.md ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md)). | Opus · Direct |
+| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | One-shot pipeline from input (Jira ticket, markdown spec, or free prompt) all the way to PR. Each run gets its own git worktree. Drives the inner `engineer → test-writer → concurrency-auditor → task-reviewer` loop, runs a whole-diff `swift-spec-review`, then opens the PR via `/git-pr`. Bounded retries; durable audit log in Obsidian. Project must declare a `spec_pipeline` YAML block in its CLAUDE.md ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md)). | Opus · Direct |
 
 ### Building
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:swift-architect](./skills/engineering/swift-architect/SKILL.md) | Scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
-| [/jls:swift-engineer](./skills/engineering/swift-engineer/SKILL.md) | Main building skill — writes new Swift 6.2 features, SwiftUI views, services, async work within the MV pattern. | Sonnet · Direct |
-| [/jls:swift-quality](./skills/testing/swift-quality/SKILL.md) | Rewrites code to meet the Swift Style Guide and project architecture rules without changing behaviour. | Sonnet · Direct |
-| [/jls:swiftui-liquid-glass](./skills/engineering/swiftui-liquid-glass/SKILL.md) | Implement, review, or improve SwiftUI features using the iOS 26+ Liquid Glass API. | Sonnet · Direct |
-| [/jls:swift-tvos](./skills/engineering/swift-tvos/SKILL.md) | Diagnoses tvOS navigation and focus engine bugs in SwiftUI codebases. Always use this — do not attempt tvOS focus diagnosis ad hoc. | Sonnet · Direct |
+| [/swift-architect](./skills/engineering/swift-architect/SKILL.md) | Scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
+| [/swift-engineer](./skills/engineering/swift-engineer/SKILL.md) | Main building skill — writes new Swift 6.2 features, SwiftUI views, services, async work within the MV pattern. | Sonnet · Direct |
+| [/swift-quality](./skills/testing/swift-quality/SKILL.md) | Rewrites code to meet the Swift Style Guide and project architecture rules without changing behaviour. | Sonnet · Direct |
+| [/swiftui-liquid-glass](./skills/engineering/swiftui-liquid-glass/SKILL.md) | Implement, review, or improve SwiftUI features using the iOS 26+ Liquid Glass API. | Sonnet · Direct |
+| [/swift-tvos](./skills/engineering/swift-tvos/SKILL.md) | Diagnoses tvOS navigation and focus engine bugs in SwiftUI codebases. Always use this — do not attempt tvOS focus diagnosis ad hoc. | Sonnet · Direct |
 
 ### Documenting
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:swift-document](./skills/engineering/swift-document/SKILL.md) | Adds or updates Apple DocC-style `///` documentation comments on Swift symbols. | Sonnet · Direct |
-| [/jls:swiftopher-columbus](./skills/engineering/swiftopher-columbus/SKILL.md) | Produces a thorough, living architecture document for an iOS/macOS Swift codebase. | Opus · Plan → Execute |
+| [/swift-document](./skills/engineering/swift-document/SKILL.md) | Adds or updates Apple DocC-style `///` documentation comments on Swift symbols. | Sonnet · Direct |
+| [/swiftopher-columbus](./skills/engineering/swiftopher-columbus/SKILL.md) | Produces a thorough, living architecture document for an iOS/macOS Swift codebase. | Opus · Plan → Execute |
 
 ### Testing
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:swift-testing](./skills/engineering/swift-testing/SKILL.md) | Generates unit tests using Apple's Swift Testing framework (`@Test`, `@Suite`, `#expect`). Not for UI tests. | Sonnet · Direct |
-| [/jls:swift-uitest](./skills/testing/swift-uitest/SKILL.md) | Creates XCUITest UI tests for iOS apps. Not for unit tests — runs out-of-process via XCTest. | Sonnet · Direct |
-| [/jls:swift-test-all](./skills/testing/swift-test-all/SKILL.md) | Runs the test suite once and reports results. Detects workspace, scheme, and simulator from `CLAUDE.md`. | Sonnet · Direct |
+| [/swift-testing](./skills/engineering/swift-testing/SKILL.md) | Generates unit tests using Apple's Swift Testing framework (`@Test`, `@Suite`, `#expect`). Not for UI tests. | Sonnet · Direct |
+| [/swift-uitest](./skills/testing/swift-uitest/SKILL.md) | Creates XCUITest UI tests for iOS apps. Not for unit tests — runs out-of-process via XCTest. | Sonnet · Direct |
+| [/swift-test-all](./skills/testing/swift-test-all/SKILL.md) | Runs the test suite once and reports results. Detects workspace, scheme, and simulator from `CLAUDE.md`. | Sonnet · Direct |
 
 ### Reviewing & auditing
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:swift-code-review](./skills/engineering/swift-code-review/SKILL.md) | Performs a Swift code review in-session — BLOCKER / WARNING / SUGGESTION findings with inline fixes. Run before commit/PR. | Opus · Direct |
-| [/jls:swift-audit](./skills/engineering/swift-audit/SKILL.md) | Exhaustive audit of a Swift/SwiftUI codebase — Swift 6 concurrency, separation of concerns, state management, test quality. Outputs `AUDIT.md` with linked per-section files. | Opus · Plan → Execute |
+| [/swift-code-review](./skills/engineering/swift-code-review/SKILL.md) | Performs a Swift code review in-session — BLOCKER / WARNING / SUGGESTION findings with inline fixes. Run before commit/PR. | Opus · Direct |
+| [/swift-audit](./skills/engineering/swift-audit/SKILL.md) | Exhaustive audit of a Swift/SwiftUI codebase — Swift 6 concurrency, separation of concerns, state management, test quality. Outputs `AUDIT.md` with linked per-section files. | Opus · Plan → Execute |
 
 ### Concurrency
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:swift-concurrency](./skills/engineering/swift-concurrency/SKILL.md) | Conceptual guidance — async/await, actors, Sendable, Swift 6 migration. Use to learn or explain. | Sonnet · Direct |
-| [/jls:swift-concurrency-expert](./skills/engineering/swift-concurrency-expert/SKILL.md) | Action-oriented — fix concrete concurrency errors, data races, isolation warnings, and Sendable gaps in existing code. | Sonnet · Direct |
+| [/swift-concurrency](./skills/engineering/swift-concurrency/SKILL.md) | Conceptual guidance — async/await, actors, Sendable, Swift 6 migration. Use to learn or explain. | Sonnet · Direct |
+| [/swift-concurrency-expert](./skills/engineering/swift-concurrency-expert/SKILL.md) | Action-oriented — fix concrete concurrency errors, data races, isolation warnings, and Sendable gaps in existing code. | Sonnet · Direct |
 
 ### Tooling & CI
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:swift-cidi](./skills/engineering/swift-cidi/SKILL.md) | Debug GitHub Actions CI for Kick iOS/tvOS projects — flaky tests, xcresult artefacts, xctestplan setup. | Sonnet · Direct (Opus for complex failures) |
-| [/jls:swift-lint](./skills/engineering/swift-lint/SKILL.md) | Finds the nearest `.swiftlint.yml` and runs SwiftLint from the right directory. | Sonnet · Direct |
-| [/jls:xcodebuildmcp-cli](./skills/engineering/xcodebuildmcp-cli/SKILL.md) | Use the XcodeBuildMCP CLI for iOS/macOS/watchOS/tvOS/visionOS work — build, test, run, debug, log, UI automation. | Sonnet · Direct |
+| [/swift-cidi](./skills/engineering/swift-cidi/SKILL.md) | Debug GitHub Actions CI for Kick iOS/tvOS projects — flaky tests, xcresult artefacts, xctestplan setup. | Sonnet · Direct (Opus for complex failures) |
+| [/swift-lint](./skills/engineering/swift-lint/SKILL.md) | Finds the nearest `.swiftlint.yml` and runs SwiftLint from the right directory. | Sonnet · Direct |
+| [/xcodebuildmcp-cli](./skills/engineering/xcodebuildmcp-cli/SKILL.md) | Use the XcodeBuildMCP CLI for iOS/macOS/watchOS/tvOS/visionOS work — build, test, run, debug, log, UI automation. | Sonnet · Direct |
 
 ### Obsidian
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:obsidian-audit](./skills/obsidian/obsidian-audit/SKILL.md) | Vault hygiene sweep — fixes tags, normalises frontmatter, lifts inline fields into YAML properties. | Sonnet · Direct |
-| [/jls:obsidian-learn](./skills/obsidian/obsidian-learn/SKILL.md) | Extracts durable knowledge from the current session and writes it to the Obsidian knowledge base. Run at end of session. | Sonnet · Direct |
-| [/jls:obsidian-manage](./skills/obsidian/obsidian-manage/SKILL.md) | Read, create, edit, search, and organise notes in the Obsidian vault at `~/raw`. | Sonnet · Direct |
-| [/jls:obsidian-rollover](./skills/obsidian/obsidian-rollover/SKILL.md) | Carries incomplete to-do items from recent past daily notes into today's daily note. | Sonnet · Direct |
+| [/obsidian-audit](./skills/obsidian/obsidian-audit/SKILL.md) | Vault hygiene sweep — fixes tags, normalises frontmatter, lifts inline fields into YAML properties. | Sonnet · Direct |
+| [/obsidian-learn](./skills/obsidian/obsidian-learn/SKILL.md) | Extracts durable knowledge from the current session and writes it to the Obsidian knowledge base. Run at end of session. | Sonnet · Direct |
+| [/obsidian-manage](./skills/obsidian/obsidian-manage/SKILL.md) | Read, create, edit, search, and organise notes in the Obsidian vault at `~/raw`. | Sonnet · Direct |
+| [/obsidian-rollover](./skills/obsidian/obsidian-rollover/SKILL.md) | Carries incomplete to-do items from recent past daily notes into today's daily note. | Sonnet · Direct |
 
 ### Productivity
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:plan-to-jira](./skills/productivity/plan-to-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Infers project, labels, and components from context, then asks via `AskUserQuestion` before creating. | Sonnet · Direct |
-| [/jls:jira-bulk](./skills/productivity/jira-bulk/SKILL.md) | Bulk Jira operations — set fix version, transition status — across multiple tickets in one invocation. | Sonnet · Direct |
-| [/jls:yt-research](./skills/productivity/yt-research/SKILL.md) | Fetches transcripts and extracts prompts from a YouTube channel's recent videos, saving each as markdown. | Sonnet · Direct |
-| [/jls:yt-distill](./skills/productivity/yt-distill/SKILL.md) | Distils a folder of YouTube transcript markdown files (output of yt-research) into a structured Obsidian reference library — skills, plugins, prompts, and techniques categories plus a master index. | Sonnet · Direct |
+| [/plan-to-jira](./skills/productivity/plan-to-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Infers project, labels, and components from context, then asks via `AskUserQuestion` before creating. | Sonnet · Direct |
+| [/jira-bulk](./skills/productivity/jira-bulk/SKILL.md) | Bulk Jira operations — set fix version, transition status — across multiple tickets in one invocation. | Sonnet · Direct |
+| [/yt-research](./skills/productivity/yt-research/SKILL.md) | Fetches transcripts and extracts prompts from a YouTube channel's recent videos, saving each as markdown. | Sonnet · Direct |
+| [/yt-distill](./skills/productivity/yt-distill/SKILL.md) | Distils a folder of YouTube transcript markdown files (output of yt-research) into a structured Obsidian reference library — skills, plugins, prompts, and techniques categories plus a master index. | Sonnet · Direct |
 
 ## Layout
 
 ```
-.claude-plugin/plugin.json      — plugin manifest
-.claude-plugin/marketplace.json — marketplace registration
-scripts/link-skills.sh          — symlinks skills into ~/.claude/skills/ (local dev)
+Makefile                        — install, link, agents, hook, unlink, unagent targets
+scripts/link-skills.sh          — symlinks skills into ~/.claude/skills/
+agents/                         — Claude Code agents (symlinked into ~/.claude/agents/)
 skills/engineering/             — Swift / iOS / Xcode / CI skills
 skills/git/                     — generic git workflow skills
 skills/obsidian/                — Obsidian vault management skills
@@ -175,7 +176,7 @@ skills/deprecated/              — retired skills; skipped by link-skills.sh
 ## Adding a skill
 
 1. Create `skills/<bucket>/<name>/SKILL.md` with `name:` and `description:` frontmatter.
-2. Add a row to the table above using the `/jls:<name>` prefix.
-3. Run `make link` to expose it locally, or `make unlink` to remove the symlinks. Reinstall the plugin after unlinking if needed.
+2. Add a row to the table above using the `/<name>` format.
+3. Run `make link` to expose it locally, or `make unlink` to remove the symlinks.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full bucket convention and the `in-progress` / `deprecated` lifecycle.

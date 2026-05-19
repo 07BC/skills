@@ -1,6 +1,6 @@
 # swift-skills — internal notes
 
-This repo is a Claude Code plugin installed via `/plugin marketplace add 07BC/skills`. Skills are invoked with the `/jls:` namespace prefix (e.g. `/jls:swift-engineer`).
+This repo is installed locally via `make install`. Skills are symlinked into `~/.claude/skills/` and invoked by name (e.g. `/swift-engineer`). Agents are symlinked into `~/.claude/agents/`.
 
 ## Layout
 
@@ -21,7 +21,7 @@ Every shipped skill must be referenced in `README.md` using the `/jls:<name>` pr
 
 1. Create `skills/<bucket>/<name>/SKILL.md` (frontmatter: `name`, `description`).
 2. Add a row to the table in `README.md` with `/jls:<name>` as the skill label.
-3. Run `scripts/link-skills.sh` to expose it locally, or run `/plugin update j` if the plugin is installed.
+3. Run `make link` to expose it locally, or `make agents` to refresh agent symlinks.
 
 ## Removing or deprecating
 
