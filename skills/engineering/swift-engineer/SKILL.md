@@ -810,7 +810,17 @@ concrete checklist.
 
 ## References
 
-- **Swift Concurrency**: See the `swift-concurrency` skill for comprehensive guidance on async/await, actors, Sendable, Swift 6 migration, and data race safety
-- **Testing patterns**: See [references/testing.md](references/testing.md)
-- **SwiftUI components**: See [references/swiftui.md](references/swiftui.md)
-- **Apple Liquid glass**: See [references/liquidglass.md](references/liquidglass.md)
+This skill teaches the MV pattern. For canonical, up-to-date API details,
+query Context7 with these library IDs (use `mcp__context7__query-docs`):
+
+| Library ID | Use for |
+|---|---|
+| `/websites/developer_apple_swiftui` | SwiftUI views, modifiers, navigation, environment, animations |
+| `/swiftlang/swift` | Swift language semantics, generics, macros, typed throws, result builders |
+| `/websites/swift` | Swift language guide, the concurrency book, package manager |
+
+For topic-specific guidance, hand off to the dedicated skill:
+
+- **Concurrency** — `swift-concurrency` (conceptual) or `swift-concurrency-expert` (hands-on fixes)
+- **Testing** — `swift-testing`
+- **Liquid Glass** — `swiftui-liquid-glass`

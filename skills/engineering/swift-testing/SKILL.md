@@ -239,3 +239,12 @@ func emailValidation(email: String, expected: Bool) {
 
 - See `references/assertions.md` for complete assertion reference
 - See `references/tags.md` for tag organisation patterns
+
+### Context7 References
+
+Query Context7 with `mcp__context7__query-docs` for current API details:
+
+| Library ID | Use for |
+|---|---|
+| `/swiftlang/swift` | Swift Testing library source, trait/expectation semantics |
+| `/websites/swift` | Swift Testing documentation on swift.org |

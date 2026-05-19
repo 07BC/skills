@@ -87,4 +87,4 @@ Button("Confirm") { }
 
 ## Resources
 - Reference guide: `references/liquid-glass.md`
-- Prefer Apple docs for up-to-date API details.
+- Apple docs (Context7): `/websites/developer_apple_swiftui` — query via `mcp__context7__query-docs` for `glassEffect`, `GlassEffectContainer`, `.buttonStyle(.glass)`, `.buttonStyle(.glassProminent)`
