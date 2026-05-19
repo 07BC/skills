@@ -77,6 +77,50 @@ Do not invent defaults for required keys.
 
 ---
 
+## Step 1.5 — Validate recommended paths
+
+The architecture authority doc is recommended but not required. If
+`SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC` is non-empty, check the file exists
+before proceeding (resolved relative to the project root, i.e. the current
+working directory):
+
+```bash
+if [[ -n "${SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC:-}" ]] && \
+   [[ ! -f "${SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC}" ]]; then
+  # arch doc set in config but file is missing — handle below
+  :
+fi
+```
+
+If the file is missing, ask the user via `AskUserQuestion`:
+
+> The architecture doc at `<path>` doesn't exist. The pipeline can run
+> without it, but spec-distiller, planner, and engineer fall back to the
+> `swift-engineer` skill body as the only architecture authority. What would
+> you like to do?
+
+- Option A: **Stop and generate it with `/swiftopher-columbus`** (Recommended) — `/swiftopher-columbus` produces a thorough living architecture document for the codebase. Once it has written the file at the configured path, re-invoke `/spec-pipeline`.
+- Option B: **Proceed without it** — unset `SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC` for the rest of this run so agents skip it cleanly. Use this when you've decided the doc isn't worth producing for this work.
+- Option C: **Abort** — stop and let the user fix the config (e.g. correct the path or remove the field from CLAUDE.md).
+
+On Option A:
+- Print: `Run \`/swiftopher-columbus\` first, then re-invoke \`/spec-pipeline\`.`
+- Exit. Do not create the worktree, do not spawn the orchestrator.
+
+On Option B:
+- Run `unset SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC` (or `export SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC=""`)
+  so the variable is empty when the orchestrator's invocation prompt is
+  composed. Agents already treat the "if set" case as "skip the read".
+- Continue to Step 2.
+
+On Option C:
+- Print a one-line abort message and exit. Do not create the worktree.
+
+The `context_docs` list is NOT validated here — missing context files are
+lower-stakes and agents handle them with a per-file read that fails softly.
+
+---
+
 ## Step 2 — Resolve input → (raw_text, spec_id)
 
 ### `--from-jira <KEY>`
