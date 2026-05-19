@@ -35,3 +35,10 @@ while IFS= read -r -d '' skill_md; do
   ln -sfn "$src" "$target"
   echo "linked $name -> $src"
 done
+
+# Link shared _lib directories so scripts can resolve ../../_lib at runtime
+find "$REPO/skills" -type d -name "_lib" -not -path '*/deprecated/*' -print0 |
+while IFS= read -r -d '' lib_dir; do
+  ln -sfn "$lib_dir" "$DEST/_lib"
+  echo "linked _lib -> $lib_dir"
+done
