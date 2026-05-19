@@ -99,7 +99,7 @@ Model and flow key from the broader skill library:
 |---|---|---|
 | [/jls:swift-architect](./skills/engineering/swift-architect/SKILL.md) | Scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
 | [/jls:swift-engineer](./skills/engineering/swift-engineer/SKILL.md) | Main building skill — writes new Swift 6.2 features, SwiftUI views, services, async work within the MV pattern. | Sonnet · Direct |
-| [/jls:swift-quality](./skills/engineering/swift-quality/SKILL.md) | Rewrites code to meet the Swift Style Guide and project architecture rules without changing behaviour. | Sonnet · Direct |
+| [/jls:swift-quality](./skills/testing/swift-quality/SKILL.md) | Rewrites code to meet the Swift Style Guide and project architecture rules without changing behaviour. | Sonnet · Direct |
 | [/jls:swiftui-liquid-glass](./skills/engineering/swiftui-liquid-glass/SKILL.md) | Implement, review, or improve SwiftUI features using the iOS 26+ Liquid Glass API. | Sonnet · Direct |
 | [/jls:swift-tvos](./skills/engineering/swift-tvos/SKILL.md) | Diagnoses tvOS navigation and focus engine bugs in SwiftUI codebases. Always use this — do not attempt tvOS focus diagnosis ad hoc. | Sonnet · Direct |
 
@@ -115,8 +115,8 @@ Model and flow key from the broader skill library:
 | Skill | What it does | Model · Flow |
 |---|---|---|
 | [/jls:swift-testing](./skills/engineering/swift-testing/SKILL.md) | Generates unit tests using Apple's Swift Testing framework (`@Test`, `@Suite`, `#expect`). Not for UI tests. | Sonnet · Direct |
-| [/jls:swift-uitest](./skills/engineering/swift-uitest/SKILL.md) | Creates XCUITest UI tests for iOS apps. Not for unit tests — runs out-of-process via XCTest. | Sonnet · Direct |
-| [/jls:swift-test-all](./skills/engineering/swift-test-all/SKILL.md) | Runs the test suite once and reports results. Detects workspace, scheme, and simulator from `CLAUDE.md`. | Sonnet · Direct |
+| [/jls:swift-uitest](./skills/testing/swift-uitest/SKILL.md) | Creates XCUITest UI tests for iOS apps. Not for unit tests — runs out-of-process via XCTest. | Sonnet · Direct |
+| [/jls:swift-test-all](./skills/testing/swift-test-all/SKILL.md) | Runs the test suite once and reports results. Detects workspace, scheme, and simulator from `CLAUDE.md`. | Sonnet · Direct |
 
 ### Reviewing & auditing
 
