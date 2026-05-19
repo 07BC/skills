@@ -87,6 +87,12 @@ Model and flow key from the broader skill library:
 | [/jls:git-push](./skills/git/git-push/SKILL.md) | Runs the project formatter, commits, then pushes. Builds on git-commit. | Sonnet · Direct |
 | [/jls:git-pr](./skills/git/git-pr/SKILL.md) | Commits, pushes, runs tests and code review, then creates a PR with a summary and end-user test plan. Builds on git-push. | Sonnet · Direct |
 
+### End-to-end pipelines
+
+| Skill | What it does | Model · Flow |
+|---|---|---|
+| [/jls:spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | One-shot pipeline from input (Jira ticket, markdown spec, or free prompt) all the way to PR. Each run gets its own git worktree. Drives the inner `engineer → test-writer → concurrency-auditor → task-reviewer` loop, runs a whole-diff `swift-spec-review`, then opens the PR via `/jls:git-pr`. Bounded retries; durable audit log in Obsidian. Project must declare a `spec_pipeline` YAML block in its CLAUDE.md ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md)). | Opus · Direct |
+
 ### Building
 
 | Skill | What it does | Model · Flow |
