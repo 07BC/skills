@@ -23,6 +23,62 @@ explicit user trigger.
 
 ---
 
+## Help mode
+
+Before doing anything else — before resolving paths, before reading config,
+before any side effect — check `$ARGUMENTS`. If it is one of:
+
+- empty (no arguments)
+- `--help`
+- `-h`
+- `help`
+
+print the help block below verbatim and exit. Do not parse config, do not
+create a worktree, do not spawn the orchestrator, do not run any script.
+
+````
+/spec-pipeline — end-to-end spec-driven orchestration
+
+Usage:
+  /spec-pipeline --from-jira KEY        distil a Jira ticket → spec → plan → PR
+  /spec-pipeline --from-spec PATH       build from an existing markdown spec
+  /spec-pipeline --from-prompt "TEXT"   build from a free-form description
+  /spec-pipeline KEY                    shorthand for --from-jira when KEY matches ^[A-Z]+-[0-9]+$
+
+  /spec-pipeline --help                 show this message
+
+What it does:
+  1. Reads spec_pipeline YAML config from your CLAUDE.md (see SCHEMA.md)
+  2. Creates a per-pipeline git worktree at ../<repo>-<spec-id>/ on a fresh branch
+  3. Distils the input into docs/specs/ and docs/plans/ (gitignored, inside the worktree)
+  4. Drives engineer → test-writer → concurrency-auditor → task-reviewer per task
+  5. Whole-diff swift-spec-review (up to 3 cycles before escalation)
+  6. Opens a PR via /git-pr after your confirmation
+
+One-time project setup:
+  - Add a spec_pipeline YAML block to the project's CLAUDE.md
+    (see SCHEMA.md alongside this SKILL.md for the schema)
+  - Add docs/specs/, docs/plans/, master-plan.md to .gitignore
+
+Durable artefacts after a run:
+  - The PR (on GitHub)
+  - Audit log at $OBSIDIAN_VAULT/AI/plans/<spec-id>.md
+    (full spec + full plan + stage log)
+  - The worktree at ../<repo>-<spec-id>/ until you remove it with
+    `git worktree remove`
+
+You're asked twice during a run:
+  - Before Stage 1: lightweight summary confirmation
+  - Before Stage 5: PR body confirmation
+Otherwise the pipeline interrupts only on hard failure (spec ambiguity,
+plan invalid after one amendment, cycle budget exceeded, /git-pr blocker).
+
+For the full config schema and required vs optional fields, see SCHEMA.md
+in this skill's directory.
+````
+
+---
+
 ## Resolving script paths
 
 The two scripts this skill ships (`read-pipeline-config.sh`,
@@ -54,10 +110,14 @@ Exactly one source flag is required:
 - `--from-prompt "<TEXT>"` — distils a free-form description
 
 `$ARGUMENTS` from the slash-command invocation is parsed left-to-right; the
-first flag wins. Unrecognised flags should fail fast with a usage message.
+first flag wins. Unrecognised flags fail fast — print *"unknown flag <flag>;
+run `/spec-pipeline --help` for usage"* and exit.
 
 If no flag is provided but the argument looks like a Jira key
 (matches `^[A-Z]+-[0-9]+$`), assume `--from-jira`.
+
+If `$ARGUMENTS` is empty or matches the Help mode triggers above, this Step
+is unreachable — the Help mode dispatch fires first.
 
 ---
 
