@@ -1,0 +1,95 @@
+# Spec Pipeline Config Schema
+
+The pipeline reads project config from a fenced YAML block in the project's `CLAUDE.md`. This file documents the schema. The same structure is parsed by `scripts/read-pipeline-config.sh`.
+
+## Where it lives
+
+In the target project's `CLAUDE.md`:
+
+````markdown
+## Spec Pipeline Config
+
+```yaml
+spec_pipeline:
+  ticket_prefix: NAT
+  workspace: KickAppleTV.xcworkspace
+  scheme: "Kick tvOS"
+  destination: "platform=tvOS Simulator,name=Apple TV"
+  tests_target: KickTV_Tests
+  target_architecture_doc: docs/engineering/target-architecture.md
+  context_docs: [CONTEXT.md, CONTEXT-MAP.md]
+  spec_dir: docs/specs
+  plan_dir: docs/plans
+  audit_dir: AI/plans
+  cycle_budget: 3
+```
+````
+
+The parser extracts the first ```` ```yaml ```` block that contains a top-level `spec_pipeline:` key and reads its child keys.
+
+## Fields
+
+| Key | Required | Type | Default | Meaning |
+|---|---|---|---|---|
+| `ticket_prefix` | recommended | string | (none) | Ticket prefix for branch naming and `/jls:git-commit`. E.g. `NAT`. When absent, the pipeline derives branch names from spec ID without a prefix. |
+| `workspace` | yes | string | — | `.xcworkspace` file at repo root. |
+| `scheme` | yes | string | — | Xcode scheme name (quote if contains spaces). |
+| `destination` | yes | string | — | Full `-destination` argument value (quote it). |
+| `tests_target` | yes | string | — | Unit test target name for `-only-testing:` filters. |
+| `target_architecture_doc` | recommended | string | (none) | Path to the project's architecture authority doc. Read by `spec-distiller` and `engineer`. |
+| `context_docs` | optional | string list | `[]` | Additional project context docs that agents should read on start. |
+| `spec_dir` | optional | string | `docs/specs` | Where `spec-distiller` writes specs. |
+| `plan_dir` | optional | string | `docs/plans` | Where `spec-distiller` writes plans. |
+| `audit_dir` | optional | string | `AI/plans` | Sub-path inside `$OBSIDIAN_VAULT` for audit logs. |
+| `cycle_budget` | optional | integer | `3` | Max Stage 4 review cycles before escalating. |
+
+## Required vs optional
+
+Hard requirements (pipeline refuses to start without these): `workspace`, `scheme`, `destination`, `tests_target`.
+
+Recommended (pipeline warns and asks once): `ticket_prefix`, `target_architecture_doc`.
+
+Everything else has a sensible default.
+
+## Vault path resolution
+
+The audit log writes to `$OBSIDIAN_VAULT/$audit_dir/<spec-id>.md`.
+
+`$OBSIDIAN_VAULT` resolution order:
+1. The `OBSIDIAN_VAULT` environment variable, if set.
+2. `$HOME/Developer/obsidian` (default).
+
+Matches the override pattern from `vault_preconditions.sh` (audit 2026-05-16).
+
+## Parsing rules (what `read-pipeline-config.sh` does)
+
+- Locates the first ```` ```yaml ```` fence containing a top-level `spec_pipeline:` key.
+- Extracts simple `key: value` pairs (with optional double-quoted values).
+- Special-cases `context_docs: [a, b, c]` inline list syntax.
+- Emits one shell variable per key on stdout, suitable for `eval` consumption:
+
+```
+SPEC_PIPELINE_WORKSPACE='KickAppleTV.xcworkspace'
+SPEC_PIPELINE_SCHEME='Kick tvOS'
+SPEC_PIPELINE_DESTINATION='platform=tvOS Simulator,name=Apple TV'
+SPEC_PIPELINE_TESTS_TARGET='KickTV_Tests'
+SPEC_PIPELINE_TICKET_PREFIX='NAT'
+SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC='docs/engineering/target-architecture.md'
+SPEC_PIPELINE_CONTEXT_DOCS='CONTEXT.md CONTEXT-MAP.md'
+SPEC_PIPELINE_SPEC_DIR='docs/specs'
+SPEC_PIPELINE_PLAN_DIR='docs/plans'
+SPEC_PIPELINE_AUDIT_DIR='AI/plans'
+SPEC_PIPELINE_CYCLE_BUDGET='3'
+```
+
+- Exits non-zero with a printable error if any required field is missing or the fence cannot be found.
+
+## Adding to a project
+
+The project must also add three lines to its `.gitignore` (all pipeline artefacts are gitignored per design — see plan Q13):
+
+```
+docs/specs/
+docs/plans/
+master-plan.md
+```

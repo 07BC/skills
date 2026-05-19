@@ -4,6 +4,67 @@ A running record of audit passes against this skill library. Each dated section 
 
 ---
 
+## 2026-05-19
+
+Introduction of `/jls:spec-pipeline` — a top-level orchestrator skill that drives the existing per-domain skills end-to-end (input → spec → plan → per-task implement → whole-diff review → PR). This is the library's first orchestrator-shaped skill. Design rationale, fork-by-fork decisions, and verification plan are recorded in `~/.claude/plans/on-the-plan-before-temporal-starfish.md`.
+
+### New skill
+
+| Path | Purpose |
+|---|---|
+| `skills/engineering/spec-pipeline/SKILL.md` | Entry point: parses `--from-jira` / `--from-spec` / `--from-prompt`, validates the project's CLAUDE.md `spec_pipeline` YAML block, creates a per-pipeline git worktree, and hands off to the orchestrator agent. `disable-model-invocation: true`. |
+| `skills/engineering/spec-pipeline/SCHEMA.md` | Canonical YAML schema reference. Documents required vs optional fields, defaults, vault path resolution, and project .gitignore additions. |
+| `skills/engineering/spec-pipeline/scripts/read-pipeline-config.sh` | Parses the fenced `spec_pipeline` YAML block from a project's CLAUDE.md. Emits `SPEC_PIPELINE_*` eval-able variables. Hard-fails on missing required keys. bash 3.2-compatible (macOS default). |
+| `skills/engineering/spec-pipeline/scripts/derive-spec-id.sh` | Produces a canonical kebab-case spec ID from `--from-jira KEY <summary>`, `--from-spec PATH`, or `--from-prompt TEXT`. Slugifies, lowercases, truncates to 60 chars. |
+
+### New agents at `agents/`
+
+The four-stage inner loop plus the top-level orchestrator and the whole-diff reviewer.
+
+| File | Role |
+|---|---|
+| `agents/engineer.md` | Spec-bound implementer for one task. Builds clean before handoff. Stops on ambiguity. |
+| `agents/test-writer.md` | Swift Testing only. Targeted-suite run via `mcp__xcode__RunSomeTests` when Xcode is open. AC-mapped tests. |
+| `agents/concurrency-auditor.md` | Self-gated. Scans task diff for triggers (`async`, `actor`, `Sendable`, `@MainActor`, `Task`, `AsyncSequence`, `NSLock`, `Mutex`, `DispatchQueue`, `nonisolated`); short-circuits with `PASS-NO-CONCERN` if none. Otherwise applies the `swift-concurrency-expert` checklist. |
+| `agents/task-reviewer.md` | Bounded per-task reviewer. One task's diff against one task's spec slice. `VERDICT: PASS \| BLOCKED`. Does NOT do cross-task coherence. |
+| `agents/swift-spec-implement.md` | Per-task orchestrator. Drives `engineer → test-writer → concurrency-auditor → task-reviewer`. Commits via `/jls:git-commit` semantics on all-PASS. Max one inner retry per gate. |
+| `agents/swift-spec-review.md` | Whole-diff outer gate. Integrative checks (every AC covered, scope cohesion, architecture uniformity in aggregate). `VERDICT: PASS \| BLOCKED`. Cited file+line on every blocker row. |
+| `agents/spec-distiller.md` | Converts `(raw_text, spec_id)` → `docs/specs/`, `docs/plans/`, `master-plan.md`. Idempotent. Marks status `🟡 BLOCKED on Open Questions` rather than guessing. |
+| `agents/planner.md` | Read-only validator for the distiller's plan. Returns `PLAN VALID` or `PLAN NEEDS AMENDMENT: <reason>`. Never rewrites. |
+| `agents/spec-pipeline-orchestrator.md` | Top-level driver. Stages 1–5, 3-cycle review loop, incremental Obsidian audit log, escalation file. Spawns every other agent via the Task tool. |
+
+### Design forks resolved during the grill
+
+Captured at length in the plan file. Summary of the load-bearing decisions:
+
+- **Generalised, not Jira-bound.** `--from-jira` / `--from-spec` / `--from-prompt` adapters. Atlassian MCP gate is in the Jira adapter only, not the skill's `compatibility.tools`.
+- **Fenced YAML block inside CLAUDE.md.** Single read surface (matches `swift-test-all` precedent); structured parsing at 10+ keys. No new `.swift-skills.yml` file.
+- **Worktree-per-pipeline isolation.** Orchestrator creates `../<repo>-<spec-id>` at Stage 0.5 on a fresh `<type>/<spec-id>` branch. No file locking — physical isolation. User removes the worktree manually post-merge.
+- **All pipeline artefacts gitignored.** `docs/specs/`, `docs/plans/`, `master-plan.md` live only in worktrees. The Obsidian audit log at `$OBSIDIAN_VAULT/AI/plans/<spec-id>.md` is the durable record and contains the full spec + full plan verbatim.
+- **Cycle budget = 3.** One BLOCKED + two retries before escalation. Configurable per-project via `cycle_budget`.
+- **Concurrency-auditor self-gates** on diff triggers — skips itself when no concurrency surface area is touched.
+- **Commits reuse `/jls:git-commit`.** No `Verified by:` template. Short imperative + ticket prefix from branch. No AI attribution. Audit trail lives in Obsidian, not git log.
+
+### Repo housekeeping
+
+| Change | Why |
+|---|---|
+| New README row under "End-to-end pipelines" | First pipeline-shaped skill warrants its own table section. Slotted between "Git workflow" and "Building" because it composes everything below. |
+
+### Skills NOT changed (and why)
+
+- `/jls:git-pr`, `/jls:git-commit`, `/jls:git-push` — Stage 5 invokes `git-pr` rather than duplicating PR creation. Existing `preflight.sh` is reused for ticket-prefix extraction during per-task commits. No edits needed.
+- `/jls:swift-engineer`, `/jls:swift-testing`, `/jls:swift-concurrency-expert`, `/jls:swift-code-review` — read by the new inner-loop agents as authoritative skill bodies. The agents reference them by path; the skills themselves are unchanged.
+- `/jls:swift-test-all` — Stage 5's full-suite run delegates to the same `xcodebuild test` invocation pattern. Could optionally call this skill directly in a future audit; left inline for now.
+
+### Known follow-ups
+
+- **Deprecation of the legacy orphan agents** (`agents/junior-developer.md`, `senior-developer.md`, `tester.md`) — these live on the `new/regression-skill` branch and are superseded by the new inner-loop agents. They need to move to `skills/deprecated/legacy-agents/` once that branch lands on `main`, with a README mapping old → new. Out of scope for this PR.
+- **Wiki page 05 (Skills vs. Agents)** — design-rationale prose for skill-vs-agent decisions, derived from the grill in the plan file. Written locally in the `skills.wiki` repo alongside sidebar/Home.md updates; not pushed yet because GitHub wiki has no PR mechanism — pushing goes live immediately. Will be pushed when this PR merges.
+- **Verification** (Phase 8 of the plan) — end-to-end dry-run against a real NAT ticket has not been done yet. Phase 8 items 3–10 require a real Swift project. The verification plan is in `~/.claude/plans/on-the-plan-before-temporal-starfish.md`.
+
+---
+
 ## 2026-05-16
 
 Three-sweep audit across all 27 shipped skills: visibility flags, deterministic-script extractions, composability/prose fixes. See the `audit/skills-2026-05-16` branch for the change set; this section is the changelog.
