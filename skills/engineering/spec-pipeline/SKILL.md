@@ -1,0 +1,346 @@
+---
+name: spec-pipeline
+description: >
+  Runs the full spec-to-PR pipeline: distil a spec from a Jira ticket, an
+  existing markdown spec, or a free-form prompt; validate the plan fits the
+  codebase; implement task-by-task through the engineer → test-writer →
+  concurrency-auditor → task-reviewer inner loop; whole-diff review; then
+  open a PR via /jls:git-pr. Each pipeline runs in its own git worktree.
+  Inputs are passed as flags. Use when the user says "ship this ticket",
+  "run the pipeline", "spec-pipeline NAT-1234", "build this spec", or
+  "/jls:spec-pipeline …". Project must declare its config in a fenced
+  spec_pipeline YAML block in CLAUDE.md — see SCHEMA.md.
+disable-model-invocation: true
+---
+
+# Spec Pipeline
+
+`/jls:spec-pipeline` is the top-level entry point. It validates inputs, sets
+up a worktree, and hands off to the `spec-pipeline-orchestrator` agent.
+
+This skill creates git worktrees and branches. **Never auto-invoke.** Always
+explicit user trigger.
+
+---
+
+## Resolving script paths
+
+The two scripts this skill ships (`read-pipeline-config.sh`,
+`derive-spec-id.sh`) live in this skill's `scripts/` directory. At runtime,
+that directory's absolute path depends on how the plugin was installed —
+typically `~/.claude/plugins/<plugin-id>/skills/engineering/spec-pipeline/scripts/`
+when installed via `/plugin install`, or symlinked into `~/.claude/skills/`
+by `scripts/link-skills.sh` in local dev.
+
+Before invoking either script, resolve the absolute path. If you don't know
+it, derive it from the SKILL.md you are reading (this file) — its directory
+is the skill root, and `scripts/` is its sibling. Export it once:
+
+```bash
+SKILL_DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || echo "<absolute path to this SKILL.md>")")"
+```
+
+Then use `${SKILL_DIR}/scripts/read-pipeline-config.sh` etc. The examples
+below assume `SKILL_DIR` is already set.
+
+---
+
+## Inputs
+
+Exactly one source flag is required:
+
+- `--from-jira <KEY>` — fetches the ticket via the Atlassian MCP
+- `--from-spec <PATH>` — reads an existing markdown spec
+- `--from-prompt "<TEXT>"` — distils a free-form description
+
+`$ARGUMENTS` from the slash-command invocation is parsed left-to-right; the
+first flag wins. Unrecognised flags should fail fast with a usage message.
+
+If no flag is provided but the argument looks like a Jira key
+(matches `^[A-Z]+-[0-9]+$`), assume `--from-jira`.
+
+---
+
+## Step 1 — Read pipeline config
+
+```bash
+eval "$(bash ${SKILL_DIR}/scripts/read-pipeline-config.sh)"
+```
+
+If this exits non-zero, surface the script's stderr verbatim and stop:
+
+> The project's `CLAUDE.md` does not have a valid `spec_pipeline` YAML block.
+> See `skills/engineering/spec-pipeline/SCHEMA.md` for the schema.
+> Required keys: `workspace`, `scheme`, `destination`, `tests_target`.
+
+Do not invent defaults for required keys.
+
+---
+
+## Step 2 — Resolve input → (raw_text, spec_id)
+
+### `--from-jira <KEY>`
+
+1. Check the Atlassian MCP is connected. Load schemas via:
+
+   ```
+   ToolSearch("select:mcp__plugin_atlassian_atlassian__getJiraIssue,mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources")
+   ```
+
+   If either tool fails to load (MCP not available), stop:
+
+   > Atlassian MCP is not available in this session. Use `--from-spec` or
+   > `--from-prompt` instead.
+
+2. Call `mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources`
+   then `mcp__plugin_atlassian_atlassian__getJiraIssue` for the key. Extract:
+   - Summary (one line)
+   - Description (full body)
+   - Acceptance criteria (verbatim)
+   - Issue type (Bug / Story / Task / Chore)
+   - Labels / Components
+
+3. If the ticket has no acceptance criteria, stop. Tell the user to add ACs
+   before re-running. Never invent acceptance criteria.
+
+4. Compose `raw_text` as a single markdown blob containing all of the above.
+
+5. Derive the spec ID:
+
+   ```bash
+   spec_id="$(bash ${SKILL_DIR}/scripts/derive-spec-id.sh --from-jira "<KEY>" "<summary>")"
+   ```
+
+6. `source_type=jira`
+
+### `--from-spec <PATH>`
+
+1. Verify the file exists. If not, stop with a clear error.
+2. `raw_text="$(cat <PATH>)"`
+3. ```bash
+   spec_id="$(bash ${SKILL_DIR}/scripts/derive-spec-id.sh --from-spec "<PATH>")"
+   ```
+4. `source_type=spec`
+
+### `--from-prompt "<TEXT>"`
+
+1. `raw_text="<TEXT>"`
+2. ```bash
+   spec_id="$(bash ${SKILL_DIR}/scripts/derive-spec-id.sh --from-prompt "<TEXT>")"
+   ```
+3. Confirm the derived `spec_id` with the user via `AskUserQuestion` (prompts
+   can produce odd slugs):
+
+   - Option A: `<derived-slug>` (Recommended)
+   - Option B: Let me type a different slug
+
+4. `source_type=prompt`
+
+---
+
+## Step 3 — Lightweight confirmation
+
+Show the user a summary before any disk operation:
+
+```
+## Pipeline ready
+
+**Spec ID:** <spec-id>
+**Source:** <jira KEY | spec PATH | prompt>
+**Worktree (to be created):** <repo-parent>/<repo-name>-<spec-id>
+**Branch (to be created):** <type>/<spec-id> (type: feat | bug | chore — derived
+                                              from spec source or defaulted to feat)
+**Cycle budget:** ${SPEC_PIPELINE_CYCLE_BUDGET}
+**Audit log:** ${SPEC_PIPELINE_VAULT}/${SPEC_PIPELINE_AUDIT_DIR}/<spec-id>.md
+```
+
+If the source is `jira`, also show:
+- Summary, Type, Labels, AC count
+
+Ask via `AskUserQuestion`:
+
+- Option A: Looks right — proceed (Recommended)
+- Option B: Stop — I want to fix something first
+
+Do not proceed without explicit confirmation.
+
+---
+
+## Step 4 — Worktree management
+
+Compute the worktree path:
+
+```bash
+repo_root="$(git rev-parse --show-toplevel)"
+repo_name="$(basename "$repo_root")"
+worktree_path="$(dirname "$repo_root")/${repo_name}-${spec_id}"
+```
+
+Compute the branch name. Type is `bug/` for ticket type Bug, `chore/` for
+Chore, otherwise `feat/`:
+
+```bash
+branch="<type>/${spec_id}"
+```
+
+### If the worktree path exists
+
+Read `${worktree_path}/master-plan.md` if present. Show the user:
+
+```
+A worktree for <spec-id> already exists at <worktree_path>.
+Last status: <status from master-plan.md, or "unknown">
+```
+
+Ask via `AskUserQuestion`:
+
+- Option A: Resume from where it left off (Recommended)
+- Option B: Restart fresh (will require confirmation before removing the existing worktree)
+- Option C: Abort
+
+On **Resume**: jump straight to Step 5 in the existing worktree path.
+
+On **Restart**:
+1. Confirm one more time via `AskUserQuestion`:
+   "This will run `git worktree remove ${worktree_path}` and delete its state. Confirm?"
+2. If confirmed, run the removal, then continue to "create" below.
+
+On **Abort**: stop. No changes.
+
+### If the worktree path does not exist
+
+Pre-flight check the current state of the parent repo:
+
+```bash
+git -C "$repo_root" status --porcelain
+git -C "$repo_root" rev-parse --abbrev-ref HEAD
+```
+
+If `main` (or the configured base) has uncommitted changes, surface them and
+ask the user whether to proceed anyway. Worktree create from a dirty main is
+allowed but worth flagging.
+
+Create the worktree:
+
+```bash
+git -C "$repo_root" worktree add "$worktree_path" -b "$branch"
+cd "$worktree_path"
+```
+
+---
+
+## Step 5 — Spawn the orchestrator
+
+Compose the orchestrator invocation prompt. It must contain:
+
+- The agent definition file: `agents/spec-pipeline-orchestrator.md`
+- The state: `spec_id`, `source_type`, `raw_text`, `worktree_path`, `audit_path`
+- The config: every `SPEC_PIPELINE_*` variable
+
+Where to write the audit log:
+
+```bash
+audit_path="${SPEC_PIPELINE_VAULT}/${SPEC_PIPELINE_AUDIT_DIR}/${spec_id}.md"
+mkdir -p "$(dirname "$audit_path")"
+```
+
+Invoke via the Task tool with the orchestrator agent. Suggested invocation
+prompt skeleton:
+
+```
+Read the following agent definition file in full before doing anything:
+
+<absolute path to agents/spec-pipeline-orchestrator.md>
+
+You are the Spec Pipeline Orchestrator described in that file.
+
+## State
+spec_id:        <spec-id>
+source_type:    <jira | spec | prompt>
+worktree_path:  <worktree path>
+audit_path:     <audit log path>
+cycle_budget:   <SPEC_PIPELINE_CYCLE_BUDGET>
+
+## Project config
+SPEC_PIPELINE_WORKSPACE='<...>'
+SPEC_PIPELINE_SCHEME='<...>'
+SPEC_PIPELINE_DESTINATION='<...>'
+SPEC_PIPELINE_TESTS_TARGET='<...>'
+SPEC_PIPELINE_TICKET_PREFIX='<...>'
+SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC='<...>'
+SPEC_PIPELINE_CONTEXT_DOCS='<...>'
+SPEC_PIPELINE_SPEC_DIR='<...>'
+SPEC_PIPELINE_PLAN_DIR='<...>'
+
+## Raw input
+<<<RAW
+<raw_text verbatim>
+RAW
+
+Begin Stage 1.
+```
+
+Wait for the orchestrator to complete. It will either:
+
+- Print `## Final Outcome — ... SHIPPED` and a PR URL → success
+- Print `## Final Outcome — ... ESCALATED` → escalation
+
+Either way, the audit log at `audit_path` contains the full record.
+
+---
+
+## Step 6 — Final report
+
+On success, print:
+
+```
+✅ Pipeline complete
+   PR:        <URL>
+   Worktree:  <worktree path>
+   Audit log: <audit path>
+
+After the PR merges, remove the worktree:
+  git worktree remove <worktree path>
+```
+
+On escalation, print:
+
+```
+⚠️  Pipeline ESCALATED — see audit log for details
+   Audit log:    <audit path>
+   Worktree:     <worktree path> (preserved for manual inspection)
+   Failing stage: <stage label>
+```
+
+---
+
+## Project setup (one-time)
+
+A project must do two things to use this skill:
+
+1. Add a `spec_pipeline` YAML block to its `CLAUDE.md` — see SCHEMA.md.
+2. Add to `.gitignore`:
+
+   ```
+   docs/specs/
+   docs/plans/
+   master-plan.md
+   ```
+
+   The pipeline writes these inside each worktree. The Obsidian audit log
+   is the durable record (the worktree is disposable).
+
+---
+
+## Hard rules
+
+- **Never auto-invoke** — `disable-model-invocation: true`. User trigger only.
+- **One source flag** — never accept two of `--from-jira / --from-spec / --from-prompt`
+- **Stop on missing required config** — never invent `workspace`/`scheme`/
+  `destination`/`tests_target`
+- **Never run on `main` without a worktree** — the orchestrator runs inside a
+  fresh worktree, on a fresh branch
+- **Never auto-confirm the worktree create** — even when the path is clear,
+  the lightweight confirmation in Step 3 is required
+- **Never invent acceptance criteria** — if the input has none, stop and ask
+- **Never auto-remove worktrees** — the user removes them post-merge
