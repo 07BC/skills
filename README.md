@@ -42,6 +42,9 @@ swift:architect ──► swift:engineer ──► swift:quality ──► swift
 
 ## Spec Pipeline
 
+> [!CAUTION]
+> This is very much a work in progress and has not been successfull so far. 
+
 `/jls:spec-pipeline` is the centrepiece of this repo — a fully agentic
 pipeline that takes a Jira ticket, an existing spec, or a free-form
 prompt and drives it all the way to a merged-ready PR with zero manual
