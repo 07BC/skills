@@ -45,7 +45,7 @@ swift:architect ──► swift:engineer ──► swift:quality ──► swift
 > [!CAUTION]
 > This is very much a work in progress and has not been successfull so far.
 
-`/jls:spec-pipeline` is the centrepiece of this repo — a fully agentic
+`/spec-pipeline` is the centrepiece of this repo — a fully agentic
 pipeline that takes a Jira ticket, an existing spec, or a free-form
 prompt and drives it all the way to a merged-ready PR with zero manual
 wiring. Each run lives in its own git worktree and commits as it goes.
@@ -53,10 +53,10 @@ wiring. Each run lives in its own git worktree and commits as it goes.
 ### Invoke
 
 ```bash
-/jls:spec-pipeline --from-jira NAT-1234    # fetch ticket from Jira
-/jls:spec-pipeline --from-spec docs/my-spec.md
-/jls:spec-pipeline --from-prompt "Add pull-to-refresh to the feed"
-/jls:spec-pipeline NAT-1234                # shorthand for --from-jira
+/spec-pipeline --from-jira NAT-1234    # fetch ticket from Jira
+/spec-pipeline --from-spec docs/my-spec.md
+/spec-pipeline --from-prompt "Add pull-to-refresh to the feed"
+/spec-pipeline NAT-1234                # shorthand for --from-jira
 ```
 
 ### Prerequisites
@@ -136,7 +136,7 @@ When a split is proposed:
    impossible, it emits `SCOPE: OK` instead.
 2. The SKILL shows you the proposed split via `AskUserQuestion`.
 3. On approval, the SKILL creates Jira sub-tickets, posts a comment on
-   the parent, and halts. You re-invoke `/jls:spec-pipeline` per child.
+   the parent, and halts. You re-invoke `/spec-pipeline` per child.
 4. On cancel, nothing is written. You re-scope the parent in Jira and
    re-invoke.
 
@@ -241,7 +241,7 @@ Model and flow key from the broader skill library:
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/jls:spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | One-shot pipeline from input (Jira ticket, markdown spec, or free prompt) all the way to PR. Each run gets its own git worktree. Drives the inner `engineer → test-writer → concurrency-auditor → task-reviewer` loop, runs a whole-diff `swift-spec-review`, then opens the PR via `/git-pr`. Bounded retries; durable audit log in Obsidian. Project must declare a `spec_pipeline` YAML block in its CLAUDE.md ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md)). | Opus · Direct |
+| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | One-shot pipeline from input (Jira ticket, markdown spec, or free prompt) all the way to PR. Each run gets its own git worktree. Drives the inner `engineer → test-writer → concurrency-auditor → task-reviewer` loop, runs a whole-diff `swift-spec-review`, then opens the PR via `/git-pr`. Bounded retries; durable audit log in Obsidian. Project must declare a `spec_pipeline` YAML block in its CLAUDE.md ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md)). | Opus · Direct |
 
 ### Building
 
