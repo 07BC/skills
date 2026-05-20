@@ -67,7 +67,7 @@ Substitute `{YYYY-MM-DD}` with today's ISO date.
 
 ## Step 2 — Roll over incomplete tasks
 
-Run `scripts/rollover.py`. The script uses the Obsidian CLI (`obsidian tasks todo/done`) for all task queries and handles the full workflow:
+Run `scripts/rollover.py`. The script uses the Obsidian CLI (`obsidian tasks todo/done`) for all task queries and handles the full workflow. The final write uses a direct `Path.write_text()` because it inserts tasks at a specific position *within* the `## To-Do` section (before the `---` divider) — `obsidian daily:append` only appends to EOF and cannot do positional section insertion.
 
 - Queries today's `## To-Do` section via `obsidian tasks todo daily` to build a dedupe list (case-insensitive, markdown links and bold/italic markers stripped).
 - Walks back the last 7 days (override with `--days N`) and collects every `- [ ]` line via `obsidian tasks todo path=<rel>`, scanning newest-first so the most recent version of a task wins.

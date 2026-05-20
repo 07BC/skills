@@ -114,8 +114,13 @@ tags: [ai-knowledge, claude-code]
 
 ## Step 4 — Mark sessions as processed
 
-Add `processed: true` to the frontmatter of each session file that was
-successfully processed, so it is skipped on future runs.
+For each successfully processed session, set the `processed` property via the CLI:
+
+```bash
+obsidian property:set name=processed value=true type=checkbox path=sessions/<filename>.md
+```
+
+This ensures the file is skipped by `scripts/find_unprocessed_sessions.py` on future runs.
 
 ---
 

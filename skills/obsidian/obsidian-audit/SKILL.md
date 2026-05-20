@@ -19,8 +19,10 @@ diagnostic on stderr if any of these fail:
 `VAULT` env defaults to `$HOME/Developer/obsidian`. If any precondition fails, stop and
 report. Do not edit anything.
 
-The Obsidian CLI is **not** used by this skill — it is flaky and silently
-fails on path resolution. All edits are direct file operations on `$VAULT`.
+All edits are direct file operations on `$VAULT` via `scripts/apply_changes.sh`,
+which handles tag arrays, scalar properties, and body-bullet removal atomically
+in one pass. For a standalone single-property update outside a batch audit,
+`obsidian property:set name=<n> value=<v> path=<rel>` is available.
 
 ## Workflow
 
@@ -61,7 +63,7 @@ This is the only place the 2+ rule is enforced. Existing-tag pruning happens per
 
 For each candidate file, apply its (now-filtered) change set:
 1. **Tag changes** — rewrite the `tags:` array in YAML frontmatter directly via `scripts/apply_changes.sh`.
-2. **Property changes** — direct file edit on the YAML frontmatter for scalar properties (do not use the Obsidian CLI; it is flaky on path resolution).
+2. **Property changes** — direct file edit on the YAML frontmatter for scalar properties via `scripts/apply_changes.sh` (keeps the change atomic with tag and bullet operations).
 3. **Inline-field lifting** — direct file edit: remove the bullet line(s), add the corresponding property to frontmatter.
 4. After each file, append a per-file diff entry to the run changelog.
 

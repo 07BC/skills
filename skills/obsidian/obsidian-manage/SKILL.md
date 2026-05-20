@@ -1,6 +1,6 @@
 ---
 name: obsidian:manage
-description: Manage notes in the Obsidian vault at $HOME/Developer/obsidian using direct file operations. Use for reading, creating, editing, searching, or organising vault notes; working with daily notes; managing todos; browsing tags/properties/frontmatter; checking backlinks or orphans. Triggers on mentions of Obsidian, vault, daily note, knowledge base, second brain, or ~/Developer/obsidian paths. Not for vault-wide audits or tag taxonomy fixes — use obsidian:audit for those.
+description: Manage notes in the Obsidian vault at $HOME/Developer/obsidian using the Obsidian CLI. Use for reading, creating, editing, searching, or organising vault notes; working with daily notes; managing todos; browsing tags/properties/frontmatter; checking backlinks or orphans. Triggers on mentions of Obsidian, vault, daily note, knowledge base, second brain, or ~/Developer/obsidian paths. Not for vault-wide audits or tag taxonomy fixes — use obsidian:audit for those.
 ---
 
 # Obsidian Vault Management
@@ -14,10 +14,11 @@ and direct file operations.
 VAULT=$(obsidian vault info=path)   # resolves to $HOME/Developer/obsidian
 ```
 
-Prefer the Obsidian CLI (`obsidian`) for vault queries — task lists, tags,
-backlinks, search, daily-note path. Use direct file ops (`Read`, `Edit`,
-`Write`, `Glob`, `Grep`, `Bash`) when the CLI has no equivalent (e.g.
-section-targeted insertion, bulk renames, template substitution).
+Use the Obsidian CLI (`obsidian`) for all vault reads and writes — task lists,
+tags, backlinks, search, daily-note path, creating notes, appending content,
+and setting properties. Fall back to direct file ops (`Read`, `Edit`, `Write`,
+`Glob`, `Grep`, `Bash`) only when the CLI has no equivalent (section-targeted
+insertion, bulk renames, complex template substitution).
 
 ## Vault structure
 
@@ -62,42 +63,51 @@ Glob: $VAULT/**/<name>.md
 
 ### 2. Create a note
 
-Use the `Write` tool. Default location is `$VAULT/inbox/<slug>.md` unless the
-user specifies otherwise. Always include YAML frontmatter with at least
-`tags`:
-```markdown
----
-tags:
-- inbox
----
+Use the CLI. Default location is `inbox/<slug>.md` unless the user specifies otherwise.
+Always include YAML frontmatter with at least `tags`:
 
-# Title
-
-Content
+```bash
+obsidian create path=inbox/<slug>.md content="---\ntags:\n- inbox\n---\n\n# Title\n\nContent"
 ```
+
+Pass `overwrite` if replacing an existing file.
 
 ### 3. Append or prepend to a note
 
-Use `Edit` against the file. For a clean trailing append, find the last line
-and insert after it. For prepending, insert immediately after the closing `---`
-of the frontmatter.
+Use the CLI:
+
+```bash
+obsidian append path=<rel> content="<text>"
+obsidian prepend path=<rel> content="<text>"
+```
+
+For section-targeted insertion (e.g. insert before a specific heading or divider),
+fall back to the `Edit` tool with an exact string match.
 
 ### 4. Daily notes
 
-Resolve today's note path with `scripts/daily_note_path.sh`, then `Read` it.
-If it does not exist, create it from `$VAULT/templates/daily-note.md`,
-substituting `{{date:YYYY-MM-DD}}` with today's ISO date.
+Get today's path and read the note:
 
-The daily-note template has these sections — preserve order:
-1. **To-Do** — `- [ ]` checkboxes
-2. **Notes** — freeform content (and any later sections like `## Work Log`,
-   `## Meetings` appended below)
+```bash
+obsidian daily:path      # → relative path (e.g. daily/2026/05-May/26-05-20.md)
+obsidian daily:read      # → note contents
+```
 
-To add a todo: `Edit` the file, inserting `- [ ] <task>` at the end of the
-`## To-Do` section.
+If the note doesn't exist, create it:
 
-To add meeting/work-log content: `Edit` the file, inserting a new
-`## <Section>` block after the existing `## Notes` heading.
+```bash
+obsidian create path=<rel> content="---\ntags:\n- daily\n---\n\n# YYYY-MM-DD\n\n## To-Do\n\n- [ ]\n\n---\n\n## Notes\n"
+```
+
+To append a todo or section:
+
+```bash
+obsidian daily:append content="- [ ] <task>"          # adds to end of note
+obsidian daily:append content="## Work Log\n\n- ..."  # new section
+```
+
+For inserting *within* a specific section (e.g. before the `---` divider in
+`## To-Do`), fall back to the `Edit` tool with a precise string match.
 
 ### 5. Search the vault
 
@@ -123,21 +133,28 @@ specific line.
 
 ### 7. Tags and properties
 
-Find files with a given tag:
-```
-Grep pattern="^tags:" path=$VAULT -A=10 | grep -B 1 "<tag>"
+List tags in a file or the vault:
+
+```bash
+obsidian tags path=<rel>        # tags in one file
+obsidian tags                   # all vault tags
 ```
 
-Read a property value: `Read` the frontmatter and parse manually — frontmatter
-is always between two `---` lines at the top of the file.
+Read a property value:
 
-Set a property: `Edit` the frontmatter directly. For YAML lists (e.g. `tags`),
-preserve the indentation:
-```yaml
-tags:
-  - foo
-  - bar
+```bash
+obsidian property:read name=<prop> path=<rel>
 ```
+
+Set or remove a property:
+
+```bash
+obsidian property:set name=<prop> value=<val> path=<rel>
+obsidian property:remove name=<prop> path=<rel>
+```
+
+For `tags` (a list property), use `type=list` and pass a JSON array as value, or
+edit the frontmatter directly with the `Edit` tool if you need fine-grained control.
 
 ### 8. Browse and navigate
 
@@ -168,14 +185,19 @@ manually, or accept that the answer requires the index.
 
 ### 10. Move and organise
 
-Move a note: `Bash` `mv "$VAULT/inbox/foo.md" "$VAULT/projects/foo.md"`. Then
-update any internal links that reference the old path.
+Move or rename a note (CLI updates links automatically):
 
-Rename a note: `Bash` `mv "$VAULT/<old>.md" "$VAULT/<new>.md"` then update
-links.
+```bash
+obsidian move path=inbox/foo.md to=projects/foo.md
+obsidian rename path=<rel> name="New Title"
+```
 
-Delete a note: `Bash` `rm "$VAULT/<file>.md"`. Confirm with the user before
-deleting — there is no Obsidian trash with direct file ops.
+Delete a note (confirm with the user first):
+
+```bash
+obsidian delete path=<rel>           # moves to Obsidian trash
+obsidian delete path=<rel> permanent  # bypasses trash — irreversible
+```
 
 ## Conventions
 
@@ -187,7 +209,6 @@ deleting — there is no Obsidian trash with direct file ops.
 - **New notes**: Default to `inbox/` unless a specific location is given.
 - **Templates**: Browse `$VAULT/templates/` for available templates.
 
-## Legacy CLI reference
+## CLI reference
 
-For historical context only — do not use in new work. See
-[references/cli-reference.md](references/cli-reference.md).
+Full command list with options: [references/cli-reference.md](references/cli-reference.md).

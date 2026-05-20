@@ -118,53 +118,31 @@ file per day.
 - If a day had no meaningful work logged, omit that day rather than
   writing an empty entry
 
-### Step 5 — Save to Obsidian (direct file edit)
+### Step 5 — Save to Obsidian
 
-Append the generated notes to today's Obsidian daily note under the **Notes**
-section by editing the file directly. Do **not** use the Obsidian CLI — it is
-flaky and silently fails on path resolution.
+Append the generated notes to today's Obsidian daily note using the CLI.
 
-Vault root: `$HOME/Developer/obsidian`.
-
-Resolve today's daily-note path with `scripts/daily_note_path.sh` (no args for
-today; honours `VAULT` env). Path format: `daily/YYYY/MM-MMM/YY-MM-D.md` —
-the day is **not** zero-padded (`26-05-1.md`, not `26-05-01.md`).
-
-Steps:
-1. Check whether `$TODAY` exists. If not, create the parent folder and write
-   the file from this template (substitute `{ISO_DATE}` with `YYYY-MM-DD`):
+1. Get today's relative path:
+   ```bash
+   obsidian daily:path
+   # → daily/YYYY/MM-MMM/YY-MM-D.md (day not zero-padded)
    ```
-   ---
-   tags:
-   - daily
-   ---
 
-   # {ISO_DATE}
-
-   ## To-Do
-
-   - [ ]
-
-   ---
-
-   ## Notes
+2. If today's note doesn't exist yet, create it:
+   ```bash
+   obsidian create path=<rel> content="---\ntags:\n- daily\n---\n\n# YYYY-MM-DD\n\n## To-Do\n\n- [ ]\n\n---\n\n## Notes\n"
    ```
-2. Use the `Edit` tool to append a `## Work Log` block under the existing
-   `## Notes` section, in this shape:
+
+3. Append the Work Log block. `## Notes` is the last section in the template,
+   so EOF append lands under it:
+   ```bash
+   obsidian daily:append content="## Work Log\n\n### [Project Name]\n\n- [task]\n- [task]\n"
    ```
-   ## Work Log
 
-   ### [Project Name]
-
-   - [task]
-   - [task]
-
-   ### [Another Project]
-
-   - [task]
+4. Verify the append succeeded:
+   ```bash
+   obsidian daily:read
    ```
-3. Confirm the edit by re-reading the file and checking the new block is
-   present.
 
 ### Step 6 — Output
 
@@ -230,19 +208,14 @@ Follow the same format and style rules as the Claude.ai workflow above.
 Save to `docs/daily-notes/YYYY-MM-DD-weekday.md` within the repo, or to the
 location the user specifies.
 
-### Step 5 — Save to Obsidian (direct file edit)
+### Step 5 — Save to Obsidian
 
-Append the generated notes to today's Obsidian daily note under the **Notes**
-section by editing the file directly. Do **not** use the Obsidian CLI.
+Same as Claude.ai workflow Step 5 — use the Obsidian CLI:
 
-Vault root: `$HOME/Developer/obsidian`. Resolve today's path with
-`scripts/daily_note_path.sh` (honours `VAULT` env).
-
-If the file does not exist, create it from the template (see Claude.ai
-workflow Step 5 above for the template). Then use the `Edit` tool to append a
-`## Work Log` block under the existing `## Notes` section.
-
-Confirm the note was updated by re-reading the file before presenting output.
+1. `obsidian daily:path` to get today's relative path
+2. If missing: `obsidian create path=<rel> content=<template>`
+3. `obsidian daily:append content=<work-log-block>`
+4. `obsidian daily:read` to confirm
 
 ---
 

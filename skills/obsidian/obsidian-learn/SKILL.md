@@ -216,26 +216,21 @@ tags: [ai-knowledge, <category>]
 After writing all category files, append new entries to the index.
 One line per entry — just the key phrase, no full sentence needed.
 
-**If the index exists**, use the `Edit` tool to append:
+**If the index exists**, append via the CLI:
 
+```bash
+obsidian append path=knowledge/_index.md content="- <key phrase> (<category>, YYYY-MM-DD)\n"
 ```
-Edit ~/Developer/obsidian/knowledge/_index.md
-— append: "- <key phrase> (<category>, YYYY-MM-DD)\n"
+
+**If the index doesn't exist yet**, create it via the CLI:
+
+```bash
+obsidian create path=knowledge/_index.md content="---\ntags: [ai-knowledge, index]\n---\n\n# Knowledge Index\n\n- <key phrase> (<category>, YYYY-MM-DD)\n"
 ```
 
-If the index doesn't exist yet, use the `Write` tool to create it:
-
-```
-Write ~/Developer/obsidian/knowledge/_index.md
-content:
----
-tags: [ai-knowledge, index]
----
-
-# Knowledge Index
-
-- <key phrase> (<category>, YYYY-MM-DD)
-```
+> Note: `scripts/kb_append.py` (used in Step 3a) makes direct file writes because
+> the CLI has no equivalent for dated-heading insertion with deduplication. The
+> index append above is a simple EOF append — CLI is fine here.
 
 ---
 
