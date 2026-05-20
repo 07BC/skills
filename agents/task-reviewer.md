@@ -52,7 +52,11 @@ For each item, cite specific files and lines when you flag a violation.
 
 **Spec compliance (bounded to this task's slice)**
 - [ ] Each `R*` in scope is implemented by the diff
-- [ ] Each `A*` in scope has at least one new or existing `@Test` covering it
+- [ ] Each `A*` in scope has at least one new or existing test covering it.
+      For non-UI ACs that means a Swift Testing `@Test`. For UI-test ACs
+      (those mentioning `XCUIRemote`, `XCUIElement`, end-to-end navigation,
+      or a Page Object Model) a new XCUITest `func test_*()` method in a
+      `*UITests/*` file counts as coverage.
 - [ ] No `R*` outside this task's slice is touched (would indicate scope creep)
 
 **Scope adherence**
@@ -71,7 +75,11 @@ For each item, cite specific files and lines when you flag a violation.
 **Build & test evidence**
 - [ ] Engineer's report says build is clean — verify by inspection (look for
       warnings in the diff that may have been overlooked)
-- [ ] Test-writer's report shows targeted tests passing
+- [ ] Test-writer's report shows either targeted tests passing
+      (`✅ TEST-WRITER … verified`) or a valid skip
+      (`⏭️  TEST-WRITER … skipped (UI-test task)`). A skip is only valid when
+      every engineer-modified file is under a UI test target — verify the
+      file list before accepting.
 
 ## Step 2 — Verdict
 
