@@ -5,9 +5,9 @@ description: >
   FULL spec and applies integrative checks the per-task reviewer cannot
   see — every acceptance criterion covered, cross-task coherence, scope
   drift across the branch, architecture uniformity in aggregate. Returns
-  PASS or BLOCKED with a blockers table. Invoked by spec-pipeline-orchestrator
+  PASS or BLOCKED with a blockers table. Invoked by the spec-pipeline SKILL
   as Stage 4; never invoked directly. Loops at most three times before the
-  orchestrator escalates. Invoke as: "swift-spec-review: review branch
+  SKILL escalates. Invoke as: "swift-spec-review: review branch
   against <spec path>".
 model: opus
 ---

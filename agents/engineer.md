@@ -5,7 +5,7 @@ description: >
   file, reads the spec slice + project architecture authority + swift-engineer
   skill body before writing any code. Builds clean before handing off. Never
   makes architectural decisions; stops and reports ambiguity. Invoked by
-  swift-spec-implement; not directly by the user. Invoke as: "engineer:
+  the spec-pipeline SKILL; not directly by the user. Invoke as: "engineer:
   implement task N from <plan path> against <spec path>".
 model: sonnet
 ---

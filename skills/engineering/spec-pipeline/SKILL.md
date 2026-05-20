@@ -16,7 +16,8 @@ disable-model-invocation: true
 # Spec Pipeline
 
 `/jls:spec-pipeline` is the top-level entry point. It validates inputs, sets
-up a worktree, and hands off to the `spec-pipeline-orchestrator` agent.
+up a worktree, then drives Stages 1–5 inline by dispatching one leaf
+specialist agent at a time.
 
 This skill creates git worktrees and branches. **Never auto-invoke.** Always
 explicit user trigger.
@@ -340,7 +341,7 @@ proposal_path="${TMPDIR:-/tmp}/spec-pipeline-${spec_id}-proposal.yaml"
 rm -f "$proposal_path"
 ```
 
-Spawn `spec-scope-guardian` via the Task tool. Pass:
+Spawn `spec-scope-guardian` via the Agent tool (subagent_type: `spec-scope-guardian`). Pass:
 
 - `jira_key`
 - `raw_text` (the same blob assembled in Step 2)
@@ -640,69 +641,468 @@ continue:
 
 ---
 
-## Step 5 — Spawn the orchestrator
+## Step 5 — Initialise audit log + state
 
-Compose the orchestrator invocation prompt. It must contain:
+The Agent tool is gated to top-level sessions only in this Claude Code
+build — subagents cannot dispatch further subagents. So the SKILL drives
+Stages 1–5 inline (Steps 6–10 below), dispatching one leaf specialist at
+a time. The full design rationale and historical orchestrator prose are
+preserved under `playbooks/spec-pipeline-orchestrator.md` and
+`playbooks/swift-spec-implement.md` next to this file.
 
-- The agent definition file: `agents/spec-pipeline-orchestrator.md`
-- The state: `spec_id`, `source_type`, `raw_text`, `worktree_path`, `audit_path`
-- The config: every `SPEC_PIPELINE_*` variable
+### Stage variables (bash shell state)
 
-Where to write the audit log:
+Set these once near the top of the implementation flow. They persist
+across every subsequent Bash tool call in this session.
 
 ```bash
+spec_path="${worktree_path}/${SPEC_PIPELINE_SPEC_DIR:-docs/specs}/${spec_id}.md"
+plan_path="${worktree_path}/${SPEC_PIPELINE_PLAN_DIR:-docs/plans}/${spec_id}.md"
 audit_path="${SPEC_PIPELINE_VAULT}/${SPEC_PIPELINE_AUDIT_DIR}/${spec_id}.md"
+cycle=0
+cycle_budget="${SPEC_PIPELINE_CYCLE_BUDGET:-3}"
+amendment_attempted=0
+blockers_path=""        # set in Stage 4 BLOCKED loop
+blocked_cycle=""        # "1" while re-entering Stage 3 after Stage 4 BLOCKED
+agents_dir="$HOME/.claude/agents"
+
 mkdir -p "$(dirname "$audit_path")"
 ```
 
-Invoke via the Task tool with the orchestrator agent. Suggested invocation
-prompt skeleton:
+`spec_path` and `plan_path` are absolute paths under the worktree.
+`audit_path` lives outside the worktree (in the Obsidian vault) and is
+the durable cross-run record. Multi-line content (blockers tables,
+amendment notes) is written to tmp files and passed by **path** to leaf
+agents, never inlined in prompts.
 
-```
-Read the following agent definition file in full before doing anything:
+### Initialise the audit log header
 
-<absolute path to agents/spec-pipeline-orchestrator.md>
+```bash
+if [[ ! -f "$audit_path" ]]; then
+  cat <<EOF > "$audit_path"
+# Spec Pipeline Run — ${spec_id}
 
-You are the Spec Pipeline Orchestrator described in that file.
-
-## State
-spec_id:        <spec-id>
-source_type:    <jira | spec | prompt>
-worktree_path:  <worktree path>
-audit_path:     <audit log path>
-cycle_budget:   <SPEC_PIPELINE_CYCLE_BUDGET>
-
-## Project config
-SPEC_PIPELINE_WORKSPACE='<...>'
-SPEC_PIPELINE_SCHEME='<...>'
-SPEC_PIPELINE_DESTINATION='<...>'
-SPEC_PIPELINE_TESTS_TARGET='<...>'
-SPEC_PIPELINE_TICKET_PREFIX='<...>'
-SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC='<...>'
-SPEC_PIPELINE_CONTEXT_DOCS='<...>'
-SPEC_PIPELINE_SPEC_DIR='<...>'
-SPEC_PIPELINE_PLAN_DIR='<...>'
-
-## Raw input
-<<<RAW
-<raw_text verbatim>
-RAW
-
-Begin Stage 1.
-```
-
-Wait for the orchestrator to complete. It will either:
-
-- Print `## Final Outcome — ... SHIPPED` and a PR URL → success
-- Print `## Final Outcome — ... ESCALATED` → escalation
-
-Either way, the audit log at `audit_path` contains the full record.
+**Started:** $(date '+%Y-%m-%d %H:%M:%S')
+**Source:** ${source_type}
+**Spec ID:** ${spec_id}
+**Worktree:** ${worktree_path}
+**Branch:** $(git -C "$worktree_path" rev-parse --abbrev-ref HEAD)
 
 ---
 
-## Step 6 — Final report
+## Stage Log
+EOF
+fi
+```
 
-On success, print:
+All later appends to the audit log use `>>` (append) or `cat … >>` —
+never `>` (truncate). Even amendment loops accrue fresh sections under
+new timestamps.
+
+### How to compose each Agent dispatch
+
+For every leaf agent invocation in Steps 6–10 below:
+
+1. Compose the invocation prompt as a heredoc string. It must begin with
+   the line `Read the following agent definition file in full before
+   doing anything:` followed by the absolute path under `$agents_dir`,
+   then the agent-specific state/config block, then any raw blob.
+2. Dispatch via the `Agent` tool with `subagent_type:
+   <leaf-agent-name>` and the composed prompt.
+3. Parse the agent's stdout per the rules in each Stage below.
+4. Append a stage-transition section to `$audit_path` before and after
+   the dispatch (see per-Stage append patterns).
+
+The full `SPEC_PIPELINE_*` config block is included in every dispatch
+prompt so the agent can read its config without re-parsing CLAUDE.md.
+
+---
+
+## Step 6 — Stage 1: Spec Distiller
+
+Append stage-start entry:
+
+```bash
+cat <<EOF >> "$audit_path"
+
+## Stage 1 — Spec Distiller — $(date '+%Y-%m-%d %H:%M:%S')
+
+Dispatching spec-distiller for ${spec_id}.
+EOF
+```
+
+Dispatch the `spec-distiller` agent via the `Agent` tool
+(`subagent_type: spec-distiller`) with an invocation prompt containing:
+
+- The absolute path to `$agents_dir/spec-distiller.md`
+- `spec_id`, `source_type`
+- The full `SPEC_PIPELINE_*` block
+- The `raw_text` (Jira blob, spec contents, or prompt text — verbatim,
+  inside a `<<<RAW … RAW` fence)
+- (On Stage 2 amendment re-entry only) an appended `## Amendment notes`
+  block carrying the planner's verbatim reasoning
+
+Wait for completion. The distiller writes `docs/specs/<spec-id>.md`,
+`docs/plans/<spec-id>.md`, and updates `master-plan.md` inside the
+worktree.
+
+### Parse the result
+
+Read the spec file. If its frontmatter `Status:` is `🟡 BLOCKED on Open
+Questions`:
+
+1. Extract the Open Questions block from the spec.
+2. Append to `$audit_path`:
+   ```bash
+   cat <<EOF >> "$audit_path"
+
+   ### Stage 1 BLOCKED — $(date '+%Y-%m-%d %H:%M:%S')
+
+   <Open Questions block verbatim>
+
+   ## Final Outcome — BLOCKED — Spec Open Questions — $(date '+%Y-%m-%d %H:%M:%S')
+
+   **Status:** ⚠️  BLOCKED — Spec Open Questions
+   **Worktree:** ${worktree_path} (preserved)
+   EOF
+   ```
+3. Print the audit path and Open Questions to the user. Exit.
+
+Otherwise — distiller succeeded. Copy the spec into the audit log under
+`## Full Spec`:
+
+```bash
+cat <<EOF >> "$audit_path"
+
+### Stage 1 complete — $(date '+%Y-%m-%d %H:%M:%S')
+
+## Full Spec
+EOF
+cat "$spec_path" >> "$audit_path"
+```
+
+Continue to Step 7.
+
+---
+
+## Step 7 — Stage 2: Planner
+
+Append stage-start entry:
+
+```bash
+cat <<EOF >> "$audit_path"
+
+## Stage 2 — Planner — $(date '+%Y-%m-%d %H:%M:%S')
+
+Dispatching planner to validate plan fits codebase.
+EOF
+```
+
+Dispatch the `planner` agent via the `Agent` tool (`subagent_type:
+planner`) with an invocation prompt containing the absolute path to
+`$agents_dir/planner.md`, `spec_path`, `plan_path`, and the full
+`SPEC_PIPELINE_*` block.
+
+### Parse the verdict (last non-empty line)
+
+- `PLAN VALID` → append rationale; continue to commit the plan into the
+  audit log:
+  ```bash
+  cat <<EOF >> "$audit_path"
+
+  ### Stage 2 PASS — $(date '+%Y-%m-%d %H:%M:%S')
+
+  ## Full Plan
+  EOF
+  cat "$plan_path" >> "$audit_path"
+  ```
+  Continue to Step 8.
+
+- `PLAN NEEDS AMENDMENT: <reason>` → enter amendment loop:
+
+  1. If `amendment_attempted -eq 1` already, escalate via Step 10 with
+     reason `Plan invalid after amendment` — the planner's second-pass
+     reasoning is appended to the audit log first.
+  2. Set `amendment_attempted=1`.
+  3. Append the amendment reason verbatim to the audit log under
+     `### Stage 2 amendment — <ts>`.
+  4. Re-dispatch `spec-distiller` with the original prompt **plus** an
+     `## Amendment notes` block carrying the planner's verbatim
+     reasoning. The distiller's idempotence check (its Step 1) rewrites
+     the spec/plan in place.
+  5. Re-dispatch `planner`. Goto step 1 of this list.
+
+`amendment_attempted` is a one-shot guard: at most one distiller rewrite
+per pipeline run.
+
+---
+
+## Step 8 — Stage 3: Per-task implementation loop
+
+Append stage-start entry:
+
+```bash
+cat <<EOF >> "$audit_path"
+
+## Stage 3 — Implementation — $(date '+%Y-%m-%d %H:%M:%S')
+
+Beginning per-task loop (blocked_cycle=${blocked_cycle:-0}).
+EOF
+```
+
+### Extract task list
+
+```bash
+task_numbers="$(grep -oE '^### Task [0-9]+:' "$plan_path" | grep -oE '[0-9]+')"
+```
+
+For each `task_n` in `task_numbers`, in order:
+
+```bash
+# Has this task already been marked ✅?
+if grep -qE "^### Task ${task_n}:.* ✅" "$plan_path"; then
+  task_done=1
+else
+  task_done=0
+fi
+
+# Normal mode: skip ✅ tasks. BLOCKED-cycle mode: re-run regardless.
+if [[ "$task_done" -eq 1 && -z "$blocked_cycle" ]]; then
+  continue
+fi
+```
+
+Then run the inner chain (Engineer → Test-writer → Concurrency-auditor →
+Task-reviewer → commit → mark ✅).
+
+### Inner chain — one task
+
+Append `### Task N start — <ts>` to the audit log.
+
+1. **Engineer dispatch** via `Agent` tool with `subagent_type: engineer`.
+   Pass:
+   - The absolute path to `$agents_dir/engineer.md`
+   - `plan_path`, `spec_path`, `task_n`
+   - Full `SPEC_PIPELINE_*` block
+   - If `-n "$blockers_path"`: additionally pass the path with the
+     instruction *"Apply each Required fix in the file at this path
+     exactly. Do not expand scope. Re-build before reporting."*
+
+   Failure modes:
+   - `⛔️ ENGINEER — STOP: ambiguity` → escalate via Step 10 with the
+     ambiguity message verbatim.
+   - Engineer reports unrecoverable build failure → escalate with the
+     build output.
+   - Engineer succeeds → parse `Files modified:` / `Files created:`
+     blocks into `engineer_files`; continue.
+
+2. **Test-writer dispatch** via `Agent` tool with `subagent_type:
+   test-writer`. Pass `spec_path`, `task_n`, `engineer_files`, full
+   `SPEC_PIPELINE_*` block.
+
+   Failure mode: unrecoverable test failure → escalate. Otherwise
+   continue with combined `impl_files` = engineer_files ∪ new test
+   files.
+
+3. **Concurrency-auditor dispatch** via `Agent` tool with `subagent_type:
+   concurrency-auditor`. Pass `task_n`, `impl_files`, full
+   `SPEC_PIPELINE_*` block.
+
+   Parse the verdict:
+   - `✅ PASS-NO-CONCERN` → continue
+   - `✅ PASS` → continue
+   - `VERDICT: BLOCKED` → write the auditor's blockers table to a tmp
+     file (`$TMPDIR/spec-pipeline-${spec_id}-concurrency-task${task_n}.md`).
+     Re-dispatch `engineer` with that tmp path as a blockers file and
+     the same "Apply each Required fix exactly" instruction. Then
+     re-dispatch `concurrency-auditor` once. If still BLOCKED → escalate.
+
+4. **Task-reviewer dispatch** via `Agent` tool with `subagent_type:
+   task-reviewer`. Pass `plan_path`, `spec_path`, `task_n`, full
+   `SPEC_PIPELINE_*` block.
+
+   Parse the verdict:
+   - `✅ PASS` → continue
+   - `VERDICT: BLOCKED` → write the reviewer's blockers to a tmp file
+     (`$TMPDIR/spec-pipeline-${spec_id}-task-review-task${task_n}.md`).
+     Re-dispatch `engineer` with that tmp path. Then re-run the full
+     chain **from test-writer onwards** (test-writer → concurrency-auditor
+     → task-reviewer). If still BLOCKED → escalate.
+
+5. **Commit** — inline `/jls:git-commit` semantics. Do not dispatch an
+   agent; the SKILL drives `git` directly.
+
+   ```bash
+   ticket="$(git -C "$worktree_path" rev-parse --abbrev-ref HEAD \
+             | grep -oE '[A-Z]+-[0-9]+' | head -1 || true)"
+
+   task_desc="$(grep -oE "^### Task ${task_n}:.*" "$plan_path" \
+                | sed "s/^### Task ${task_n}: //; s/  ✅\$//")"
+
+   if [[ -n "$blocked_cycle" ]]; then
+     # BLOCKED-cycle mode — fix commit, not new task work
+     msg_body="fix ${task_desc} from review"
+   else
+     msg_body="${task_desc}"
+   fi
+
+   if [[ -n "$ticket" ]]; then
+     msg="${ticket}: ${msg_body}"
+   else
+     msg="${msg_body}"
+   fi
+
+   # Stage specific files only — never -A or .
+   for f in $impl_files; do
+     git -C "$worktree_path" add -- "$f"
+   done
+
+   git -C "$worktree_path" commit -m "$(cat <<COMMITMSG
+$msg
+COMMITMSG
+   )"
+   ```
+
+   If the pre-commit hook fails: fix the hook's complaint, re-stage,
+   create a **new** commit (never amend, never `--no-verify`). If the
+   failure is not fixable after one attempt → escalate.
+
+6. **Update plan + master-plan** — only on first-time completion (not
+   BLOCKED-cycle, where the task is already ✅):
+
+   ```bash
+   if [[ -z "$blocked_cycle" ]]; then
+     # Append ✅ to this task's heading
+     sed -i '' -E "s/^(### Task ${task_n}:.*[^✅])\$/\\1  ✅/" "$plan_path"
+     # Increment the "Done" count in master-plan.md
+     # (use the existing pattern in the file — find the row for this spec
+     #  and bump done/total)
+   fi
+   ```
+
+7. **Append per-task done entry** to the audit log with the commit hash
+   and modified file count.
+
+### After the loop
+
+```bash
+cat <<EOF >> "$audit_path"
+
+### Stage 3 complete — $(date '+%Y-%m-%d %H:%M:%S')
+
+All tasks committed (blocked_cycle=${blocked_cycle:-0}).
+EOF
+```
+
+Continue to Step 9.
+
+### Known cost: BLOCKED-cycle re-runs every task
+
+In BLOCKED-cycle mode the inner chain re-runs for **every** task in the
+plan, not just tasks the blockers touch. The engineer no-ops on files
+outside its task's scope (relying on existing scope discipline), but the
+dispatch overhead is real. This matches the historical orchestrator
+behaviour exactly.
+
+---
+
+## Step 9 — Stage 4: Whole-diff review
+
+Append stage-start entry:
+
+```bash
+cat <<EOF >> "$audit_path"
+
+## Stage 4 — Spec Review (cycle ${cycle}) — $(date '+%Y-%m-%d %H:%M:%S')
+
+Dispatching swift-spec-review for whole-branch diff.
+EOF
+```
+
+Dispatch `swift-spec-review` via the `Agent` tool (`subagent_type:
+swift-spec-review`). Pass the absolute path to
+`$agents_dir/swift-spec-review.md`, `spec_path`, `plan_path`, branch
+base (default `main`), and the full `SPEC_PIPELINE_*` block.
+
+### Parse the verdict (last non-empty line)
+
+- `VERDICT: PASS` →
+  ```bash
+  blocked_cycle=""    # clear BLOCKED-cycle state
+  ```
+  Record any SHOULD-FIX / NICE-TO-HAVE notes in the audit log under
+  `### Stage 4 PASS — <ts>`. Continue to Step 10.
+
+- `VERDICT: BLOCKED` → BLOCKED loop:
+  1. Extract the blockers table from the reviewer output.
+  2. Write it to `$TMPDIR/spec-pipeline-${spec_id}-blockers-cycle${cycle}.md`.
+     Store the path in `blockers_path`.
+  3. Set `blocked_cycle=1`.
+  4. Append the blockers table to the audit log under
+     `### Cycle ${cycle} blockers — <ts>`:
+     ```bash
+     cat <<EOF >> "$audit_path"
+
+     ### Cycle ${cycle} blockers — $(date '+%Y-%m-%d %H:%M:%S')
+
+     EOF
+     cat "$blockers_path" >> "$audit_path"
+     ```
+  5. `cycle=$((cycle+1))`.
+  6. If `cycle > cycle_budget - 1` → escalate via Step 10 with reason
+     `Spec review BLOCKED past cycle budget`.
+  7. Otherwise jump back to Step 8 in BLOCKED-cycle mode.
+
+---
+
+## Step 10 — Stage 5: PR (or escalation)
+
+### On Stage 4 PASS — invoke /jls:git-pr
+
+Append stage-start entry:
+
+```bash
+cat <<EOF >> "$audit_path"
+
+## Stage 5 — PR — $(date '+%Y-%m-%d %H:%M:%S')
+
+Invoking /jls:git-pr.
+EOF
+```
+
+Invoke the `git-pr` skill via the `Skill` tool with `skill: "git-pr"`.
+The skill handles:
+
+- Final push of the branch
+- Full unit-test run against `tests_target`
+- Code review on the diff
+- PR draft with title/body
+- Human confirmation before `gh pr create`
+
+The SKILL does **not** inline `gh pr create`. If `/jls:git-pr` reports
+blockers from its own code-review pass that the whole-diff review
+missed, halt — do not bypass.
+
+### On success — append Final Outcome and exit
+
+```bash
+cat <<EOF >> "$audit_path"
+
+## Final Outcome — $(date '+%Y-%m-%d %H:%M:%S')
+
+**Status:** ✅ SHIPPED
+**PR:** <PR URL from /jls:git-pr output>
+**Commits:** $(git -C "$worktree_path" rev-list --count main..HEAD)
+**Cycles:** $((cycle + 1))
+**Notes:** <any SHOULD-FIX / NICE-TO-HAVE from Stage 4>
+
+### Cleanup reminder
+After this PR merges, remove the worktree:
+git worktree remove ${worktree_path}
+EOF
+```
+
+Print the same final block to the user:
 
 ```
 ✅ Pipeline complete
@@ -714,7 +1114,34 @@ After the PR merges, remove the worktree:
   git worktree remove <worktree path>
 ```
 
-On escalation, print:
+### On any escalation (from any earlier step)
+
+Any halt jumps here. Append `## Final Outcome — ESCALATED — <reason>` to
+the audit log with the failing stage label, the cycle count at
+escalation, and the last blockers table verbatim (if any). State that
+the worktree is preserved.
+
+```bash
+cat <<EOF >> "$audit_path"
+
+## Final Outcome — $(date '+%Y-%m-%d %H:%M:%S')
+
+**Status:** ⚠️  ESCALATED — <reason>
+**Failing stage:** <Stage N label>
+**Cycle at escalation:** ${cycle}
+**Worktree:** ${worktree_path} (preserved for manual inspection)
+EOF
+
+if [[ -n "$blockers_path" ]]; then
+  cat <<EOF >> "$audit_path"
+
+### Last blockers table
+EOF
+  cat "$blockers_path" >> "$audit_path"
+fi
+```
+
+Print to the user:
 
 ```
 ⚠️  Pipeline ESCALATED — see audit log for details
@@ -722,6 +1149,22 @@ On escalation, print:
    Worktree:     <worktree path> (preserved for manual inspection)
    Failing stage: <stage label>
 ```
+
+**Never** create a PR on escalation. **Never** remove the worktree.
+
+### Failure modes that trigger escalation
+
+| Stage | Reason |
+|---|---|
+| Stage 1 | Spec has Open Questions after distillation |
+| Stage 2 | Plan still invalid after one amendment |
+| Stage 3 | Engineer halts on ambiguity / build failure |
+| Stage 3 | Test-writer cannot fix failing test |
+| Stage 3 | Concurrency-auditor BLOCKED twice in a row |
+| Stage 3 | Task-reviewer BLOCKED twice in a row |
+| Stage 3 | Pre-commit hook fails persistently |
+| Stage 4 | Spec-review BLOCKED past `cycle_budget` |
+| Stage 5 | `/jls:git-pr` reports blockers or fails |
 
 ---
 
@@ -749,7 +1192,7 @@ A project must do two things to use this skill:
 - **One source flag** — never accept two of `--from-jira / --from-spec / --from-prompt`
 - **Stop on missing required config** — never invent `workspace`/`scheme`/
   `destination`/`tests_target`
-- **Never run on `main` without a worktree** — the orchestrator runs inside a
+- **Never run on `main` without a worktree** — Stages 1–5 run inside a
   fresh worktree, on a fresh branch
 - **Never auto-confirm the worktree create** — even when the path is clear,
   the lightweight confirmation in Step 3 is required

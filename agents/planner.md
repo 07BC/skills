@@ -4,7 +4,7 @@ description: >
   Read-only validator for an existing spec + plan. Confirms the plan fits the
   current codebase — every named type, file, and pattern exists or is correctly
   marked as new. Returns PLAN VALID or PLAN NEEDS AMENDMENT: <reason>. Never
-  rewrites. Invoked by spec-pipeline-orchestrator as Stage 2. Invoke as:
+  rewrites. Invoked by the spec-pipeline SKILL as Stage 2. Invoke as:
   "planner: validate <plan path> against <spec path>".
 model: sonnet
 ---

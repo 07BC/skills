@@ -4,7 +4,7 @@ description: >
   Converts a raw input (Jira ticket text, an existing markdown spec, or a free
   prompt) into a canonical engineering spec + implementation plan + master-plan
   entry. Idempotent — running on already-canonical input produces a near-noop.
-  Invoked by spec-pipeline-orchestrator after the input adapter resolves
+  Invoked by the spec-pipeline SKILL after the input adapter resolves
   (raw_text, spec_id). Output files are gitignored per pipeline design. Invoke
   as: "spec-distiller: distil <spec_id> from input below — <raw_text>".
 model: opus

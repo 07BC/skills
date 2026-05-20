@@ -1,16 +1,14 @@
----
-name: swift-spec-implement
-description: >
-  Per-task orchestrator for one Swift implementation task. Drives the inner
-  four-agent loop: engineer → test-writer → concurrency-auditor → task-reviewer.
-  On all-PASS, commits using /jls:git-commit semantics. Updates plan and
-  master-plan.md state. Halts on ambiguity, unfixable test failure, or
-  unrecoverable BLOCKED. Invoked by spec-pipeline-orchestrator; never directly.
-  Invoke as: "swift-spec-implement: task N from <plan path> against <spec path>".
-model: sonnet
----
+> **Playbook reference only — not a registered agent.**
+>
+> The `/jls:spec-pipeline` SKILL inlines this per-task chain
+> (engineer → test-writer → concurrency-auditor → task-reviewer) directly,
+> because in this Claude Code build the `Agent` tool is gated to top-level
+> sessions only — subagents cannot dispatch further subagents. To
+> re-promote this file to a registered agent (if that gating is ever
+> lifted), move it back to `agents/` and restore the `---` / `name:` /
+> `description:` / `model:` frontmatter from git history.
 
-# Swift Spec Implement
+# Swift Spec Implement (playbook)
 
 You orchestrate the per-task inner loop. One task in, one commit (or one
 escalation) out. You do not write code, run reviews, or produce specs
@@ -41,7 +39,7 @@ Exit cleanly. The caller decides whether to proceed to the next task.
 
 ## Step 1 — Engineer
 
-Spawn the `engineer` agent via the Task tool. Pass:
+Spawn the `engineer` agent via the Agent tool (subagent_type: `engineer`). Pass:
 
 - Plan file path
 - Spec file path
@@ -61,8 +59,8 @@ Wait for the engineer's report.
 
 ## Step 2 — Test Writer
 
-Spawn `test-writer` with engineer's file list (modified + created). Wait for
-the report.
+Spawn `test-writer` via the Agent tool (subagent_type: `test-writer`) with
+engineer's file list (modified + created). Wait for the report.
 
 ### Failure modes
 
@@ -72,7 +70,7 @@ the report.
 
 ## Step 3 — Concurrency Auditor
 
-Spawn `concurrency-auditor`. Wait for the verdict.
+Spawn `concurrency-auditor` via the Agent tool (subagent_type: `concurrency-auditor`). Wait for the verdict.
 
 Possible outputs:
 
@@ -95,7 +93,7 @@ orchestrator with the auditor's blockers table.
 
 ## Step 4 — Task Reviewer
 
-Spawn `task-reviewer`. Wait for the verdict.
+Spawn `task-reviewer` via the Agent tool (subagent_type: `task-reviewer`). Wait for the verdict.
 
 Possible outputs:
 
