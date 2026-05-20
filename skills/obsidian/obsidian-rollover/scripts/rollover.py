@@ -58,8 +58,28 @@ def _text(line: str, done: bool = False) -> str | None:
 
 
 def _norm(s: str) -> str:
-    s = re.sub(r"\[(.*?)\]\([^)]+\)", r"\1", s)
+    s = re.sub(r"\[(.*?)\]\([^)]+\)", r"\1", s)  # strip markdown links
+    s = re.sub(r"\*+", "", s)                      # strip bold/italic markers
     return re.sub(r"\s+", " ", s).strip().lower()
+
+
+def _is_dup(norm: str, seen: set[str]) -> bool:
+    """True if norm is a near-duplicate of any entry in seen."""
+    if norm in seen:
+        return True
+    # Substring containment: catches "Monday first: NAT-694 — ..." vs "NAT-694 — ..."
+    if len(norm) > 30:
+        for s in seen:
+            if norm in s or (len(s) > 30 and s in norm):
+                return True
+    # Same key before ' — ' separator: catches rephrased context after the dash
+    sep = norm.find(" — ")
+    if sep > 0:
+        key = norm[:sep]
+        for s in seen:
+            if s == key or s.startswith(key + " — "):
+                return True
+    return False
 
 
 def _insert(content: str, new_items: list[str]) -> str:
@@ -139,7 +159,7 @@ def main() -> int:
     sources: list[tuple[datetime.date, str]] = []
     for d, text in candidates:
         norm = _norm(text)
-        if not norm or norm in seen or norm in completed_anywhere:
+        if not norm or _is_dup(norm, seen) or _is_dup(norm, completed_anywhere):
             continue
         seen.add(norm)
         to_add.append(f"- [ ] {text}")

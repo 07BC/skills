@@ -69,9 +69,10 @@ Substitute `{YYYY-MM-DD}` with today's ISO date.
 
 Run `scripts/rollover.py`. The script uses the Obsidian CLI (`obsidian tasks todo/done`) for all task queries and handles the full workflow:
 
-- Queries today's `## To-Do` section via `obsidian tasks todo daily` to build a dedupe list (case-insensitive, markdown links stripped).
-- Walks back the last 7 days (override with `--days N`) and collects every `- [ ]` line via `obsidian tasks todo path=<rel>`.
-- Filters out: empty placeholders, items already present in today's note, and items that appear as `- [x]` anywhere in the scanned window.
+- Queries today's `## To-Do` section via `obsidian tasks todo daily` to build a dedupe list (case-insensitive, markdown links and bold/italic markers stripped).
+- Walks back the last 7 days (override with `--days N`) and collects every `- [ ]` line via `obsidian tasks todo path=<rel>`, scanning newest-first so the most recent version of a task wins.
+- Filters out: empty placeholders, items already present in today's note, items that appear as `- [x]` anywhere in the scanned window, and near-duplicates of already-accepted tasks.
+- Near-duplicate detection strips bold/italic markers then applies two checks: (1) substring containment for tasks longer than 30 chars (catches a task prefixed with e.g. "Monday first: " matching a later version without the prefix); (2) same key before the ` — ` separator (catches the same task heading with a rephrased context note).
 - Inserts survivors into today's `## To-Do` section, just before the `---` divider that follows it, with a blank line separating them from the last existing item.
 
 Use `--dry-run` first if you want to see what would change before writing.
