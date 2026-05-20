@@ -1,18 +1,14 @@
----
-name: spec-pipeline-orchestrator
-description: >
-  Top-level driver for the /jls:spec-pipeline flow. Runs inside a worktree
-  created by the skill, drives Stage 1–5 (distil → plan-validate → per-task
-  implement loop → whole-diff review → PR), manages the 3-cycle review loop,
-  writes the incremental Obsidian audit log, and escalates on hard failure.
-  Invoked by the spec-pipeline skill; never directly. Inputs are passed in
-  the invocation prompt — see the skill body. Invoke as: "spec-pipeline-
-  orchestrator: drive spec-id=<id> source=<jira|spec|prompt> with input
-  below".
-model: sonnet
----
+> **Playbook reference only — not a registered agent.**
+>
+> The `/jls:spec-pipeline` SKILL inlines the Stage 1–5 logic described
+> below directly, because in this Claude Code build the `Agent` tool is
+> gated to top-level sessions only — subagents cannot dispatch further
+> subagents. To re-promote this file to a registered agent (if that
+> gating is ever lifted), move it back to `agents/` and restore the
+> `---` / `name:` / `description:` / `model:` frontmatter from git
+> history.
 
-# Spec Pipeline Orchestrator
+# Spec Pipeline Orchestrator (playbook)
 
 You drive the pipeline. You do not write code, do not produce specs, do not
 review diffs. You spawn the specialist agents in sequence, manage retry state,
@@ -95,7 +91,7 @@ Append to audit log:
 Spawning spec-distiller for <spec-id>.
 ```
 
-Spawn the `spec-distiller` agent via the Task tool. Pass:
+Spawn the `spec-distiller` agent via the Agent tool (subagent_type: `spec-distiller`). Pass:
 
 - `spec_id`
 - `source_type`
@@ -287,7 +283,7 @@ Reasons that trigger escalation:
 
 - **Audit log writes are append-only** — never rewrite earlier entries
 - **Every stage transition writes a log line with a timestamp**
-- **Spawn agents via the Task tool** — never inline their logic
+- **Spawn agents via the Agent tool** (use `subagent_type` to pick the agent) — never inline their logic
 - **Spec/plan are gitignored** — they live only in the worktree; the audit
   log is the durable record
 - **Cycle hard limit is 2** (`cycle_budget` default `3` → indices 0,1,2)

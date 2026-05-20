@@ -76,12 +76,12 @@ wiring. Each run lives in its own git worktree and commits as it goes.
 
 ### Agentic flow
 
-The pipeline is orchestrated by the `spec-pipeline-orchestrator` agent
-(Sonnet), which spawns a chain of specialist agents in sequence. You are
-interrupted only at defined gates.
+The pipeline is driven by the `/jls:spec-pipeline` SKILL itself, which
+runs at the top level and dispatches a chain of specialist agents in
+sequence. You are interrupted only at defined gates.
 
 ```
-SKILL: spec-pipeline
+SKILL: spec-pipeline (top-level driver — runs all stages inline)
 │
 ├─ Stage 0  ── 🛂 spec-scope-guardian (Opus)            [Jira only]
 │              Checks ticket scope before any work starts.
@@ -95,18 +95,18 @@ SKILL: spec-pipeline
 │              Validates the plan fits the existing codebase.
 │              PLAN VALID → continue │ PLAN NEEDS AMENDMENT → re-distil (1 retry)
 │
-├─ Stage 3  ── Per-task loop (repeats until all tasks done)
+├─ Stage 3  ── Per-task loop (driven inline by the SKILL)
 │  │
 │  ├──── 🔨 engineer (Sonnet)              implement one task, build clean
 │  ├──── ✅ test-writer (Sonnet)           write @Test / @Suite tests for it
-│  ├──── 🔒 concurrency-auditor (Sonnet)   check Sendable / actor / async safety
+│  ├──── 🔒 concurrency-auditor (Opus)     check Sendable / actor / async safety
 │  └──── 🔍 task-reviewer (Sonnet)         verify task against spec slice
 │
-├─ Stage 4  ── 🧐 swift-spec-review (Sonnet)
+├─ Stage 4  ── 🧐 swift-spec-review (Opus)
 │              Whole-diff review of the branch against the full spec.
 │              VERDICT: PASS → continue │ VERDICT: BLOCKED → loop back (max 3 cycles)
 │
-└─ Stage 5  ── /git-pr (Sonnet)
+└─ Stage 5  ── /jls:git-pr (Sonnet)
                Push branch, run tests, code review, draft PR body,
                await your confirmation before `gh pr create`.
 ```
@@ -175,17 +175,19 @@ the only durable copy.
 
 ### Agents involved
 
+The driver is the `/jls:spec-pipeline` SKILL itself — it runs at the top
+level and dispatches each leaf agent below in turn.
+
 | Agent | Model | Role |
 |---|---|---|
 | `spec-scope-guardian` | Opus | Stage 0 — thematic scope check for Jira tickets |
-| `spec-pipeline-orchestrator` | Sonnet | Driver — coordinates all stages, manages retries, writes audit log |
 | `spec-distiller` | Opus | Stage 1 — raw input → canonical spec + implementation plan |
 | `planner` | Sonnet | Stage 2 — validates plan fits the codebase (read-only) |
 | `engineer` | Sonnet | Stage 3 — implements one task, builds clean |
 | `test-writer` | Sonnet | Stage 3 — writes Swift Testing `@Test` / `@Suite` tests per task |
-| `concurrency-auditor` | Sonnet | Stage 3 — audits async/actor/Sendable correctness |
+| `concurrency-auditor` | Opus | Stage 3 — audits async/actor/Sendable correctness |
 | `task-reviewer` | Sonnet | Stage 3 — verifies task against spec slice |
-| `swift-spec-review` | Sonnet | Stage 4 — whole-diff review against the full spec |
+| `swift-spec-review` | Opus | Stage 4 — whole-diff review against the full spec |
 
 ---
 

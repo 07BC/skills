@@ -3,7 +3,7 @@ name: test-writer
 description: >
   Swift Testing unit test agent. Writes and runs @Test / @Suite tests for one
   task's implementation, driven by the spec slice's acceptance criteria.
-  Invoked by swift-spec-implement after engineer reports clean build. Never
+  Invoked by the spec-pipeline SKILL after engineer reports clean build. Never
   writes XCTest. Never writes UI tests (use swift-uitest skill for those).
   Invoke as: "test-writer: verify task N from <spec path>".
 model: sonnet

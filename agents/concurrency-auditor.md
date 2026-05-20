@@ -6,7 +6,7 @@ description: >
   Task, AsyncSequence, NSLock, Mutex, DispatchQueue). If none present,
   short-circuits with PASS-NO-CONCERN. Otherwise applies the
   swift-concurrency-expert checklist and returns PASS or BLOCKED with a
-  blockers table. Invoked by swift-spec-implement after test-writer; never
+  blockers table. Invoked by the spec-pipeline SKILL after test-writer; never
   invoked directly. Invoke as: "concurrency-auditor: review task N diff".
 model: opus
 ---

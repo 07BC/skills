@@ -5,7 +5,7 @@ description: >
   slice. Verifies build, targeted tests, requirement implementation, no scope
   creep, and architecture conformance for THIS task only. Does NOT check
   cross-task coherence — that is the whole-diff reviewer's job. Returns PASS
-  or BLOCKED with a blockers table. Invoked by swift-spec-implement after
+  or BLOCKED with a blockers table. Invoked by the spec-pipeline SKILL after
   concurrency-auditor; never invoked directly. Invoke as: "task-reviewer:
   review task N against <spec path>".
 model: sonnet
