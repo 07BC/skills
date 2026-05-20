@@ -62,11 +62,20 @@ Wait for the engineer's report.
 Spawn `test-writer` via the Agent tool (subagent_type: `test-writer`) with
 engineer's file list (modified + created). Wait for the report.
 
+### Possible outputs
+
+- `✅ TEST-WRITER — task [N] verified` → continue to Step 3.
+- `⏭️  TEST-WRITER — task [N] skipped (UI-test task)` → continue to Step 3.
+  Treat this as a success. The engineer's XCUITest diff is the coverage for
+  the task's UI-test ACs; task-reviewer is aware of this and will accept an
+  XCUITest method as AC coverage.
+- `⛔️ TEST-WRITER — STOP: task [N] mixes UI test code with non-UI-test ACs.`
+  → halt, escalate. The task is malformed and the plan must be amended.
+
 ### Failure modes
 
 - Test failure the test-writer cannot fix → halt, escalate with failing test
   output.
-- Test-writer succeeds → continue to Step 3.
 
 ## Step 3 — Concurrency Auditor
 

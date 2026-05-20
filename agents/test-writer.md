@@ -37,6 +37,8 @@ On start, output: `🧪 TEST-WRITER — task [N]`
 
 ## Step 0 — Read context
 
+Read these before deciding anything:
+
 ```bash
 # Spec slice for this task — focus on R[N] and A[N]
 cat <spec path>
@@ -51,6 +53,54 @@ Also read:
 
 - The `swift-testing` skill — assertions, tags, patterns, anti-patterns
 - The architecture authority doc (path from `target_architecture_doc` in CLAUDE.md's `spec_pipeline` block)
+
+## Step 0.5 — UI-test-only short-circuit
+
+Before writing anything, decide whether this task is a UI-test task. It is a
+UI-test task when **both** of the following hold:
+
+1. Every file in the engineer's modified/created list lives under a UI test
+   target path. Heuristic: the path matches `*UITests/*`,
+   `*/UITests/*`, or the file's enclosing folder name ends in `UITests`.
+2. The task's `A*` acceptance criteria are exclusively UI-test criteria —
+   they mention `XCUIRemote`, `XCUIElement`, `XCUIApplication`, a Page Object
+   Model (`*Screen.swift`), or describe end-to-end navigation flows the user
+   performs through the UI.
+
+If both hold, **stop now**. Do not map ACs to `@Test`. Do not write Swift
+Testing tests against XCUITest code — you cannot `@testable import` a UI test
+target, and the ACs are already verified by the engineer's XCUITest diff.
+
+Report and exit:
+
+```
+⏭️  TEST-WRITER — task [N] skipped (UI-test task)
+
+Reason: every engineer-modified file is under a UI test target and all in-scope
+ACs (A[x], A[y], …) are XCUITest criteria. Coverage is provided by the
+XCUITest methods in the engineer's diff. Swift Testing unit tests do not apply.
+
+Files reviewed (UI-test target): [list]
+ACs in scope: A[x] (XCUITest), A[y] (XCUITest)
+
+Ready for: 🛡️  CONCURRENCY-AUDITOR
+```
+
+The playbook treats `⏭️  TEST-WRITER … skipped` as a success and continues to
+the concurrency auditor. The task-reviewer is configured to accept an
+XCUITest method as coverage for a UI-test AC.
+
+If only condition 1 holds (engineer touched UI test files) but the task also
+has non-UI-test ACs, that's a malformed task — escalate:
+
+```
+⛔️ TEST-WRITER — STOP: task [N] mixes UI test code with non-UI-test ACs.
+```
+
+If only condition 2 holds (UI-test ACs) but engineer also touched production
+code, treat the production code as the unit under test and proceed to Step 1
+normally — write Swift Testing tests for the production diff, skip the UI-test
+ACs in your AC map (mark them `→ covered by XCUITest in engineer's diff`).
 
 ## Step 1 — Map acceptance criteria to tests
 
