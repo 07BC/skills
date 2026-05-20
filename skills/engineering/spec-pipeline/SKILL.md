@@ -10,7 +10,6 @@ description: >
   "run the pipeline", "spec-pipeline NAT-1234", "build this spec", or
   "/jls:spec-pipeline …". Project must declare its config in a fenced
   spec_pipeline YAML block in CLAUDE.md — see SCHEMA.md.
-disable-model-invocation: true
 ---
 
 # Spec Pipeline
@@ -1188,7 +1187,7 @@ A project must do two things to use this skill:
 
 ## Hard rules
 
-- **Never auto-invoke** — `disable-model-invocation: true`. User trigger only.
+- **Never auto-invoke** — user trigger only. The skill creates worktrees and branches; do not invoke it from description-matching alone.
 - **One source flag** — never accept two of `--from-jira / --from-spec / --from-prompt`
 - **Stop on missing required config** — never invent `workspace`/`scheme`/
   `destination`/`tests_target`

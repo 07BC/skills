@@ -7,7 +7,6 @@ description: >
   or any time a plan or feature description needs to become a trackable Jira issue.
   Also trigger when the user finishes a planning or grilling session and wants to capture
   the outcome. Always use this skill — do not create Jira tickets ad hoc without it.
-disable-model-invocation: true
 compatibility:
   tools:
     - mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources
