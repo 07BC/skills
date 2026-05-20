@@ -48,6 +48,9 @@ Usage:
   /spec-pipeline --help                 show this message
 
 What it does:
+  0. (Jira only) Scope check — splits oversized tickets into sub-tasks before
+     any other work. Skipped for --from-spec / --from-prompt, on resume, or
+     when the ticket already has a parent or sub-tasks.
   1. Reads spec_pipeline YAML config from your CLAUDE.md (see SCHEMA.md)
   2. Creates a per-pipeline git worktree at ../<repo>-<spec-id>/ on a fresh branch
   3. Distils the input into docs/specs/ and docs/plans/ (gitignored, inside the worktree)
@@ -70,6 +73,8 @@ Durable artefacts after a run:
 You're asked at minimum twice during a run, and more when the input or spec
 has unresolved questions:
   - Before Stage 1: lightweight summary confirmation
+  - Before Stage 1 (Jira only): scope-split confirmation if the ticket is too
+    big — may be zero questions
   - During Stage 1: one question per conflict or open UI decision (may be zero)
   - During Stage 3: one question per spec ambiguity the engineer cannot infer
     from the codebase (may be zero)
@@ -212,6 +217,11 @@ lower-stakes and agents handle them with a per-file read that fails softly.
    - Acceptance criteria (verbatim)
    - Issue type (Bug / Story / Task / Chore)
    - Labels / Components
+   - `parent_key` — the `parent.key` field if present, else empty (used
+     by Step 3.5 to skip Stage 0 on tickets that are already sub-tasks)
+   - `existing_subtask_keys` — array of keys from the `subtasks` field;
+     defensive read (treat missing or empty as `[]`). Used by Step 3.5 to
+     halt re-invocations on already-split parents.
 
 3. If the ticket has no acceptance criteria, stop. Tell the user to add ACs
    before re-running. Never invent acceptance criteria.
@@ -276,6 +286,166 @@ Ask via `AskUserQuestion`:
 - Option B: Stop — I want to fix something first
 
 Do not proceed without explicit confirmation.
+
+---
+
+## Step 3.5 — Scope check (Jira only)
+
+Run only when `source_type == jira`. Otherwise skip to Step 4.
+
+Compute the worktree path the same way Step 4 will:
+
+```bash
+repo_root="$(git rev-parse --show-toplevel)"
+repo_name="$(basename "$repo_root")"
+worktree_path="$(dirname "$repo_root")/${repo_name}-${spec_id}"
+```
+
+### Skip conditions — in order
+
+1. **Resume in progress.** If `[[ -d "$worktree_path" ]]`, the user is
+   resuming an in-flight pipeline. Skip Stage 0 and print one line:
+
+   ```
+   ⏭️  Scope check skipped — worktree exists, resuming
+   ```
+
+   Continue to Step 4.
+
+2. **Ticket already has a parent.** If `parent_key` (from Step 2) is
+   non-empty, this ticket is already a sub-task. Skip Stage 0 and print:
+
+   ```
+   ⏭️  Scope check skipped — ticket already has a parent
+   ```
+
+   Continue to Step 4.
+
+3. **Parent already has sub-tasks.** If `existing_subtask_keys` is
+   non-empty, the parent has already been split. Halt:
+
+   ```
+   Parent ticket <jira_key> already has sub-tasks: <KEY1, KEY2, ...>.
+   Re-invoke /jls:spec-pipeline --from-jira <child_key> per child.
+   ```
+
+   Exit. Do not create the worktree.
+
+If none of the above apply, run scope-guardian.
+
+### Scope-guardian invocation
+
+```bash
+proposal_path="${TMPDIR:-/tmp}/spec-pipeline-${spec_id}-proposal.yaml"
+rm -f "$proposal_path"
+```
+
+Spawn `spec-scope-guardian` via the Task tool. Pass:
+
+- `jira_key`
+- `raw_text` (the same blob assembled in Step 2)
+- `proposal_path`
+- The `SPEC_PIPELINE_*` config block (so the agent can read context_docs
+  and target_architecture_doc)
+
+Parse the agent's **last non-empty stdout line**:
+
+- `SCOPE: OK` → continue to Step 4.
+- `SCOPE: SPLIT` → run the split flow below.
+- Anything else (missing verdict, truncated output, error) → halt:
+
+  ```
+  spec-scope-guardian produced no SCOPE: verdict — see output above.
+  ```
+
+  Do not create the worktree. The user re-invokes.
+
+### Split flow
+
+1. Read `proposal_path`. If absent or malformed YAML, halt with the same
+   parse-error message as above.
+
+2. Render the proposed sub-tasks (titles, summaries, AC distribution,
+   rationales) and ask via `AskUserQuestion`:
+
+   - Option A: **Approve and create sub-tickets** (Recommended) — proceed
+     to step 3 below.
+   - Option B: **Cancel** — exit with the hint *"Re-scope the ticket in
+     Jira and re-invoke /jls:spec-pipeline."* No worktree, no Jira writes.
+
+3. On Approve, load Jira write tools:
+
+   ```
+   ToolSearch("select:mcp__plugin_atlassian_atlassian__getJiraProjectIssueTypesMetadata,mcp__plugin_atlassian_atlassian__createJiraIssue,mcp__plugin_atlassian_atlassian__createIssueLink,mcp__plugin_atlassian_atlassian__addCommentToJiraIssue")
+   ```
+
+   If any fail to load (MCP not available), halt with the same message as
+   Step 2's MCP-unavailable case.
+
+4. Resolve the Sub-task issue type:
+
+   - Project key = the substring of `jira_key` before the `-`.
+   - Call `mcp__plugin_atlassian_atlassian__getJiraProjectIssueTypesMetadata`.
+   - Find an issue type whose name case-insensitively matches `Sub-task`,
+     `Subtask`, or `Sub-Task`.
+   - **Fallback if none exists** (some Kanban projects have no Sub-task
+     type): ask via `AskUserQuestion`:
+     - Option A: **Create siblings linked to the parent** — create issues
+       of the same type as the parent and link them with
+       `createIssueLink` relationship `"relates to"`.
+     - Option B: **Abort** — exit without writes.
+
+5. For each proposed sub-task in order, call
+   `mcp__plugin_atlassian_atlassian__createJiraIssue` with:
+
+   - `project: { key: <project_key> }`
+   - `summary: <title>`
+   - `description: <YAML's summary + the ACs rendered as a markdown
+     checklist with - [ ] per AC>`
+   - `issuetype: { name: <resolved type> }`
+   - `parent: { key: <jira_key> }` (true Sub-task path) — OR omit the
+     `parent` field and call `createIssueLink` after creation (sibling
+     fallback path)
+
+   Collect the returned KEY for each.
+
+6. Post a comment to the parent via
+   `mcp__plugin_atlassian_atlassian__addCommentToJiraIssue` with body:
+
+   ```
+   spec-pipeline scope-guardian split this ticket into N sub-tasks:
+   - <KEY1>: <title1>
+   - <KEY2>: <title2>
+   Re-invoke /jls:spec-pipeline --from-jira <KEY> per child when ready.
+   ```
+
+7. Print and exit:
+
+   ```
+   ## Scope SPLIT — sub-tickets created
+   Parent:  <jira_key>  (comment posted)
+   Created: <KEY1>, <KEY2>, ...
+   Re-invoke /jls:spec-pipeline --from-jira <KEY> per child when ready.
+   ```
+
+   Do NOT create the worktree. Do NOT spawn the orchestrator. The
+   proposal file is left on disk for post-hoc debugging — the OS reaps
+   tmpdir.
+
+### Partial-failure handling
+
+If `createJiraIssue` fails after some children have already been created,
+print the keys that succeeded, name the one that failed, and ask via
+`AskUserQuestion`:
+
+- Option A: Retry the failed sub-task
+- Option B: Accept the partial result and post the parent comment with
+  what was created
+- Option C: Stop — leave created sub-tickets as-is, skip the parent
+  comment
+
+**Never auto-rollback** created Jira issues. Jira undo is destructive and
+noisy.
 
 ---
 
@@ -583,5 +753,7 @@ A project must do two things to use this skill:
   fresh worktree, on a fresh branch
 - **Never auto-confirm the worktree create** — even when the path is clear,
   the lightweight confirmation in Step 3 is required
+- **Never create the worktree before the scope check passes** on Jira input —
+  Step 3.5 either approves OK or halts on SPLIT before Step 4 runs
 - **Never invent acceptance criteria** — if the input has none, stop and ask
 - **Never auto-remove worktrees** — the user removes them post-merge

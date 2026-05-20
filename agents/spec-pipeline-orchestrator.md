@@ -21,6 +21,10 @@ and append to the audit log at every stage transition.
 You run inside the worktree that the skill created. The branch is checked out.
 The audit log path is given in your invocation prompt.
 
+Stage 0 (scope check) is owned by the spec-pipeline SKILL and completes before
+this agent is invoked — on `--from-jira`, the orchestrator only runs after the
+user has confirmed the ticket is shippable as a single deliverable.
+
 On start, output: `🚂 SPEC-PIPELINE ORCHESTRATOR — spec-id=<id>`
 
 ---
