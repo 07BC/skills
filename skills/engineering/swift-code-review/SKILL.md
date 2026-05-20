@@ -1,18 +1,20 @@
 ---
 name: swift-code-review
-description: **Performs** a Swift code review in this session — outputs BLOCKER / WARNING / SUGGESTION findings with inline fixes. Loads swift-engineer, swift-testing, and swift-concurrency, then applies a concrete pass/fail checklist. Use before committing, raising a PR, or verifying a feature is complete. If the user instead wants a reusable review prompt to hand off to another session, use prompt:review.
+description: **Performs** a Swift code review in this session — outputs BLOCKER / WARNING / SUGGESTION findings with inline fixes. Loads swift-engineer, swift-style, swift-testing, and swift-concurrency, then applies a concrete pass/fail checklist. Use before committing, raising a PR, or verifying a feature is complete. If the user instead wants a reusable review prompt to hand off to another session, use prompt:review.
 ---
 
 # Swift Code Review
 
 Required dependency skills (must be present in ~/.claude/skills/):
 - `swift-engineer`
+- `swift-style`
 - `swift-testing`
 - `swift-concurrency`
 
 Load these skills first, then apply every checklist item below:
 
 - Read skill swift-engineer
+- Read skill swift-style
 - Read skill swift-testing
 - Read skill swift-concurrency
 
