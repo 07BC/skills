@@ -40,6 +40,152 @@ swift:architect ──► swift:engineer ──► swift:quality ──► swift
     (design)           (build)            (clean)             (review)              (audit)
 ```
 
+## Spec Pipeline
+
+`/jls:spec-pipeline` is the centrepiece of this repo — a fully agentic
+pipeline that takes a Jira ticket, an existing spec, or a free-form
+prompt and drives it all the way to a merged-ready PR with zero manual
+wiring. Each run lives in its own git worktree and commits as it goes.
+
+### Invoke
+
+```bash
+/jls:spec-pipeline --from-jira NAT-1234    # fetch ticket from Jira
+/jls:spec-pipeline --from-spec docs/my-spec.md
+/jls:spec-pipeline --from-prompt "Add pull-to-refresh to the feed"
+/jls:spec-pipeline NAT-1234                # shorthand for --from-jira
+```
+
+### Prerequisites
+
+- A `spec_pipeline` YAML block in the project's `CLAUDE.md`
+  ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md) documents
+  every field)
+- Atlassian MCP connected (for `--from-jira` input)
+- Docs to gitignore inside each worktree:
+  ```
+  docs/specs/
+  docs/plans/
+  master-plan.md
+  ```
+
+---
+
+### Agentic flow
+
+The pipeline is orchestrated by the `spec-pipeline-orchestrator` agent
+(Sonnet), which spawns a chain of specialist agents in sequence. You are
+interrupted only at defined gates.
+
+```
+SKILL: spec-pipeline
+│
+├─ Stage 0  ── 🛂 spec-scope-guardian (Opus)            [Jira only]
+│              Checks ticket scope before any work starts.
+│              SCOPE: OK → continue │ SCOPE: SPLIT → create sub-tasks + halt
+│
+├─ Stage 1  ── 📐 spec-distiller (Opus)
+│              Distils raw input → engineering spec + implementation plan.
+│              Asks one question per conflict and one per UI decision.
+│
+├─ Stage 2  ── 🗺 planner (Sonnet)
+│              Validates the plan fits the existing codebase.
+│              PLAN VALID → continue │ PLAN NEEDS AMENDMENT → re-distil (1 retry)
+│
+├─ Stage 3  ── Per-task loop (repeats until all tasks done)
+│  │
+│  ├──── 🔨 engineer (Sonnet)              implement one task, build clean
+│  ├──── ✅ test-writer (Sonnet)           write @Test / @Suite tests for it
+│  ├──── 🔒 concurrency-auditor (Sonnet)   check Sendable / actor / async safety
+│  └──── 🔍 task-reviewer (Sonnet)         verify task against spec slice
+│
+├─ Stage 4  ── 🧐 swift-spec-review (Sonnet)
+│              Whole-diff review of the branch against the full spec.
+│              VERDICT: PASS → continue │ VERDICT: BLOCKED → loop back (max 3 cycles)
+│
+└─ Stage 5  ── /jls:git-pr (Sonnet)
+               Push branch, run tests, code review, draft PR body,
+               await your confirmation before `gh pr create`.
+```
+
+---
+
+### Stage 0 — Scope guardian
+
+The scope guardian runs **before any worktree is created** — making it
+cheap to abort on oversized tickets. It is skipped when:
+
+- The ticket already has a parent (it's already a sub-task)
+- The ticket already has sub-tasks (the split has already happened)
+- A worktree for this spec-id already exists (resume path)
+
+**Threshold — thematic separation only.** The guardian splits only when
+ACs cluster around clearly different user-visible outcomes (e.g. model +
+UI + analytics bundled into one ticket, or "phase 1 / phase 2" wording).
+A focused 8-AC ticket all about one screen stays whole. AC
+countable-independence alone is not enough to trigger a split.
+
+When a split is proposed:
+1. The guardian writes a YAML proposal to a tmpdir file listing 2+
+   sub-tasks, each with a title, summary, rationale, and ACs lifted
+   **verbatim** from the parent. Every parent AC lands in exactly one
+   child — no orphans, no duplicates. If a clean distribution is
+   impossible, it emits `SCOPE: OK` instead.
+2. The SKILL shows you the proposed split via `AskUserQuestion`.
+3. On approval, the SKILL creates Jira sub-tickets, posts a comment on
+   the parent, and halts. You re-invoke `/jls:spec-pipeline` per child.
+4. On cancel, nothing is written. You re-scope the parent in Jira and
+   re-invoke.
+
+---
+
+### User gates
+
+You are always asked at these points — the pipeline will not proceed
+without explicit confirmation:
+
+| Gate | When |
+|---|---|
+| **Lightweight confirmation** | Before any disk or worktree operation |
+| **Scope-split confirmation** | When Stage 0 proposes Jira sub-tasks (may be zero) |
+| **Conflict resolution** | Once per conflicting requirement detected in Stage 1 |
+| **UI design decisions** | Once per open UI question in Stage 1 (navigation, states, etc.) |
+| **PR body review** | Before `gh pr create` in Stage 5 |
+
+---
+
+### Durable artefacts
+
+After a run completes (or is split):
+
+| Artefact | Location | Notes |
+|---|---|---|
+| Pull request | GitHub | The shipped deliverable |
+| Audit log | `$OBSIDIAN_VAULT/AI/plans/<spec-id>.md` | Full spec + plan + stage log. Written even if the worktree is removed. |
+| Worktree | `../<repo>-<spec-id>/` | Preserved until you run `git worktree remove` post-merge |
+
+Spec and plan files inside the worktree (`docs/specs/`, `docs/plans/`,
+`master-plan.md`) are gitignored by design — the Obsidian audit log is
+the only durable copy.
+
+---
+
+### Agents involved
+
+| Agent | Model | Role |
+|---|---|---|
+| `spec-scope-guardian` | Opus | Stage 0 — thematic scope check for Jira tickets |
+| `spec-pipeline-orchestrator` | Sonnet | Driver — coordinates all stages, manages retries, writes audit log |
+| `spec-distiller` | Opus | Stage 1 — raw input → canonical spec + implementation plan |
+| `planner` | Sonnet | Stage 2 — validates plan fits the codebase (read-only) |
+| `engineer` | Sonnet | Stage 3 — implements one task, builds clean |
+| `test-writer` | Sonnet | Stage 3 — writes Swift Testing `@Test` / `@Suite` tests per task |
+| `concurrency-auditor` | Sonnet | Stage 3 — audits async/actor/Sendable correctness |
+| `task-reviewer` | Sonnet | Stage 3 — verifies task against spec slice |
+| `swift-spec-review` | Sonnet | Stage 4 — whole-diff review against the full spec |
+
+---
+
 ## Install
 
 ### Prerequisites
