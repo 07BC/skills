@@ -241,7 +241,7 @@ Model and flow key from the broader skill library:
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | One-shot pipeline from input (Jira ticket, markdown spec, or free prompt) all the way to PR. Each run gets its own git worktree. Drives the inner `engineer → test-writer → concurrency-auditor → task-reviewer` loop, runs a whole-diff `swift-spec-review`, then opens the PR via `/git-pr`. Bounded retries; durable audit log in Obsidian. Project must declare a `spec_pipeline` YAML block in its CLAUDE.md ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md)). | Opus · Direct |
+| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | Jira ticket / spec / prompt → PR, fully agentic. Stage 0 checks ticket scope (Jira only) and splits oversized tickets into Jira sub-tasks before any work starts. Then: distil spec → validate plan → per-task `engineer → test-writer → concurrency-auditor → task-reviewer` loop → whole-diff review → PR. Each run gets its own git worktree. Durable audit log in Obsidian. See the [Spec Pipeline](#spec-pipeline) section for the full flow. | Opus (scope + distil) · Sonnet (rest) · Direct |
 
 ### Building
 
