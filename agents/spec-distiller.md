@@ -39,6 +39,10 @@ On start, output: `📐 SPEC-DISTILLER — <spec-id>`
    to re-read the prose context, not re-parse)
 2. The path under `target_architecture_doc` if set
 3. Each `context_docs` path
+4. The `swift-engineer` skill body — authoritative MV architecture rules,
+   SwiftUI patterns, state management, navigation, and code style
+5. The `swiftui-liquid-glass` skill body — iOS 26+ Liquid Glass API guidelines
+   (skip if the feature clearly has no UI component)
 
 If the input is `source_type=spec`, also read the file referenced by the
 raw_text path — that IS the input.
@@ -57,6 +61,27 @@ the orchestrator). In that case:
 
 Otherwise continue.
 
+## Step 1.5 — Conflict detection
+
+Before touching the codebase or writing any file, scan `raw_text` for
+conflicting items. A conflict is any of:
+
+- Two requirements that are mutually exclusive
+- A requirement that directly contradicts a stated non-goal
+- A requirement that contradicts an acceptance criterion
+- An ambiguity where two reasonable interpretations lead to materially different
+  implementations
+
+For each conflict found, ask the user to resolve it via `AskUserQuestion`.
+Ask **one conflict per call**. Quote the conflicting items verbatim in the
+question body. Provide a recommended resolution as the first option, grounded
+in the patterns in the `swift-engineer` skill you read in Step 0.
+
+Incorporate all answers into `raw_text` as an appended "Resolved conflicts"
+section before continuing.
+
+If no conflicts are found, skip this step and continue to Step 2.
+
 ## Step 2 — Explore the codebase
 
 Use exploration tools (read directories under `Sources/` or the project's
@@ -64,6 +89,34 @@ source root) to map files relevant to the spec's scope. Goal: know what
 exists vs what must be created.
 
 Do not read the whole codebase. Read what the input references.
+
+## Step 2.5 — UI grilling
+
+Determine whether the spec involves any UI components — views, screens,
+sheets, navigation elements, or user-facing interactions. If there are none,
+skip this step and continue to Step 3.
+
+If UI is involved, interview the user about every open UI design decision,
+**one question at a time** via `AskUserQuestion`, until all decisions are
+resolved. For each question, provide a recommended answer drawn from:
+- Patterns already in the codebase (discovered in Step 2)
+- The `swift-engineer` skill's SwiftUI section (navigation, state, overlays)
+- The `swiftui-liquid-glass` skill if the feature targets iOS 26+
+
+Ask in dependency order:
+1. Screen hierarchy — which screens exist and how they are reached
+2. Navigation pattern — push (`NavigationStack`), modal sheet, tab, or split view
+3. Interaction patterns — tap targets, swipe gestures, long-press
+4. Loading, error, and empty states — what the user sees in each case
+5. Platform-specific concerns — tvOS focus order, accessibility labels,
+   Dynamic Type support, Liquid Glass eligibility
+6. Any feature-specific edge cases not covered above
+
+If a question can be answered by reading the codebase (Step 2 already ran),
+read it instead of asking.
+
+Incorporate all answers into the spec's Architecture and Functional
+Requirements sections before writing to disk.
 
 ## Step 3 — Write the engineering spec
 
@@ -282,3 +335,8 @@ Questions` and append after the report:
 - **Idempotent** — re-running on a canonical spec should produce no diff
   beyond what amendment notes require
 - **Spec/plan paths are relative to the worktree root** — not absolute
+- **Ask before assuming** — whenever the input is ambiguous or conflicting and
+  the answer cannot be derived from the codebase or context docs, use
+  `AskUserQuestion` before writing anything. Never silently resolve ambiguity.
+- **Ask one question at a time** — never batch multiple questions into a single
+  `AskUserQuestion` call; resolve each decision fully before moving to the next.

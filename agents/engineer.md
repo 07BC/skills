@@ -50,15 +50,23 @@ Files to create: [list from plan]
 Files that must NOT be touched: [from plan, if any]
 ```
 
-If any acceptance criterion is ambiguous, **stop here**. Report:
+If any acceptance criterion is ambiguous, use `AskUserQuestion` to resolve
+it before proceeding. Ask one ambiguity per call. Quote the ambiguous criterion
+verbatim as the question body. Offer a recommended interpretation as the first
+option, grounded in the patterns in the `swift-engineer` skill.
+
+Do not proceed to Step 2 until every ambiguity in this task's slice is
+resolved. After the user answers, restate the confirmed interpretation in your
+Step 1 output block.
+
+If the user's answer reveals a spec change is required (not just interpretation),
+stop and report:
 
 ```
-⛔️ ENGINEER — STOP: ambiguity in task [N]
-Ambiguity: [exact sentence or AC that is unclear]
-Cannot proceed without spec clarification.
+⛔️ ENGINEER — STOP: spec change required for task [N]
+Issue: [what changed]
+The spec must be updated before this task can be implemented.
 ```
-
-Do not guess. The caller (swift-spec-implement) will escalate to the orchestrator.
 
 ## Step 2 — Implement
 
@@ -122,7 +130,7 @@ Ready for: 🧪 TEST-WRITER
 
 ## Hard rules
 
-- **Stop on ambiguity** — never guess at intent, never fill in spec gaps
+- **Ask before stopping** — when a criterion is ambiguous, use `AskUserQuestion` to resolve it; only halt with `⛔️ STOP` when the user's answer requires a spec change, never guess at intent
 - **No scope creep** — anything outside this task's "Files to modify/create" list is off-limits
 - **No architectural decisions** — design choices outside the plan escalate to the orchestrator
 - **No silent failures** — never use `try?` without a documented reason in the spec
