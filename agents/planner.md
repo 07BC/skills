@@ -82,6 +82,20 @@ Walk through the plan task-by-task. For each task, verify:
 - [ ] Every Implementation step within a task is independently buildable
       (no step starts with "And then..." continuing across multiple actions)
 
+### Genuine spec ambiguity
+
+If, while reading the spec, you find an item that is so ambiguous the plan
+cannot be validated (e.g. the spec references a type or pattern that could
+plausibly mean two different things and the correct interpretation changes the
+verdict), use `AskUserQuestion` to resolve it.
+
+Ask one ambiguity per call. Quote the ambiguous spec text verbatim. Provide a
+recommended interpretation as the first option, based on the codebase patterns
+you read in Step 0.
+
+If the ambiguity is a plan error (wrong file, wrong type name), do NOT ask the
+user — that is `PLAN NEEDS AMENDMENT`. Only ask when the spec itself is unclear.
+
 ## Step 2 — Verdict
 
 ### Plan is executable
@@ -131,3 +145,5 @@ as the amendment brief.
   with your reasoning) will fix.
 - **No softening** — if the plan has any one of the checklist failures, it's
   `PLAN NEEDS AMENDMENT`. Don't pass a plan you would not stand behind.
+- **Ask on genuine spec ambiguity** — use `AskUserQuestion` when the spec
+  text is so ambiguous validation is impossible; do not guess
