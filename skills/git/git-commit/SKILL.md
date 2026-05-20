@@ -1,7 +1,6 @@
 ---
 name: git-commit
 description: Stages specific files and commits with a short imperative message. Extracts a ticket number from the branch name if one is present and prepends it to the message. Use when the user says "commit", "commit my changes", or "stage and commit". Builds on git-push and git-pr — do not invoke manually if those are running.
-disable-model-invocation: true
 ---
 
 ## Rules
