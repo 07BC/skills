@@ -43,7 +43,7 @@ swift:architect ──► swift:engineer ──► swift:quality ──► swift
 ## Spec Pipeline
 
 > [!CAUTION]
-> This is very much a work in progress and has not been successfull so far. 
+> This is very much a work in progress and has not been successfull so far.
 
 `/jls:spec-pipeline` is the centrepiece of this repo — a fully agentic
 pipeline that takes a Jira ticket, an existing spec, or a free-form
@@ -106,7 +106,7 @@ SKILL: spec-pipeline
 │              Whole-diff review of the branch against the full spec.
 │              VERDICT: PASS → continue │ VERDICT: BLOCKED → loop back (max 3 cycles)
 │
-└─ Stage 5  ── /jls:git-pr (Sonnet)
+└─ Stage 5  ── /git-pr (Sonnet)
                Push branch, run tests, code review, draft PR body,
                await your confirmation before `gh pr create`.
 ```
@@ -241,7 +241,7 @@ Model and flow key from the broader skill library:
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | One-shot pipeline from input (Jira ticket, markdown spec, or free prompt) all the way to PR. Each run gets its own git worktree. Drives the inner `engineer → test-writer → concurrency-auditor → task-reviewer` loop, runs a whole-diff `swift-spec-review`, then opens the PR via `/git-pr`. Bounded retries; durable audit log in Obsidian. Project must declare a `spec_pipeline` YAML block in its CLAUDE.md ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md)). | Opus · Direct |
+| [/jls:spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | One-shot pipeline from input (Jira ticket, markdown spec, or free prompt) all the way to PR. Each run gets its own git worktree. Drives the inner `engineer → test-writer → concurrency-auditor → task-reviewer` loop, runs a whole-diff `swift-spec-review`, then opens the PR via `/git-pr`. Bounded retries; durable audit log in Obsidian. Project must declare a `spec_pipeline` YAML block in its CLAUDE.md ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md)). | Opus · Direct |
 
 ### Building
 

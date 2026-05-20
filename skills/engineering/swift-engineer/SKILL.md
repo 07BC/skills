@@ -156,7 +156,7 @@ struct UserRow: View {
 | `@Observable` | Applied to **services** (reference types). Never to ViewModels — there are no ViewModels |
 | `@Environment(\.someService)` | How views read services. This is the default injection mechanism |
 | `@Bindable` | Bridge to write into an `@Observable` service from a view (only at the view boundary, never the property of choice) |
-| `@AppStorage` | UserDefaults-backed persistence |
+| `@AppStorage` | UserDefaults-backed persistence **in SwiftUI views only** — never inside an `@Observable` class |
 
 **Forbidden in this codebase:**
 - `ObservableObject` conformance
@@ -566,6 +566,82 @@ func fetchLivestreams(
 ---
 
 ## Code Style
+
+### UserDefaults in @Observable — use `access` / `withMutation`
+
+`@AppStorage` is a SwiftUI property wrapper. It **cannot** be applied to stored
+properties inside an `@Observable` class — the compiler will reject it with:
+
+> *Property wrapper cannot be applied to a stored property declared in a
+> '@Observable' class*
+
+Instead, back UserDefaults-persisted properties using the two observation
+primitives the `@Observable` macro exposes: `access` and `withMutation`.
+
+```swift
+// ✅ Correct: UserDefaults in an @Observable service
+@MainActor
+@Observable
+final class SettingsService {
+  private let defaults = UserDefaults.standard
+
+  var isNotificationsEnabled: Bool {
+    get {
+      access(keyPath: \.isNotificationsEnabled)
+      return defaults.bool(forKey: Keys.isNotificationsEnabled)
+    }
+    set {
+      withMutation(keyPath: \.isNotificationsEnabled) {
+        defaults.set(newValue, forKey: Keys.isNotificationsEnabled)
+      }
+    }
+  }
+}
+
+private extension SettingsService {
+  enum Keys {
+    static let isNotificationsEnabled = "isNotificationsEnabled"
+  }
+}
+```
+
+`access` registers the read with the observation graph so SwiftUI knows which
+views depend on this property. `withMutation` fires the change notification so
+those views invalidate. The result is identical tracking behaviour to a plain
+stored property.
+
+`@AppStorage` is correct and idiomatic in a SwiftUI `View` for simple,
+view-local preferences that do not need to be shared across services:
+
+```swift
+// ✅ Correct: @AppStorage in a view
+struct AppearanceView: View {
+  @AppStorage("useDarkMode") private var useDarkMode = false
+
+  var body: some View {
+    Toggle("Dark mode", isOn: $useDarkMode)
+  }
+}
+```
+
+**One owner per key.** A service property and a view `@AppStorage` for the same
+key will both compile but will not stay in sync — changes through one will not
+update the other. Decide on a single owner and stick to it.
+
+| Scenario | Pattern |
+|---|---|
+| Preference used by multiple views or has business logic | `access`/`withMutation` in service |
+| Simple view-local toggle with no logic | `@AppStorage` in the view |
+
+**Keys must always be named constants** — never inline string literals:
+
+```swift
+// ❌ Avoid
+defaults.bool(forKey: "isNotificationsEnabled")
+
+// ✅ Prefer
+defaults.bool(forKey: Keys.isNotificationsEnabled)
+```
 
 ### Avoid didSet with Side Effects
 
