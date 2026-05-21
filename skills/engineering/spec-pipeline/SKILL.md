@@ -52,7 +52,8 @@ What it does:
      any other work. Skipped for --from-spec / --from-prompt, on resume, or
      when the ticket already has a parent or sub-tasks.
   1. Reads spec_pipeline YAML config from your CLAUDE.md (see SCHEMA.md)
-  2. Creates a per-pipeline git worktree at ../<repo>-<spec-id>/ on a fresh branch
+  2. Creates a per-pipeline git worktree at ../<repo>-<branch-id>/ on a fresh branch
+     (branch-id = ticket key for Jira, spec-id slug for other sources)
   3. Distils the input into docs/specs/ and docs/plans/ (gitignored, inside the worktree)
   4. Drives engineer → test-writer → concurrency-auditor → task-reviewer per task
   5. Whole-diff swift-spec-review (up to 3 cycles before escalation)
@@ -67,7 +68,7 @@ Durable artefacts after a run:
   - The PR (on GitHub)
   - Audit log at $OBSIDIAN_VAULT/AI/plans/<spec-id>.md
     (full spec + full plan + stage log)
-  - The worktree at ../<repo>-<spec-id>/ until you remove it with
+  - The worktree at ../<repo>-<branch-id>/ until you remove it with
     `git worktree remove`
 
 You're asked at minimum twice during a run, and more when the input or spec
@@ -81,6 +82,10 @@ has unresolved questions:
   - Before Stage 5: PR body confirmation
 Otherwise the pipeline interrupts only on hard failure (spec ambiguity,
 plan invalid after one amendment, cycle budget exceeded, /git-pr blocker).
+
+Long pipelines (60–90+ min) may pause silently at the end of a turn due to
+context growth. If the pipeline appears to stop with no message, type
+`continue` — it will resume from where it left off.
 
 For the full config schema and required vs optional fields, see SCHEMA.md
 in this skill's directory.
@@ -228,10 +233,11 @@ lower-stakes and agents handle them with a per-file read that fails softly.
 
 4. Compose `raw_text` as a single markdown blob containing all of the above.
 
-5. Derive the spec ID:
+5. Derive the spec ID and branch ID:
 
    ```bash
    spec_id="$(bash ${SKILL_DIR}/scripts/derive-spec-id.sh --from-jira "<KEY>" "<summary>")"
+   branch_id="<KEY>"   # worktree and branch use only the ticket number
    ```
 
 6. `source_type=jira`
@@ -242,6 +248,7 @@ lower-stakes and agents handle them with a per-file read that fails softly.
 2. `raw_text="$(cat <PATH>)"`
 3. ```bash
    spec_id="$(bash ${SKILL_DIR}/scripts/derive-spec-id.sh --from-spec "<PATH>")"
+   branch_id="${spec_id}"
    ```
 4. `source_type=spec`
 
@@ -257,7 +264,10 @@ lower-stakes and agents handle them with a per-file read that fails softly.
    - Option A: `<derived-slug>` (Recommended)
    - Option B: Let me type a different slug
 
-4. `source_type=prompt`
+4. ```bash
+   branch_id="${spec_id}"
+   ```
+5. `source_type=prompt`
 
 ---
 
@@ -270,8 +280,8 @@ Show the user a summary before any disk operation:
 
 **Spec ID:** <spec-id>
 **Source:** <jira KEY | spec PATH | prompt>
-**Worktree (to be created):** <repo-parent>/<repo-name>-<spec-id>
-**Branch (to be created):** <type>/<spec-id> (type: feat | bug | chore — derived
+**Worktree (to be created):** <repo-parent>/<repo-name>-<branch-id>
+**Branch (to be created):** <type>/<branch-id> (type: feat | bug | chore — derived
                                               from spec source or defaulted to feat)
 **Cycle budget:** ${SPEC_PIPELINE_CYCLE_BUDGET}
 **Audit log:** ${SPEC_PIPELINE_VAULT}/${SPEC_PIPELINE_AUDIT_DIR}/<spec-id>.md
@@ -287,6 +297,16 @@ Ask via `AskUserQuestion`:
 
 Do not proceed without explicit confirmation.
 
+> **Long-pipeline note** — also display this block verbatim in the confirmation
+> message so the user sees it before work begins:
+>
+> ```
+> ⏱️  This pipeline can take 60–90+ minutes across multiple agent dispatches.
+>    Claude Code may pause silently at the end of a long turn (context growth).
+>    If the pipeline appears to stop with no message, type  continue  to resume.
+>    The pipeline will pick up from where it left off.
+> ```
+
 ---
 
 ## Step 3.5 — Scope check (Jira only)
@@ -298,7 +318,7 @@ Compute the worktree path the same way Step 4 will:
 ```bash
 repo_root="$(git rev-parse --show-toplevel)"
 repo_name="$(basename "$repo_root")"
-worktree_path="$(dirname "$repo_root")/${repo_name}-${spec_id}"
+worktree_path="$(dirname "$repo_root")/${repo_name}-${branch_id}"
 ```
 
 ### Skip conditions — in order
@@ -456,14 +476,14 @@ Compute the worktree path:
 ```bash
 repo_root="$(git rev-parse --show-toplevel)"
 repo_name="$(basename "$repo_root")"
-worktree_path="$(dirname "$repo_root")/${repo_name}-${spec_id}"
+worktree_path="$(dirname "$repo_root")/${repo_name}-${branch_id}"
 ```
 
 Compute the branch name. Type is `bug/` for ticket type Bug, `chore/` for
 Chore, otherwise `feat/`:
 
 ```bash
-branch="<type>/${spec_id}"
+branch="<type>/${branch_id}"
 ```
 
 ### If the worktree path exists
