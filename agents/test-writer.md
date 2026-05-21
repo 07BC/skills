@@ -161,6 +161,7 @@ DO test:
 - Edge cases and boundary conditions from the spec
 
 DO NOT test:
+- **Code paths that touch process-global Apple singletons** (`UserDefaults.standard`, `FileManager.default`, `NotificationCenter.default`, `URLSession.shared`, etc.) — if the SUT reaches for one, stop and inject a mock store via the initialiser. `.serialized` does not fix cross-suite races. See `swift-testing` skill → "Never touch process-global state".
 - Apple framework internals
 - Trivial getters/setters with no logic
 - Private implementation details
@@ -247,5 +248,6 @@ Ready for: 🛡️  CONCURRENCY-AUDITOR
   `AsyncStream`, or `Task.yield()` for async coordination
 - **No tautological tests** — if deleting the implementation wouldn't break the
   test, delete the test
+- **No process-global Apple singletons in tests** — never reference `UserDefaults.standard`, `FileManager.default`, `NotificationCenter.default`, `URLSession.shared`, `UIPasteboard.general`, `NSUbiquitousKeyValueStore.default`, or any other `.shared` / `.default` / `.standard` accessor. Inject a mock via the SUT's initialiser. If the production code accesses one directly, escalate — do not patch around it.
 - **Block on test failure** — never report success with a failing test
 - **Targeted runs only** — never run the full test target here; that is Stage 5's job

@@ -78,10 +78,53 @@ struct AuthServiceTests {
 - Edge cases and boundary conditions
 
 **DO NOT test:**
+- **Process-global Apple singletons** — see "Never touch process-global state" below
 - Apple frameworks (UIKit, SwiftUI, Foundation internals)
 - Simple property getters/setters
 - Private implementation details
 - Third-party library internals
+
+## Never touch process-global state
+
+**Unit tests must never read from or write to a process-global Apple singleton.** They are shared mutable state across the test process, leak between suites, and cause flaky CI under parallel scheduling.
+
+**Banned in unit tests:**
+- `UserDefaults.standard` (and any default-initialised `UserDefaults(suiteName:)` shared with the app)
+- `FileManager.default`
+- `NotificationCenter.default`
+- `URLSession.shared`
+- `UIPasteboard.general`
+- `NSUbiquitousKeyValueStore.default`
+- `Bundle.main` (mutating accessors)
+- `HTTPCookieStorage.shared`, `URLCache.shared`
+- Any other `.shared` / `.default` / `.standard` Apple accessor in `Foundation`, `UIKit`, `AppKit`, `WatchKit`, or `TVUIKit`
+
+**Why:** Swift Testing runs suites in parallel by default. `.serialized` only serialises tests **within** the suite that declares it — it does **not** serialise across suites. Two suites both writing to `UserDefaults.standard` will race, and the race only appears on the CI scheduler. This is exactly how previously-green tests start failing on Apple TV 4K but pass locally.
+
+**Always inject the dependency.** Production code must take the store as a parameter (constructor injection or initialiser default), and the test must pass a mock or in-memory implementation.
+
+```swift
+// BAD — touches UserDefaults.standard, races across suites
+@Test("Registers default when key absent")
+func registersDefault() {
+    UserDefaults.standard.removeObject(forKey: "server_url")
+    sut.registerDefaults()
+    #expect(UserDefaults.standard.string(forKey: "server_url") == "rtmp://default")
+}
+
+// GOOD — mock store passed in, no global state
+@Test("Registers default when key absent")
+func registersDefault() {
+    let store = MockUserDefaults()  // in-memory dictionary
+    let sut = PreferencesService(store: store)
+    sut.registerDefaults()
+    #expect(store.string(forKey: "server_url") == "rtmp://default")
+}
+```
+
+**`.serialized` is not a workaround.** If you find yourself adding `.serialized` to avoid a UserDefaults race, stop — inject a mock instead. `.serialized` will still flake when a *different* suite touches the same singleton.
+
+**If the production code reaches for a singleton directly,** the production code is the bug — refactor it to accept the store via initialiser before writing the test. Do not work around it by mutating the singleton in `init()` / `deinit`.
 
 ## Avoid Tautological Tests
 
@@ -175,6 +218,7 @@ func keysUseSeparateStorage() { ... }  // DELETE
 - [ ] Read existing tests in the file first
 - [ ] Does a test already cover this code path?
 - [ ] Am I testing my code or Apple's framework?
+- [ ] Does this test touch `UserDefaults.standard`, `FileManager.default`, `NotificationCenter.default`, or any other process-global singleton? (If yes, inject a mock instead — see "Never touch process-global state")
 - [ ] Would removing this test reduce confidence in the code?
 
 ## Common Patterns
