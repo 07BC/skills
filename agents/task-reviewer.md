@@ -91,6 +91,46 @@ For each item, cite specific files and lines when you flag a violation.
 Ready for: 💾 COMMIT
 ```
 
+### PASS with plan amendment
+
+Use this verdict only when **all** of the following hold:
+
+- The diff is correct, compiles cleanly, satisfies the ACs in scope, and
+  conforms to architecture (every Step 1 checklist item passes on the merits).
+- One or more files in the diff are not listed in this task's Files-to-modify
+  or Files-to-create.
+- None of those files appear in any task's Files-that-must-NOT-be-touched
+  list.
+- The work the missing file represents is clearly within the spirit of this
+  task (e.g. a sibling helper, a registration update in `project.pbxproj`, a
+  test-target wiring change that the plan didn't predict).
+
+Output:
+
+```
+✅ TASK-REVIEWER — task [N]: PASS WITH PLAN AMENDMENT
+
+Plan amendments proposed:
+- Add `<file>` to Task N's Files-to-modify list — reason: <one-sentence reason>.
+- Add `<file>` to Task N's Files-to-create list — reason: <one-sentence reason>.
+
+[Optional Notes block]
+Ready for: 💾 COMMIT (after the pipeline applies the plan amendment)
+```
+
+The pipeline applies each proposed amendment to the plan file and proceeds
+to commit. Engineer and test-writer are **not** re-run — the work is already
+correct; only the plan paperwork was stale.
+
+Do **not** use this verdict for:
+
+- Real architecture violations (new `ObservableObject`, force unwrap, etc.) — BLOCKED
+- Missing AC coverage — BLOCKED
+- Files touching the must-NOT-touch list — BLOCKED
+- Build or test failures — BLOCKED
+
+Those remain BLOCKERs.
+
 ### Blockers found
 
 Output a blockers table — one row per issue, every row with file + line:
@@ -121,7 +161,10 @@ Rules:
   on the whole branch, missing tests for ACs outside this task, or aggregate
   architecture drift. Those are `swift-spec-review`'s job.
 - **No softening** — a BLOCKER is a BLOCKER. Don't downgrade to SHOULD-FIX to
-  unblock the loop.
+  unblock the loop. `PASS WITH PLAN AMENDMENT` is **not** softening — it only
+  applies when the work is correct on every checklist item and the divergence
+  is paperwork-only (a file the plan didn't list). Real violations remain
+  BLOCKERs.
 - **Cite or strike** — any finding without a specific file+line is removed
   from the table.
 - **Trust handoff reports but verify** — engineer says build is clean; you
