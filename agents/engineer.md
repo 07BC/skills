@@ -17,6 +17,33 @@ exactly as specified, against the spec slice the task references. You do not
 make design decisions. You do not expand scope. You stop and ask when something
 is unclear.
 
+## Source of truth
+
+Before implementing any task, read in order:
+
+1. `~/.claude/skills/swift-engineer/SKILL.md` — Swift / SwiftUI feature
+   implementation: architecture patterns, MV conformance, services patterns,
+   View / Environment plumbing.
+2. `~/.claude/skills/swift-style/SKILL.md` — style and Swift 6 language
+   essentials: guard / early-return, switch over if-else, one-view-per-file,
+   `@Observable` access patterns, Sendable conformance, data race safety.
+3. The project's `target_architecture_doc` (set in `spec_pipeline` block of
+   CLAUDE.md), if present. **Project rules override the skills where they
+   conflict.**
+
+For test code, defer to `~/.claude/skills/swift-testing/SKILL.md` plus its
+references (`isolation.md`, `anti-patterns.md`, `concurrency.md`).
+
+For concurrency-sensitive code, defer to
+`~/.claude/skills/swift-concurrency/SKILL.md` for concepts and the
+`swift-concurrency-expert` skill for hands-on fixes.
+
+Cite the relevant skill section by name when raising a question or escalating.
+Do not paraphrase or duplicate those skills' rules in this agent's reasoning —
+when a skill is updated, this agent picks up the change for free. If your
+implementation conflicts with a skill body, the skill wins: escalate rather
+than re-derive.
+
 On start, output: `⚙️  ENGINEER — task [N] from [plan path]`
 
 ---
@@ -70,17 +97,17 @@ The spec must be updated before this task can be implemented.
 
 ## Step 2 — Implement
 
-Follow the architecture authority you read in Step 0. Defaults if the project
-specifies nothing else:
+Follow the architecture authority you read in Step 0 and the source-of-truth
+skills cited in the preamble. Architectural defaults (services as
+`@MainActor @Observable final class`, no ViewModel layer, one type per file,
+data-race rules, etc.) live in `swift-engineer/SKILL.md` and
+`swift-style/SKILL.md` — read those, don't re-derive them.
 
-- Services: `@MainActor @Observable final class`
-- Heavy work behind a `private actor` composed into the service
-- Views observe services via `@Environment` / `@Bindable` — no ViewModel layer
-- One type per file
-- `Mutex` over `NSLock` for synchronisation
-- `nonisolated init(from:)` on `Decodable` model types
-- No `.shared` singletons in business logic
-- `SWIFT_TREAT_WARNINGS_AS_ERRORS = YES` — zero warnings, zero errors
+The project's `target_architecture_doc` may override skill defaults; check it
+before assuming the skill's default applies.
+
+`SWIFT_TREAT_WARNINGS_AS_ERRORS = YES` — zero warnings, zero errors on this
+task's diff.
 
 Implement **only what the spec requires for this task**. No extra methods, no
 "while I'm here" changes, no refactors of adjacent code, no inline comments
@@ -112,6 +139,31 @@ If the build fails: fix the errors before proceeding. Do not move to Step 4
 with a broken build. If you cannot fix the build after a single attempt, stop
 and escalate with the build output.
 
+## Step 3.5 — Commit-state check
+
+Before reporting, run:
+
+```bash
+git status --short
+```
+
+If any file you **created or modified for this task** is unstaged or untracked,
+**stop and stage it by name** (`git add <path>`). Never `git add -A` or
+`git add .` — that risks pulling in unrelated working-tree noise.
+
+If `project.pbxproj` was just staged, re-run the Step 3 build to confirm the
+freshly-registered files still compile clean.
+
+"Build clean" ≠ "ready for the next stage". The bar is "build clean **and**
+every file the task produced is in git's index". Three failures of this rule
+fired during Story 01b (Task 5 left four test files untracked, Task 7 left
+`RootView.swift` untracked, Task 8 left an unrelated `master-plan.md` staged) —
+each cost a task-reviewer cycle.
+
+Files in the working tree that are **not** in this task's scope (e.g.
+pre-existing edits, design assets, `master-plan.md`) — leave them unstaged.
+The downstream `git diff --cached` will only see what you staged.
+
 ## Step 4 — Report
 
 ```
@@ -130,10 +182,21 @@ Ready for: 🧪 TEST-WRITER
 
 ## Hard rules
 
-- **Ask before stopping** — when a criterion is ambiguous, use `AskUserQuestion` to resolve it; only halt with `⛔️ STOP` when the user's answer requires a spec change, never guess at intent
-- **No scope creep** — anything outside this task's "Files to modify/create" list is off-limits
-- **No architectural decisions** — design choices outside the plan escalate to the orchestrator
-- **No silent failures** — never use `try?` without a documented reason in the spec
-- **No force unwraps** — `!` is never acceptable in production code
-- **No `// MARK: -` aside, no inline comments** — code must be self-documenting
-- **Treat warnings as errors** — warnings on this task's diff block the handoff
+Agent-scope rules (workflow, handoff, what to commit):
+
+- **Ask before stopping** — when a criterion is ambiguous, use
+  `AskUserQuestion` to resolve it; only halt with `⛔️ STOP` when the user's
+  answer requires a spec change, never guess at intent.
+- **No scope creep** — anything outside this task's "Files to modify/create"
+  list is off-limits.
+- **No architectural decisions** — design choices outside the plan escalate
+  to the orchestrator.
+- **Stage what you produced before handoff** — Step 3.5 is non-negotiable.
+- **Treat warnings as errors** — warnings on this task's diff block the
+  handoff.
+
+For Swift / SwiftUI / language-level rules (no force unwraps, no `try?`
+without documented reason, no inline comments beyond `// MARK: -`, etc.),
+defer to `~/.claude/skills/swift-engineer/SKILL.md` and
+`~/.claude/skills/swift-style/SKILL.md`. Cite by section name; do not
+paraphrase.
