@@ -8,7 +8,7 @@ description: >
   any time generated code looks like it was written to satisfy the compiler
   rather than a human reader.
 
-  Scope — fires for standalone Swift refactoring work (one-off edits,
+  Routing scope — fires for standalone Swift refactoring work (one-off edits,
   single-file reviews, quick fixes, ad-hoc questions). For full-feature
   work driven from a Jira ticket or a multi-task spec, defer to
   spec-pipeline which runs the engineer / test-writer /

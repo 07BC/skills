@@ -1,6 +1,6 @@
 ---
 name: swift-document
-description: "Adds or updates Apple DocC-style /// documentation comments on Swift symbols — functions, methods, properties, types, enums, and protocols. Use when the user asks to document Swift code, add comments, update existing documentation, or document a specific file, type, or function. Triggers on 'document this', 'add comments', 'add docs', 'update the comments', '/swift-document'. Scope — fires for standalone Swift documentation work (one-off edits, single-file reviews, quick fixes, ad-hoc questions). For full-feature work driven from a Jira ticket or a multi-task spec, defer to spec-pipeline which runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree."
+description: "Adds or updates Apple DocC-style /// documentation comments on Swift symbols — functions, methods, properties, types, enums, and protocols. Use when the user asks to document Swift code, add comments, update existing documentation, or document a specific file, type, or function. Triggers on 'document this', 'add comments', 'add docs', 'update the comments', '/swift-document'. Routing scope — fires for standalone Swift documentation work (one-off edits, single-file reviews, quick fixes, ad-hoc questions). For full-feature work driven from a Jira ticket or a multi-task spec, defer to spec-pipeline which runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree."
 ---
 
 # swift-document

@@ -11,7 +11,7 @@ description: >
   process, cannot import app code, use XCTest (not Swift Testing), and require
   credentials to be injected via environment variables, never hardcoded.
 
-  Scope — fires for standalone XCUITest UI test writing work (one-off
+  Routing scope — fires for standalone XCUITest UI test writing work (one-off
   edits, single-file reviews, quick fixes, ad-hoc questions). For
   full-feature work driven from a Jira ticket or a multi-task spec, defer
   to spec-pipeline which runs the engineer / test-writer /
