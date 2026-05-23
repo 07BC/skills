@@ -1013,7 +1013,31 @@ All tasks committed (blocked_cycle=${blocked_cycle:-0}).
 EOF
 ```
 
-Continue to Step 9.
+Continue to Step 8.5.
+
+### SourceKit indexing-lag suppression
+
+After any `project.pbxproj` modification (engineer dispatches that register
+new Swift files), expect `<new-diagnostics>` system reminders of the form
+*"Cannot find type X in scope"* or *"No such module Y"* to fire within
+seconds of the edit. These are SourceKit-indexing-lag false positives — the
+build succeeds clean. Story 01b produced 12 such false positives across 10
+tasks.
+
+Rule: if a `<new-diagnostics>` reminder fires **within 10 seconds of a
+`project.pbxproj` modification** with "Cannot find" or "No such module" text,
+treat it as suspected indexing lag. Require only a clean
+`xcodebuild ... build` (exit 0, zero errors, zero warnings) to clear it.
+Do **not** re-dispatch the engineer to "fix" the diagnostic. Emit a single
+acknowledgement line per task to the audit log:
+
+```
+SourceKit indexing lag suppressed — build clean.
+```
+
+If the same diagnostic persists **after** a clean build (i.e. the build also
+errors with the same symbol), treat it as a real error and re-dispatch the
+engineer per the normal blockers flow.
 
 ### Known cost: BLOCKED-cycle re-runs every task
 
@@ -1024,6 +1048,50 @@ dispatch overhead is real. This matches the historical orchestrator
 behaviour exactly.
 
 ---
+
+## Step 8.5 — Stage 3.5: In-flight AC coverage scan
+
+Trigger: every 3 completed tasks (i.e. when `(task_n % 3) == 0` after the
+final commit step), **or** whenever a task whose acceptance-criteria letter
+overlaps another task's just landed (e.g. two tasks both claim partial A5).
+
+The scan is lightweight and **non-blocking** — it emits a NOTICE, not a
+verdict. It exists to surface coverage gaps mid-pipeline, when context is
+fresh and the next task can absorb a corrective test, rather than at
+end-of-branch where the whole-diff reviewer at Stage 4 catches them too late.
+
+Procedure:
+
+```bash
+# For each AC letter referenced in the spec
+ac_letters="$(grep -oE 'A[0-9]+' "$spec_path" | sort -u)"
+
+for ac in $ac_letters; do
+  # Grep the test diff (since the branch's base) for any @Test that mentions
+  # types or symbols named in the AC's text.
+  hits="$(git -C "$worktree_path" diff origin/${BASE_BRANCH:-main}...HEAD \
+            -- '*Tests/*.swift' \
+          | grep -c "@Test")"
+  if [[ "$hits" -eq 0 ]]; then
+    cat <<EOF >> "$audit_path"
+
+### Stage 3.5 — NOTICE — $(date '+%Y-%m-%d %H:%M:%S')
+
+AC ${ac} has no @Test coverage yet. Confirm intentional (covered by
+compile-time enforcement per swift-testing skill "When NOT to write a test"?)
+or add a test in the next task.
+EOF
+  fi
+done
+```
+
+The orchestrator does **not** halt on a Stage 3.5 NOTICE. Surface the notice
+to the user before the next task dispatches if any AC has zero hits — the
+user can confirm the gap is intentional (compiler-enforced category) or
+instruct the next task's engineer to add coverage. Stage 4 still runs its
+whole-diff check at end-of-branch as the hard gate.
+
+Continue to Step 9.
 
 ## Step 9 — Stage 4: Whole-diff review
 
