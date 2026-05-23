@@ -220,9 +220,22 @@ Report the final OK summary and destination path to the user.
 
 ---
 
+## Step 6 — Rebuild the AI index
+
+After validation passes, invoke the `ai-index` skill to rebuild the
+cross-channel index:
+
+> "Rebuild the AI index at `~/Developer/obsidian/AI/`"
+
+This updates `AI/index/skills.md`, `AI/index/prompts.md`,
+`AI/index/techniques.md`, `AI/index/plugins.md`, the topic files, and
+`AI/index/index.md` to include the newly distilled channel.
+
+---
+
 ## Summary output
 
-After validation passes:
+After the AI index rebuild completes:
 
 ```
 === yt-distill: <channel> ===
@@ -231,6 +244,8 @@ Plugins:    N files
 Prompts:    N files
 Techniques: N files
 Output:     <dest>
+
+AI index rebuilt → AI/index/
 ===
 ```
 
