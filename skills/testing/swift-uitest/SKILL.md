@@ -10,9 +10,25 @@ description: >
   UI tests are fundamentally different from unit tests: they run in a separate
   process, cannot import app code, use XCTest (not Swift Testing), and require
   credentials to be injected via environment variables, never hardcoded.
+
+  Scope — fires for standalone XCUITest UI test writing work (one-off
+  edits, single-file reviews, quick fixes, ad-hoc questions). For
+  full-feature work driven from a Jira ticket or a multi-task spec, defer
+  to spec-pipeline which runs the engineer / test-writer /
+  concurrency-auditor / task-reviewer sub-agents in a worktree.
 ---
 
 # Swift UI Test Skill
+
+## Scope
+
+This skill is for **standalone** XCUITest UI test writing work — single-file edits, quick reviews, ad-hoc writing UI tests. It is **not** the path for full-feature implementation driven from a Jira ticket or multi-task spec. For that, the `spec-pipeline` skill runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree and produces a PR end-to-end. Defer to `spec-pipeline` when:
+
+- the user names a Jira ticket (e.g. NAT-1234) and asks to ship it,
+- the user says "run the pipeline", "ship this", or "/jls:spec-pipeline …",
+- the work spans more than one Swift file and includes design + tests + review.
+
+If the work is one file, one function, one review pass, or a question — this skill is the right home.
 
 You write Xcode UI tests for an iOS app using XCUITest. These tests drive a
 real simulator, interact with accessibility elements, and verify end-to-end

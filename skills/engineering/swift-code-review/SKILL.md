@@ -1,6 +1,6 @@
 ---
 name: swift-code-review
-description: **Performs** a Swift code review in this session — outputs BLOCKER / WARNING / SUGGESTION findings with inline fixes. Loads swift-engineer, swift-style, swift-testing, and swift-concurrency, then applies a concrete pass/fail checklist. Use before committing, raising a PR, or verifying a feature is complete. If the user instead wants a reusable review prompt to hand off to another session, use prompt:review.
+description: **Performs** a Swift code review in this session — outputs BLOCKER / WARNING / SUGGESTION findings with inline fixes. Loads swift-engineer, swift-style, swift-testing, and swift-concurrency, then applies a concrete pass/fail checklist. Use before committing, raising a PR, or verifying a feature is complete. If the user instead wants a reusable review prompt to hand off to another session, use prompt:review. Scope — fires for standalone Swift code review work (one-off edits, single-file reviews, quick fixes, ad-hoc questions). For full-feature work driven from a Jira ticket or a multi-task spec, defer to spec-pipeline which runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree.
 ---
 
 # Swift Code Review
@@ -11,6 +11,16 @@ description: **Performs** a Swift code review in this session — outputs BLOCKE
 > skill itself does not auto-fire. Any routing scope declared elsewhere
 > governs only when this skill auto-fires on a human message; it does not
 > gate sub-agent referencing.
+
+## Scope
+
+This skill is for **standalone** Swift code review work — single-file edits, quick reviews, ad-hoc review. It is **not** the path for full-feature implementation driven from a Jira ticket or multi-task spec. For that, the `spec-pipeline` skill runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree and produces a PR end-to-end. Defer to `spec-pipeline` when:
+
+- the user names a Jira ticket (e.g. NAT-1234) and asks to ship it,
+- the user says "run the pipeline", "ship this", or "/jls:spec-pipeline …",
+- the work spans more than one Swift file and includes design + tests + review.
+
+If the work is one file, one function, one review pass, or a question — this skill is the right home.
 
 Required dependency skills (must be present in ~/.claude/skills/):
 - `swift-engineer`

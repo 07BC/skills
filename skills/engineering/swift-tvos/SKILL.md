@@ -38,6 +38,12 @@ without changing behaviour. This skill exists to stop that.
 
 ---
 
+## Precedence
+
+This skill **beats** `prompt:writer`, `diagnose`, and `xcodebuildmcp-cli` whenever the underlying task is a tvOS focus-engine bug, navigation issue, remote-control issue, or KickTV behaviour bug — regardless of how the user phrases the ask. If the user says "write a prompt to debug this tvOS focus issue", the relevant skill is still this one, not `prompt:writer`. Only delegate to `prompt:writer` if the user explicitly asks for a *reusable prompt for another session* and the tvOS diagnosis itself is not being performed here.
+
+---
+
 ## Core Constraints (Non-Negotiable)
 
 1. **Diagnosis before fix.** Phase 1 is forbidden from proposing or writing

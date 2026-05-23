@@ -7,6 +7,12 @@ description: >
   "clean this up", "this is hard to read", "poor structure", "refactor", or
   any time generated code looks like it was written to satisfy the compiler
   rather than a human reader.
+
+  Scope — fires for standalone Swift refactoring work (one-off edits,
+  single-file reviews, quick fixes, ad-hoc questions). For full-feature
+  work driven from a Jira ticket or a multi-task spec, defer to
+  spec-pipeline which runs the engineer / test-writer /
+  concurrency-auditor / task-reviewer sub-agents in a worktree.
 ---
 
 # Swift Code Quality Skill
@@ -17,6 +23,16 @@ description: >
 > authority — even when this skill itself does not auto-fire. Any routing
 > scope declared elsewhere governs only when this skill auto-fires on a human
 > message; it does not gate sub-agent referencing.
+
+## Scope
+
+This skill is for **standalone** Swift refactoring work — single-file edits, quick reviews, ad-hoc rewrite. It is **not** the path for full-feature implementation driven from a Jira ticket or multi-task spec. For that, the `spec-pipeline` skill runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree and produces a PR end-to-end. Defer to `spec-pipeline` when:
+
+- the user names a Jira ticket (e.g. NAT-1234) and asks to ship it,
+- the user says "run the pipeline", "ship this", or "/jls:spec-pipeline …",
+- the work spans more than one Swift file and includes design + tests + review.
+
+If the work is one file, one function, one review pass, or a question — this skill is the right home.
 
 This skill rewrites Swift code to be clean, readable, and structurally correct
 according to the Google Swift Style Guide and this project's architecture rules.

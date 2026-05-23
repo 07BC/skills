@@ -16,6 +16,20 @@ as a `.md` file and presented via `present_files` — never pasted inline.
 
 ---
 
+## When NOT to fire
+
+Do **not** fire this skill when the user's described task matches another more specific skill's trigger surface, even if they say "write a prompt to …". In those cases the more specific skill should run and (optionally) write its own prompt as part of its output. Specifically defer to:
+
+- `swift-tvos` — anything about tvOS focus engine, Apple TV navigation, remote control, KickTV bugs.
+- `ux-screen-designer` — when the prompt would be for designing a screen / UI / UX from a PRD.
+- `swift-architect` — when the prompt would be for architecting a new app or auditing MV adherence.
+- `swiftopher-columbus` — when the prompt would be for producing an architecture document.
+- `diagnose` — when the prompt would be for debugging a specific bug or performance regression.
+
+If the user explicitly says they want a *reusable prompt for another session* and the current session is not going to do the work, then fire normally.
+
+---
+
 ## Step 1 — Understand the task
 
 Establish before writing:

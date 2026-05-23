@@ -1,6 +1,6 @@
 ---
 name: swift-document
-description: "Adds or updates Apple DocC-style /// documentation comments on Swift symbols — functions, methods, properties, types, enums, and protocols. Use when the user asks to document Swift code, add comments, update existing documentation, or document a specific file, type, or function. Triggers on 'document this', 'add comments', 'add docs', 'update the comments', '/swift-document'."
+description: "Adds or updates Apple DocC-style /// documentation comments on Swift symbols — functions, methods, properties, types, enums, and protocols. Use when the user asks to document Swift code, add comments, update existing documentation, or document a specific file, type, or function. Triggers on 'document this', 'add comments', 'add docs', 'update the comments', '/swift-document'. Scope — fires for standalone Swift documentation work (one-off edits, single-file reviews, quick fixes, ad-hoc questions). For full-feature work driven from a Jira ticket or a multi-task spec, defer to spec-pipeline which runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree."
 ---
 
 # swift-document
@@ -8,6 +8,16 @@ description: "Adds or updates Apple DocC-style /// documentation comments on Swi
 Adds or updates `///` DocC documentation on Swift symbols following Apple's official style.
 
 Read [apple-doc-conventions.md](references/apple-doc-conventions.md) before starting.
+
+## Scope
+
+This skill is for **standalone** Swift documentation work — single-file edits, quick reviews, ad-hoc documenting. It is **not** the path for full-feature implementation driven from a Jira ticket or multi-task spec. For that, the `spec-pipeline` skill runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree and produces a PR end-to-end. Defer to `spec-pipeline` when:
+
+- the user names a Jira ticket (e.g. NAT-1234) and asks to ship it,
+- the user says "run the pipeline", "ship this", or "/jls:spec-pipeline …",
+- the work spans more than one Swift file and includes design + tests + review.
+
+If the work is one file, one function, one review pass, or a question — this skill is the right home.
 
 ## Process
 

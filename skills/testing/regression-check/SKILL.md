@@ -1,6 +1,6 @@
 ---
 name: regression-check
-description: Audits in-progress code changes or written plans for side effects and regressions BEFORE they are committed or implemented. Catches broken callers (blast radius), behavioural ripples through shared state, observers, KVO, NotificationCenter, scenePhase, and concurrency or threading regressions. Always use this skill when the user says "audit for regressions", "check side effects", "what could this break", "is this safe to commit", "what am I missing", or asks Claude to verify that a plan or pending change won't break anything else. Also trigger proactively right after a plan document is written and before any code is generated for it, and right before a commit when significant changes are staged.
+description: Audits in-progress code changes or written plans for side effects and regressions BEFORE they are committed or implemented. Catches broken callers (blast radius), behavioural ripples through shared state, observers, KVO, NotificationCenter, scenePhase, and concurrency or threading regressions. Always use this skill when the user says "audit for regressions", "check side effects", "what could this break", "is this safe to commit", "what am I missing", or asks Claude to verify that a plan or pending change won't break anything else. Also trigger proactively right after a plan document is written and before any code is generated for it, and right before a commit when significant changes are staged. Scope — fires for standalone regression / side-effect analysis work (one-off edits, single-file reviews, quick fixes, ad-hoc questions). For full-feature work driven from a Jira ticket or a multi-task spec, defer to spec-pipeline which runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree.
 ---
 
 # Regression Check
@@ -8,6 +8,16 @@ description: Audits in-progress code changes or written plans for side effects a
 A focused audit pass that looks at code changes or written plans and asks one question: **what does this break that you haven't thought about?**
 
 This is not a code review. It does not comment on style, naming, or architecture. It looks for *consequences* — the unintended reach of a change into parts of the system the author didn't touch.
+
+## Scope
+
+This skill is for **standalone** regression / side-effect analysis work — single-file edits, quick reviews, ad-hoc regression check. It is **not** the path for full-feature implementation driven from a Jira ticket or multi-task spec. For that, the `spec-pipeline` skill runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree and produces a PR end-to-end. Defer to `spec-pipeline` when:
+
+- the user names a Jira ticket (e.g. NAT-1234) and asks to ship it,
+- the user says "run the pipeline", "ship this", or "/jls:spec-pipeline …",
+- the work spans more than one Swift file and includes design + tests + review.
+
+If the work is one file, one function, one review pass, or a question — this skill is the right home.
 
 ## When to invoke this skill
 

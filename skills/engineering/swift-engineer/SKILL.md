@@ -1,6 +1,6 @@
 ---
 name: swift-engineer
-description: Main skill for building features in a Swift/SwiftUI MV (Model-View) app — writes new Swift 6.2 code, SwiftUI views, services, tests, and async work. Use when implementing new features, screens, services, or test suites. For setting up a new app or auditing an existing app for MV-pattern adherence, use swift-architect. For reviewing code before commit/PR, use swift-code-review. For rewriting existing code without behaviour changes, use swift-quality. Triggers on Swift files (.swift), Xcode projects, SwiftUI components, or questions about Swift best practices.
+description: Main skill for building features in a Swift/SwiftUI MV (Model-View) app — writes new Swift 6.2 code, SwiftUI views, services, tests, and async work. Use when implementing new features, screens, services, or test suites. For setting up a new app or auditing an existing app for MV-pattern adherence, use swift-architect. For reviewing code before commit/PR, use swift-code-review. For rewriting existing code without behaviour changes, use swift-quality. Triggers on Swift files (.swift), Xcode projects, SwiftUI components, or questions about Swift best practices. Scope — fires for standalone Swift work (one-off edits, single-file reviews, quick fixes, ad-hoc questions). For full-feature work driven from a Jira ticket or a multi-task spec, defer to spec-pipeline which runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree.
 ---
 
 # Swift Engineering
@@ -21,6 +21,16 @@ write new Swift 6.2 code, SwiftUI views, services, tests, and async work
 > `@Environment` / `@Bindable`. No `ObservableObject`, no `@Published`,
 > no `*ViewModel` types. For app setup or MV-adherence audits, hand off to
 > `swift-architect`.
+
+## Scope
+
+This skill is for **standalone** Swift code work — single-file edits, quick reviews, ad-hoc implementation. It is **not** the path for full-feature implementation driven from a Jira ticket or multi-task spec. For that, the `spec-pipeline` skill runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree and produces a PR end-to-end. Defer to `spec-pipeline` when:
+
+- the user names a Jira ticket (e.g. NAT-1234) and asks to ship it,
+- the user says "run the pipeline", "ship this", or "/jls:spec-pipeline …",
+- the work spans more than one Swift file and includes design + tests + review.
+
+If the work is one file, one function, one review pass, or a question — this skill is the right home.
 
 ## Required Companion Skills
 

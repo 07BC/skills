@@ -1,6 +1,6 @@
 ---
 name: swift-testing
-description: Generate unit tests using Apple's Swift Testing framework. Use when asked to write tests, check test coverage, or create test files for Swift code. Triggers on requests like "write unit tests for {file}", "test this code", "add tests for my changes", or any Swift testing task. NOT for XCTest - this skill uses Swift Testing (@Test, @Suite, #expect).
+description: Generate unit tests using Apple's Swift Testing framework. Use when asked to write tests, check test coverage, or create test files for Swift code. Triggers on requests like "write unit tests for {file}", "test this code", "add tests for my changes", or any Swift testing task. NOT for XCTest - this skill uses Swift Testing (@Test, @Suite, #expect). Scope — fires for standalone Swift Testing test writing work (one-off edits, single-file reviews, quick fixes, ad-hoc questions). For full-feature work driven from a Jira ticket or a multi-task spec, defer to spec-pipeline which runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree.
 ---
 
 # Swift Testing
@@ -13,6 +13,16 @@ description: Generate unit tests using Apple's Swift Testing framework. Use when
 > referencing.
 
 Generate unit tests using Apple's Swift Testing framework (not XCTest).
+
+## Scope
+
+This skill is for **standalone** Swift Testing test writing work — single-file edits, quick reviews, ad-hoc writing tests. It is **not** the path for full-feature implementation driven from a Jira ticket or multi-task spec. For that, the `spec-pipeline` skill runs the engineer / test-writer / concurrency-auditor / task-reviewer sub-agents in a worktree and produces a PR end-to-end. Defer to `spec-pipeline` when:
+
+- the user names a Jira ticket (e.g. NAT-1234) and asks to ship it,
+- the user says "run the pipeline", "ship this", or "/jls:spec-pipeline …",
+- the work spans more than one Swift file and includes design + tests + review.
+
+If the work is one file, one function, one review pass, or a question — this skill is the right home.
 
 ## Quick Reference
 

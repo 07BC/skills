@@ -29,6 +29,20 @@ xcodebuildmcp <workflow> <tool> --help
 Notes:
 - Use `--json '{...}'` for complex arguments and `--output json` if you need machine-readable results (not recommended).
 
+## Canonical invocations
+
+For `simulator test`, always pass `--extra-args` as a single JSON-encoded array (do not probe variants). Example:
+
+````
+mcp__XcodeBuildMCP__simulator_test --workspace KickApp.xcworkspace \
+  --scheme Kick --simulator-id "<UDID>" \
+  --extra-args '["-resultBundlePath","build/result.xcresult","-only-testing:KickAppTests/LoginTests"]'
+````
+
+For log capture during runtime debugging, prefer `xcrun simctl spawn <UDID> log stream --predicate 'subsystem == "io.kick.app"'` over `sleep N && screenshot` chains. Capture is event-based, not poll-based.
+
+**Sleep + screenshot cap**: do not chain more than 3 consecutive `sleep N && screenshot` invocations. If a UI state isn't reachable in 3 polls, change strategy (log-predicate watch, accessibility query, or instrument the code path).
+
 ## Common Workflows
 
 ### Build And Run On Simulator

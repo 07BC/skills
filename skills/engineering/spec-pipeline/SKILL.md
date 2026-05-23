@@ -23,6 +23,28 @@ explicit user trigger.
 
 ---
 
+## Quick reference
+
+````
+/jls:spec-pipeline --jira NAT-1234            # start from a Jira ticket
+/jls:spec-pipeline --spec docs/specs/foo.md   # start from an existing spec markdown
+/jls:spec-pipeline --prompt "describe feature" # start from a free-form prompt
+/jls:spec-pipeline --resume <spec-id>          # resume an interrupted pipeline
+/jls:spec-pipeline --help                      # full flag list (mirror of this section)
+````
+
+Internal flow (read-only summary):
+1. **distil** (spec-distiller) → canonical spec + plan
+2. **validate** (planner) → confirm plan fits current code
+3. **implement** loop, per task:
+   - engineer → test-writer → concurrency-auditor → task-reviewer (max 3 review loops per task)
+4. **whole-diff review** (swift-spec-review, max 3 loops)
+5. **PR** (git-pr)
+
+Each pipeline runs in its own git worktree. Project must declare a fenced `spec_pipeline` YAML block in its CLAUDE.md (see SCHEMA.md).
+
+---
+
 ## Help mode
 
 Before doing anything else — before resolving paths, before reading config,
