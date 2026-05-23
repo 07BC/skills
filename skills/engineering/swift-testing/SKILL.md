@@ -14,19 +14,15 @@ import Testing
 
 @Suite(.tags(.feature))
 struct MyFeatureTests {
-    let sut: MyFeature
-
-    init() {
-        sut = MyFeature()
-    }
 
     @Test("Description of what is being tested")
-    func behaviourUnderTest() {
+    func behaviourUnderTest() async throws {
         // Given
+        let sut = MyFeature()
         let input = "test"
 
         // When
-        let result = sut.process(input)
+        let result = try await sut.process(input)
 
         // Then
         #expect(result == "expected")
@@ -34,18 +30,20 @@ struct MyFeatureTests {
 }
 ```
 
+**Every `@Test` function is `async throws`.** Swift Testing runs tests in parallel by default; `async throws` is the contract that keeps parallel execution safe and lets you `await` mocks, `try #require` optionals, and bridge async APIs without changing the signature later. Synchronous tests are not an optimisation — they are a regression that paints the test into a corner the moment a collaborator becomes an actor.
+
 ## Core Syntax
 
 | XCTest | Swift Testing |
 |--------|---------------|
 | `class FooTests: XCTestCase` | `@Suite struct FooTests` |
-| `func testFoo()` | `@Test func foo()` |
+| `func testFoo()` | `@Test func foo() async throws` |
 | `XCTAssertEqual(a, b)` | `#expect(a == b)` |
 | `XCTAssertTrue(x)` | `#expect(x)` |
 | `XCTAssertNil(x)` | `#expect(x == nil)` |
 | `XCTAssertThrowsError` | `#expect(throws:)` |
-| `setUpWithError()` | `init() throws` |
-| `tearDown()` | `deinit` |
+| `setUpWithError()` | `init() async throws` |
+| `tearDown()` | per-test cleanup in body (see `references/concurrency.md`) |
 
 ## Test Structure
 
@@ -67,6 +65,92 @@ struct AuthServiceTests {
     }
 }
 ```
+
+Stored properties on a `@Suite` struct must be `Sendable`. If your SUT is not `Sendable` (e.g. it is `@MainActor`-isolated or holds non-`Sendable` collaborators), do not store it as a property — construct it inside the test body instead. See `references/concurrency.md` for the `@MainActor` patterns.
+
+## Concurrency contract
+
+Swift Testing runs tests in parallel by default. The whole point of the framework is that the test runner uses the cooperative thread pool, scheduling tests concurrently within a process. **Every rule below exists to keep that parallelism intact.** Reaching for `.serialized`, `@MainActor`, or locks is the testing equivalent of converting an `actor` to a `@MainActor class` — it makes the compiler happy and hides the bug.
+
+### Hard-stop bans
+
+If you find yourself typing any of these, stop and re-read this section:
+
+- **Never write a synchronous `@Test` function.** No `@Test func foo()` — always `@Test func foo() async throws`. Even if the body has no `await` today, the signature must be future-proof.
+- **Never apply `.serialized` to a test or suite.** Not at the `@Test` level, not at the `@Suite(.serialized)` level. The only legitimate reasons for `.serialized` are (a) the suite tests a true process singleton you cannot inject around (rare — usually means a production bug), or (b) the suite drives an ordering-dependent integration scenario explicitly. Neither applies to a unit test. If you think you need `.serialized` to fix a race, you have a shared-state bug — find it.
+- **Never apply `@MainActor` to a `@Test` function.** It serialises every test in the suite onto the main actor and defeats parallelism. To assert on `@MainActor`-isolated state, use `await MainActor.run { #expect(...) }` for the assertion only, or `await` the SUT's method normally and let isolation inference handle the hop. See `references/concurrency.md`.
+- **Never declare a mock as `class Mock: @unchecked Sendable`.** Never use `NSLock`, `os_unfair_lock`, or `Mutex` inside a mock to "make it thread-safe." If the mock holds mutable state, the mock is an `actor`. Full stop. See "Mock taxonomy" below.
+- **Never use `nonisolated(unsafe) static var` for shared test fixtures.** Each test creates its own mocks. There is no such thing as a shared fixture in a parallel test suite — that is just a race waiting to happen.
+- **Never use `Task.sleep` (or `try await Task.sleep`) to wait for state to settle.** It is flaky by construction. Use `confirmation { }` for callback APIs, `withCheckedContinuation` for completion handlers, or `await` the actor directly. See `references/concurrency.md`.
+- **Never silence Swift 6 concurrency warnings in test targets.** `@preconcurrency import`, `@unchecked Sendable`, and `nonisolated(unsafe)` in test code are not workarounds — they are the bug.
+- **Crash budget: 5 minutes.** If a test traps at runtime and you cannot fix it without changing the SUT's assertion contract within 5 minutes, **stop and escalate**. Do not rewrite the test to a weaker assertion that sidesteps the crash. That is silent coverage loss. See `references/anti-patterns.md` ("weaker-after-crash").
+- **Never assert on test-built state.** A test that constructs its own collaborators, mutates them, then asserts on its own mutations is testing the collaborator, not the SUT. The test must observe state **through the SUT's own returned instance or its own context**. See `references/anti-patterns.md` ("parallel-setup tests").
+
+### Diagnostic workflow when a test is flaky
+
+Before reaching for `.serialized` or `@MainActor`:
+
+1. Run the suite with repetitions: `swift test --filter MyFeatureTests --num-workers 8 --repetitions 50` (or the Xcode equivalent — Product → Perform Action → Test Repeatedly).
+2. If only one test in N runs fails, you have a race. If every run fails, you have a logic bug.
+3. For races, list every piece of state shared across tests: `static` properties, singleton accesses, captured `Task { }` blocks without `await`, `@TaskLocal` values set in `init()` that bleed across tests, file-system paths, port numbers, notification names.
+4. Eliminate the sharing. Do not serialise around it.
+
+## Mock taxonomy
+
+The shape of a mock depends on what it stands in for. **Picking the wrong shape is the root cause of most test races.**
+
+| Mock stands in for | Mock shape | Why |
+|---|---|---|
+| Shared mutable system state (UserDefaults, Keychain, FileManager, NotificationCenter, in-memory caches) | `actor` | Read/modify/write needs serialisation across calls. An actor is the only correct primitive — `Mutex` works but forces synchronous call sites that clash with `async` test bodies. |
+| Pure call recorder / argument captor with no read-after-write semantics | `final class` with `let` properties, OR closure-captured state via `@Sendable` callback | If callers only ever write (e.g. recording the last endpoint hit), an actor is overkill. Use a `Sendable` final class or capture state in a closure the SUT calls. |
+| `URLSession` and HTTP-layer mocking | `URLProtocol` subclass registered per-test | `URLProtocol` is the supported Apple extension point. The system handles request isolation; do not wrap in an actor. |
+| `Date`, `UUID`, `Locale`, `Calendar`, clocks | `@TaskLocal` provider, or constructor-injected closure (`() -> Date`) | Tests scope the value to a single test via `$now.withValue(...) { ... }`. No shared mutable state across tests. |
+| `@Observable` SwiftUI service (`@MainActor`-isolated) | The real type, exercised from the test with `await` | Don't mock your own `@Observable` services. Construct them with mocked dependencies and `await` their methods. See `references/concurrency.md`. |
+
+### Worked example: `actor MockUserDefaults`
+
+This is the exact shape Sonnet should generate when a test needs a `UserDefaults` substitute:
+
+```swift
+actor MockUserDefaults: KeyValueStore {
+    private var storage: [String: Any] = [:]
+
+    func string(forKey key: String) -> String? {
+        storage[key] as? String
+    }
+
+    func set(_ value: Any?, forKey key: String) {
+        storage[key] = value
+    }
+
+    func removeObject(forKey key: String) {
+        storage.removeValue(forKey: key)
+    }
+}
+```
+
+The production code depends on a `KeyValueStore` protocol (with `async` methods), and the real implementation wraps `UserDefaults.standard`. The mock and the real type both conform. Tests construct `MockUserDefaults()` per-test and `await` its methods — no locks, no `@unchecked Sendable`, no `.serialized`.
+
+If you cannot make the protocol's methods `async` because the call site is synchronous, the production code is the bug — preferences access from a synchronous context inside `@MainActor` code is a sign that the property should be hoisted to an `@Observable` service that loads it once at startup.
+
+## When NOT to write a test
+
+Before writing anything, ask: **what regression would this test catch?** If the honest answer is "the Swift compiler stopped working" or "Apple's framework stopped working", do not write the test. Categories that typically need no test:
+
+- **Exhaustive `switch` over an enum with no associated-value logic.** Compiler-enforced.
+- **SwiftUI `View` bodies with no `@State` interaction.** Structural; the type checker is the test.
+- **`@main App` struct bodies.** Opaque return types make the modifier chain unobservable from a test. Verify the composition root *constructs* (a smoke test) — do not try to assert the modifier graph.
+- **Pure value types whose only members are `let` properties.** Construction is the test.
+- **`Hashable` / `Equatable` conformances on enums.** Compiler-synthesised. `#expect(Route.a != Route.b)` verifies the compiler, not your code.
+- **`Codable` round-trips for types with no custom coding.** Compiler-synthesised.
+- **Type conformance** (`#expect(sut is SomeProtocol)`). If it didn't conform, the file wouldn't compile.
+
+When you decide a unit of work needs no test, **state which existing test (or compile-time guarantee) covers each acceptance criterion**. Reporting "no test needed" without naming the existing coverage is the same as not checking.
+
+The only behaviours worth testing on enums and value types are the ones the compiler *cannot* catch:
+- Decoding the right case from external input (JSON, URL, raw value)
+- `switch` dispatch side effects (the right branch ran, with the right output)
+- Custom `Equatable`/`Hashable` implementations (anything not synthesised)
 
 ## What to Test
 
@@ -106,7 +190,7 @@ struct AuthServiceTests {
 ```swift
 // BAD — touches UserDefaults.standard, races across suites
 @Test("Registers default when key absent")
-func registersDefault() {
+func registersDefault() async throws {
     UserDefaults.standard.removeObject(forKey: "server_url")
     sut.registerDefaults()
     #expect(UserDefaults.standard.string(forKey: "server_url") == "rtmp://default")
@@ -114,11 +198,12 @@ func registersDefault() {
 
 // GOOD — mock store passed in, no global state
 @Test("Registers default when key absent")
-func registersDefault() {
-    let store = MockUserDefaults()  // in-memory dictionary
+func registersDefault() async throws {
+    let store = MockUserDefaults()  // actor wrapping in-memory dictionary
     let sut = PreferencesService(store: store)
-    sut.registerDefaults()
-    #expect(store.string(forKey: "server_url") == "rtmp://default")
+    await sut.registerDefaults()
+    let stored = await store.string(forKey: "server_url")
+    #expect(stored == "rtmp://default")
 }
 ```
 
@@ -133,7 +218,7 @@ func registersDefault() {
 ```swift
 // BAD: Tautological - always passes, tests nothing
 @Test("Stores value")
-func storesValue() {
+func storesValue() async throws {
     var value = ""
     value = "test"
     #expect(value == "test")  // Always true!
@@ -146,16 +231,15 @@ func storesValue() {
 ```swift
 // GOOD: Verifies the value reached the store with correct key
 @Test("Persists value to store with correct key")
-func persistsToStore() {
+func persistsToStore() async throws {
     let store = MockUserDefaults()
+    let sut = PreferencesService(store: store)
 
-    @UserDefault(.serverUrl, store: store)
-    var server: String
-
-    server = "rtmp://test.com"
+    await sut.setServerURL("rtmp://test.com")
 
     // Verify the store directly - not via the wrapper
-    #expect(store.string(forKey: "server_url") == "rtmp://test.com")
+    let stored = await store.string(forKey: "server_url")
+    #expect(stored == "rtmp://test.com")
 }
 ```
 
@@ -163,14 +247,14 @@ func persistsToStore() {
 ```swift
 // GOOD: Pre-populate store, then verify wrapper reads it correctly
 @Test("Reads value from pre-populated store")
-func readsFromStore() {
+func readsFromStore() async throws {
     let store = MockUserDefaults()
-    store.set("rtmp://existing.com", forKey: "server_url")  // Arrange first
+    await store.set("rtmp://existing.com", forKey: "server_url")  // Arrange first
 
-    @UserDefault(.serverUrl, store: store)
-    var server: String
+    let sut = PreferencesService(store: store)
 
-    #expect(server == "rtmp://existing.com")  // Verify getter works
+    let server = await sut.serverURL
+    #expect(server == "rtmp://existing.com")
 }
 ```
 
@@ -235,7 +319,7 @@ func fetchUser() async throws {
 ### Testing errors
 ```swift
 @Test("Throws error for invalid input")
-func invalidInput() throws {
+func invalidInput() async throws {
     #expect(throws: ValidationError.self) {
         try sut.validate("")
     }
@@ -245,10 +329,16 @@ func invalidInput() throws {
 ### Testing with mocks
 ```swift
 @Test("Calls API with correct parameters")
-func callsAPI() async {
+func callsAPI() async throws {
+    let mockAPI = MockAPIClient()  // actor
+    let sut = DataService(api: mockAPI)
+
     await sut.loadData()
-    #expect(mockAPI.lastEndpoint == "/data")
-    #expect(mockAPI.callCount == 1)
+
+    let lastEndpoint = await mockAPI.lastEndpoint
+    let callCount = await mockAPI.callCount
+    #expect(lastEndpoint == "/data")
+    #expect(callCount == 1)
 }
 ```
 
@@ -259,7 +349,7 @@ func callsAPI() async {
     ("invalid", false),
     ("@missing.com", false)
 ])
-func emailValidation(email: String, expected: Bool) {
+func emailValidation(email: String, expected: Bool) async throws {
     #expect(sut.isValidEmail(email) == expected)
 }
 ```
@@ -281,8 +371,11 @@ func emailValidation(email: String, expected: Bool) {
 
 ## References
 
-- See `references/assertions.md` for complete assertion reference
-- See `references/tags.md` for tag organisation patterns
+- `references/assertions.md` — complete assertion reference (`#expect`, `#require`, error matching)
+- `references/tags.md` — tag organisation patterns
+- `references/concurrency.md` — testing `@MainActor`-isolated services, bridging async callbacks (`confirmation`, `withCheckedContinuation`), `@TaskLocal` clocks/UUID providers, async cleanup
+- `references/isolation.md` — Swift Testing's concurrency model, when `MainActor.assumeIsolated` is safe inside `@Test`, and the `@Test + @MainActor` ≠ "test body runs main-actor-isolated" trap
+- `references/anti-patterns.md` — parallel-setup tests, weaker-after-crash, compiler-already-enforced assertions, `Decimal` float-literal trap
 
 ### Context7 References
 
