@@ -5,6 +5,13 @@ user-invocable: false
 ---
 # Swift Concurrency
 
+> **Source of truth for Swift Concurrency concepts and patterns in every
+> context.** Other agents (including spec-pipeline's engineer, test-writer,
+> concurrency-auditor, and task-reviewer sub-agents) read this body as
+> authority — even when this skill itself does not auto-fire. Any routing
+> scope declared elsewhere governs only when this skill auto-fires on a human
+> message; it does not gate sub-agent referencing.
+
 ## Overview
 
 This skill provides expert guidance on Swift Concurrency, covering modern async/await patterns, actors, tasks, Sendable conformance, and migration to Swift 6. Use this skill to help developers write safe, performant concurrent code and navigate the complexities of Swift's structured concurrency model.

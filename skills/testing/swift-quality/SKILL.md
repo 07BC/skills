@@ -11,6 +11,13 @@ description: >
 
 # Swift Code Quality Skill
 
+> **Source of truth for Swift refactoring and quality rewriting in every
+> context.** Other agents (including spec-pipeline's engineer, test-writer,
+> concurrency-auditor, and task-reviewer sub-agents) read this body as
+> authority — even when this skill itself does not auto-fire. Any routing
+> scope declared elsewhere governs only when this skill auto-fires on a human
+> message; it does not gate sub-agent referencing.
+
 This skill rewrites Swift code to be clean, readable, and structurally correct
 according to the Google Swift Style Guide and this project's architecture rules.
 It does not change behaviour. It does not change public API surfaces or protocol

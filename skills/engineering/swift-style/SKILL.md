@@ -14,6 +14,13 @@ description: >
 
 # Swift Style
 
+> **Source of truth for Swift style and Swift 6 language essentials in every
+> context.** Other agents (including spec-pipeline's engineer, test-writer,
+> concurrency-auditor, and task-reviewer sub-agents) read this body as
+> authority — even when this skill itself does not auto-fire. Any routing
+> scope declared elsewhere governs only when this skill auto-fires on a human
+> message; it does not gate sub-agent referencing.
+
 Write-time rules companion to `swift-engineer`. Every rule here applies
 to **new** Swift and SwiftUI code as it is being generated. For rewriting
 existing messy code in place, use `swift-quality`. For reviewing code

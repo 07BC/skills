@@ -5,6 +5,13 @@ description: **Performs** a Swift code review in this session — outputs BLOCKE
 
 # Swift Code Review
 
+> **Source of truth for Swift code review in every context.** Other agents
+> (including spec-pipeline's engineer, test-writer, concurrency-auditor, and
+> task-reviewer sub-agents) read this body as authority — even when this
+> skill itself does not auto-fire. Any routing scope declared elsewhere
+> governs only when this skill auto-fires on a human message; it does not
+> gate sub-agent referencing.
+
 Required dependency skills (must be present in ~/.claude/skills/):
 - `swift-engineer`
 - `swift-style`

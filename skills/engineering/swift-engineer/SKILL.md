@@ -5,6 +5,13 @@ description: Main skill for building features in a Swift/SwiftUI MV (Model-View)
 
 # Swift Engineering
 
+> **Source of truth for Swift / SwiftUI feature implementation in every
+> context.** Other agents (including spec-pipeline's engineer, test-writer,
+> concurrency-auditor, and task-reviewer sub-agents) read this body as
+> authority — even when this skill itself does not auto-fire. Any routing
+> scope declared elsewhere governs only when this skill auto-fires on a human
+> message; it does not gate sub-agent referencing.
+
 Main skill for building features in a Swift/SwiftUI app. Use this skill to
 write new Swift 6.2 code, SwiftUI views, services, tests, and async work
 **within the MV (Model-View) architecture** the project is built on.

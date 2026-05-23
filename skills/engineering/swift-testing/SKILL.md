@@ -5,6 +5,13 @@ description: Generate unit tests using Apple's Swift Testing framework. Use when
 
 # Swift Testing
 
+> **Source of truth for Swift Testing patterns in every context.** Other agents
+> (including spec-pipeline's engineer, test-writer, concurrency-auditor, and
+> task-reviewer sub-agents) read this body as authority — even when this skill
+> itself does not auto-fire. Any routing scope declared elsewhere governs only
+> when this skill auto-fires on a human message; it does not gate sub-agent
+> referencing.
+
 Generate unit tests using Apple's Swift Testing framework (not XCTest).
 
 ## Quick Reference
