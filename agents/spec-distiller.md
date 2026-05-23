@@ -80,7 +80,32 @@ in the patterns in the `swift-engineer` skill you read in Step 0.
 Incorporate all answers into `raw_text` as an appended "Resolved conflicts"
 section before continuing.
 
-If no conflicts are found, skip this step and continue to Step 2.
+If no conflicts are found, skip this step and continue to Step 1.7.
+
+## Step 1.7 — Language-pattern Open Questions
+
+Before exploring the codebase, scan `raw_text` (and any spec text produced in
+Step 1's amendment cycle) for Swift patterns known to bite at implementation
+time. For each match, emit an Open Question in the spec's Open Questions
+section and resolve it via `AskUserQuestion` before Step 2 runs.
+
+| Trigger in the input | Open Question to emit |
+|---|---|
+| `@Entry` together with any `@MainActor` factory or default | Default `defaultValue` is nonisolated — confirm isolation strategy for the default expression before any task is implemented. See `~/.claude/skills/swift-testing/references/isolation.md` "Why @Entry forces this pattern". |
+| `Decimal` property or initialiser parameter | Confirm fixtures and call sites use `Decimal(string:)` not float literals (`ExpressibleByFloatLiteral` routes through `Double`). See `~/.claude/skills/swift-testing/references/anti-patterns.md` "Decimal float literal". |
+| `MainActor.assumeIsolated`, or `nonisolated` + `@MainActor` pairing | Confirm test approach. `@Test @MainActor` is necessary but **not** sufficient inside Swift Testing's `@Sendable` outer closure. Decide between Mitigation 1 (test the seeding directly), 2 (`MainActor.run` in the test), or 3 (refactor production) before writing the test. See `swift-testing/references/isolation.md`. |
+| `NavigationPath()` with a single typed route enum | Recommend a typed array (e.g. `[Route]`) — same API, compiler-verified exhaustiveness, no heterogeneous storage cost. |
+
+The resolution is appended to the spec's Open Questions section as "Resolved"
+along with the chosen path, so downstream agents (engineer, test-writer) read
+the decision in their Step 0 spec read.
+
+These Open Questions surface during pipeline confirmation (free) instead of
+mid-implementation (expensive). Story 01b's 1 h 55 min `MainActor.assumeIsolated`
+debug spiral would not have happened if `@Entry` + `@MainActor` had been
+flagged here.
+
+If no triggers match, skip and continue to Step 2.
 
 ## Step 2 — Explore the codebase
 
@@ -209,6 +234,18 @@ Save to `docs/specs/<spec-id>.md`:
 
 ## Step 4 — Write the implementation plan
 
+Before listing tasks, run the **test-target bootstrap detection**:
+
+```bash
+grep PBXNativeTarget <project>.xcodeproj/project.pbxproj | grep -E "(Tests|UITests)" | head -1
+```
+
+If empty (no test target exists in the Xcode project) AND any task in this
+plan will write tests, emit **Task 0** before Task 1 (see template below).
+Otherwise skip Task 0 and number tasks from 1. The bootstrap is owned by the
+engineer, not by test-writer — test-writer writes tests; it does not build
+target infrastructure.
+
 Save to `docs/plans/<spec-id>.md`:
 
 ```markdown
@@ -227,6 +264,32 @@ Save to `docs/plans/<spec-id>.md`:
 ---
 
 ## Tasks
+
+### Task 0: Bootstrap `<Project>Tests` target (only when no test target exists)
+
+**Spec reference:** infrastructure (no R)
+**Acceptance criteria:** none (precondition for any test-writing task)
+**Dependencies:** None
+
+**Files to create:**
+- `<Project>Tests/Tags.swift` — Swift Testing `@Tag` extensions for this story's suite tags
+
+**Files to modify:**
+- `<Project>.xcodeproj/project.pbxproj` — add `<Project>Tests` `PBXNativeTarget`, build configuration list, sources phase; register `Tags.swift` in the target
+- `<Project>.xcodeproj/xcshareddata/xcschemes/<Project>.xcscheme` — wire `<Project>Tests` into the scheme's Test action
+
+**Implementation steps:**
+1. Add a new test target named `<Project>Tests` to the Xcode project. Host application is `<Project>`.
+2. Match the main target's `IPHONEOS_DEPLOYMENT_TARGET`, `SWIFT_VERSION`; set `GENERATE_INFOPLIST_FILE = YES`.
+3. Create `<Project>Tests/Tags.swift` declaring the tags this story's suites will use.
+4. Wire `<Project>Tests` into the shared scheme's Test action.
+
+**Verification:**
+- [ ] `xcodebuild ... build -scheme <Project>` succeeds
+- [ ] The scheme's Test action lists `<Project>Tests`
+- [ ] An empty `@Suite` would compile inside `<Project>Tests/`
+
+---
 
 ### Task 1: {Short imperative description}
 
@@ -286,6 +349,33 @@ If any acceptance criterion cannot be mapped to a task, flag it as a risk and
 mark the spec status as `🟡 BLOCKED on Open Questions` instead of writing a
 plan you cannot stand behind.
 ```
+
+## Step 4.5 — Topological sort
+
+Before saving the plan to disk, validate task ordering. Build a DAG from each
+task's `Dependencies:` field:
+
+- For every `Dependencies: Task M` annotation on Task N, add an edge M → N.
+- If a `Task 0 — Bootstrap` was emitted, every test-writing task implicitly
+  depends on Task 0; do not require this to be listed explicitly, but enforce
+  the ordering.
+
+Enforce: if Task N depends on Task M, M must have a lower number than N. If
+the task list as initially assembled violates this rule, **reorder before
+writing**. Do not emit a plan in which Task 2 depends on Task 7 — the
+spec-pipeline orchestrator runs tasks numerically, so Task 2 would fail to
+build until Task 7 lands.
+
+If the DAG has a cycle, halt with:
+
+```
+🟡 BLOCKED on dependency cycle: Task A ↔ Task B ↔ … ↔ Task A
+```
+
+The user must rewrite requirements to break the cycle before the plan can be
+emitted. This rule fired retroactively in Story 01b — the distiller emitted
+Task 2 (`EnvironmentValues+Services`) before Task 7 (`ScenarioService.preview`),
+and the inversion was caught only by a manual plan rewrite before Stage 3.
 
 ## Step 5 — Write or update master-plan.md
 
