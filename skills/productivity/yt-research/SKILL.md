@@ -34,12 +34,33 @@ via the `android_vr` / `tv_embedded` player clients still work, and
 
 From the user's message, extract:
 
-- **Channel URL** — e.g. `https://www.youtube.com/@handle/videos`
-- **Output directory** — where to save the markdown files. Ask if not given.
+- **Channel URL** — e.g. `https://www.youtube.com/@handle/videos` or a single video URL.
 - **Video count** — how many recent videos to fetch (default: 16).
 
 If the channel URL is missing, ask for it via `AskUserQuestion` before
 proceeding. Do not guess a URL.
+
+### Resolve output directory (always Obsidian vault)
+
+1. Get the vault path:
+   ```
+   obsidian vault
+   ```
+   Parse the `path` field from the output (tab-separated `name<TAB>path<TAB>...`).
+
+2. Get the channel/uploader name from the URL using yt-dlp:
+   ```
+   yt-dlp --print "%(uploader)s" --playlist-end 1 <url>
+   ```
+   Slugify it: lowercase, spaces → hyphens, strip non-alphanumeric characters except hyphens.
+
+3. Set output directory:
+   ```
+   <vault_path>/AI/<channel-slug>/transcript
+   ```
+   Create it with `mkdir -p` before running scripts.
+
+Do not ask the user for an output directory — always use this Obsidian path.
 
 ---
 
