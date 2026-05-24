@@ -12,35 +12,32 @@ grep -r "^actor \|^public actor \|@globalActor" . --include="*.swift" -l
 # MainActor annotations
 grep -r "@MainActor" . --include="*.swift" | wc -l
 
-# Mutex (iOS 18+) vs NSLock (legacy)
-grep -r "Mutex\b" . --include="*.swift" -l
-grep -r "NSLock\|os_unfair_lock" . --include="*.swift" -l
+# Lock primitives — any non-actor synchronisation is drift
+grep -rn -E '\b(Mutex|NSLock|NSRecursiveLock|os_unfair_lock|OSAllocatedUnfairLock|DispatchSemaphore|@synchronized)\b' . --include="*.swift"
 
 # Sendable
 grep -r "Sendable\|@unchecked Sendable" . --include="*.swift" | wc -l
 ```
 
-## Mutex (iOS 18+) — preferred synchronisation primitive
+## Actors — the only sanctioned synchronisation primitive
+
+Any type with mutating shared state must be an actor (or `@MainActor` if UI-bound). Locks (`Mutex`, `NSLock`, `os_unfair_lock`, `OSAllocatedUnfairLock`, `DispatchSemaphore`, `@synchronized`) are all treated as drift from the policy — including `Mutex`. Flag every occurrence.
 
 ```swift
-import Synchronization
+actor CameraManager {
+    private(set) var isRunning = false
 
-final class CameraManager: Sendable {
-    private let _isRunning = Mutex(false)
-
-    var isRunning: Bool {
-        _isRunning.withLock { $0 }
-    }
-
-    func start() {
-        _isRunning.withLock { $0 = true }
-    }
+    func start() { isRunning = true }
+    func stop()  { isRunning = false }
 }
 ```
 
-`Mutex` is `Sendable`, works under strict concurrency, and avoids the
-`@unchecked Sendable` escape hatch that `NSLock` required.
-Flag any remaining `NSLock` usage as a migration candidate.
+A `Mutex<Bool>` or `NSLock`-protected boolean is the classic shape this replaces. The actor gives compile-time isolation for every accessor, composes with `await`, and removes `Mutex` / `withLock` vocabulary that the rest of the codebase doesn't use.
+
+When auditing, group findings as:
+
+- **Actor or `@MainActor`** — on policy.
+- **Any lock primitive** — drift. Note the file, the type, and the surface area (how many call sites would need to become `async` to migrate).
 
 ## Actor isolation patterns
 
