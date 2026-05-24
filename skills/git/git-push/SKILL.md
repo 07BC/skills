@@ -28,7 +28,7 @@ description: Runs the project formatter (if configured), commits, then pushes to
    ```
 
 4. Push:
-   - No upstream set: `git push -u origin HEAD`
-   - Upstream exists: `git push`
+   - No upstream set: `CLAUDE_SKILL_PUSH=1 git push -u origin HEAD`
+   - Upstream exists: `CLAUDE_SKILL_PUSH=1 git push`
 
 5. Confirm the push succeeded by reporting the remote URL and branch name.
