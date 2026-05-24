@@ -1,6 +1,6 @@
 > **Playbook reference only — not a registered agent.**
 >
-> The `/jls:spec-pipeline` SKILL inlines the Stage 1–5 logic described
+> The `/spec-pipeline` SKILL inlines the Stage 1–5 logic described
 > below directly, because in this Claude Code build the `Agent` tool is
 > gated to top-level sessions only — subagents cannot dispatch further
 > subagents. To re-promote this file to a registered agent (if that
@@ -222,10 +222,10 @@ Append to audit log:
 
 ```
 ## Stage 5 — PR — <timestamp>
-Invoking /jls:git-pr.
+Invoking /git-pr.
 ```
 
-Run the `/jls:git-pr` skill. It handles:
+Run the `/git-pr` skill. It handles:
 
 - A final push of the branch
 - A full unit-test run against `tests_target`
@@ -235,7 +235,7 @@ Run the `/jls:git-pr` skill. It handles:
 
 You do NOT inline `gh pr create` here. The skill is the single source of truth.
 
-If `/jls:git-pr` reports any blockers from its code-review pass that
+If `/git-pr` reports any blockers from its code-review pass that
 `swift-spec-review` missed, halt and surface them — do not bypass.
 
 After the PR is created, append `## Final Outcome`:
@@ -275,7 +275,7 @@ Reasons that trigger escalation:
 - `swift-spec-implement` halts on ambiguity, build failure, or unresolved
   inner-loop BLOCKED (Stage 3)
 - `swift-spec-review` returns BLOCKED past the cycle budget (Stage 4)
-- `/jls:git-pr` reports blockers or fails (Stage 5)
+- `/git-pr` reports blockers or fails (Stage 5)
 
 ---
 
@@ -288,6 +288,6 @@ Reasons that trigger escalation:
   log is the durable record
 - **Cycle hard limit is 2** (`cycle_budget` default `3` → indices 0,1,2)
 - **Never bypass Stage 4** — even on cycle 0 PASS, the whole-diff review must run
-- **Never auto-confirm `/jls:git-pr`** — the human confirms the PR body
+- **Never auto-confirm `/git-pr`** — the human confirms the PR body
 - **Never auto-remove the worktree** — print the reminder, let the user do it
 - **Never write code** — delegate to engineer via swift-spec-implement

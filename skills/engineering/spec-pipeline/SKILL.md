@@ -5,16 +5,16 @@ description: >
   existing markdown spec, or a free-form prompt; validate the plan fits the
   codebase; implement task-by-task through the engineer → test-writer →
   concurrency-auditor → task-reviewer inner loop; whole-diff review; then
-  open a PR via /jls:git-pr. Each pipeline runs in its own git worktree.
+  open a PR via /git-pr. Each pipeline runs in its own git worktree.
   Inputs are passed as flags. Use when the user says "ship this ticket",
   "run the pipeline", "spec-pipeline NAT-1234", "build this spec", or
-  "/jls:spec-pipeline …". Project must declare its config in a fenced
+  "/spec-pipeline …". Project must declare its config in a fenced
   spec_pipeline YAML block in CLAUDE.md — see SCHEMA.md.
 ---
 
 # Spec Pipeline
 
-`/jls:spec-pipeline` is the top-level entry point. It validates inputs, sets
+`/spec-pipeline` is the top-level entry point. It validates inputs, sets
 up a worktree, then drives Stages 1–5 inline by dispatching one leaf
 specialist agent at a time.
 
@@ -346,7 +346,7 @@ worktree_path="$(dirname "$repo_root")/${repo_name}-${branch_id}"
 
    ```
    Parent ticket <jira_key> already has sub-tasks: <KEY1, KEY2, ...>.
-   Re-invoke /jls:spec-pipeline --from-jira <child_key> per child.
+   Re-invoke /spec-pipeline --from-jira <child_key> per child.
    ```
 
    Exit. Do not create the worktree.
@@ -391,7 +391,7 @@ Parse the agent's **last non-empty stdout line**:
    - Option A: **Approve and create sub-tickets** (Recommended) — proceed
      to step 3 below.
    - Option B: **Cancel** — exit with the hint *"Re-scope the ticket in
-     Jira and re-invoke /jls:spec-pipeline."* No worktree, no Jira writes.
+     Jira and re-invoke /spec-pipeline."* No worktree, no Jira writes.
 
 3. On Approve, load Jira write tools:
 
@@ -436,7 +436,7 @@ Parse the agent's **last non-empty stdout line**:
    spec-pipeline scope-guardian split this ticket into N sub-tasks:
    - <KEY1>: <title1>
    - <KEY2>: <title2>
-   Re-invoke /jls:spec-pipeline --from-jira <KEY> per child when ready.
+   Re-invoke /spec-pipeline --from-jira <KEY> per child when ready.
    ```
 
 7. Print and exit:
@@ -445,7 +445,7 @@ Parse the agent's **last non-empty stdout line**:
    ## Scope SPLIT — sub-tickets created
    Parent:  <jira_key>  (comment posted)
    Created: <KEY1>, <KEY2>, ...
-   Re-invoke /jls:spec-pipeline --from-jira <KEY> per child when ready.
+   Re-invoke /spec-pipeline --from-jira <KEY> per child when ready.
    ```
 
    Do NOT create the worktree. Do NOT spawn the orchestrator. The
@@ -948,7 +948,7 @@ Append `### Task N start — <ts>` to the audit log.
      chain **from test-writer onwards** (test-writer → concurrency-auditor
      → task-reviewer). If still BLOCKED → escalate.
 
-5. **Commit** — inline `/jls:git-commit` semantics. Do not dispatch an
+5. **Commit** — inline `/git-commit` semantics. Do not dispatch an
    agent; the SKILL drives `git` directly.
 
    ```bash
@@ -1076,7 +1076,7 @@ base (default `main`), and the full `SPEC_PIPELINE_*` block.
 
 ## Step 10 — Stage 5: PR (or escalation)
 
-### On Stage 4 PASS — invoke /jls:git-pr
+### On Stage 4 PASS — invoke /git-pr
 
 Append stage-start entry:
 
@@ -1085,7 +1085,7 @@ cat <<EOF >> "$audit_path"
 
 ## Stage 5 — PR — $(date '+%Y-%m-%d %H:%M:%S')
 
-Invoking /jls:git-pr.
+Invoking /git-pr.
 EOF
 ```
 
@@ -1098,7 +1098,7 @@ The skill handles:
 - PR draft with title/body
 - Human confirmation before `gh pr create`
 
-The SKILL does **not** inline `gh pr create`. If `/jls:git-pr` reports
+The SKILL does **not** inline `gh pr create`. If `/git-pr` reports
 blockers from its own code-review pass that the whole-diff review
 missed, halt — do not bypass.
 
@@ -1110,7 +1110,7 @@ cat <<EOF >> "$audit_path"
 ## Final Outcome — $(date '+%Y-%m-%d %H:%M:%S')
 
 **Status:** ✅ SHIPPED
-**PR:** <PR URL from /jls:git-pr output>
+**PR:** <PR URL from /git-pr output>
 **Commits:** $(git -C "$worktree_path" rev-list --count main..HEAD)
 **Cycles:** $((cycle + 1))
 **Notes:** <any SHOULD-FIX / NICE-TO-HAVE from Stage 4>
@@ -1183,7 +1183,7 @@ Print to the user:
 | Stage 3 | Task-reviewer BLOCKED twice in a row |
 | Stage 3 | Pre-commit hook fails persistently |
 | Stage 4 | Spec-review BLOCKED past `cycle_budget` |
-| Stage 5 | `/jls:git-pr` reports blockers or fails |
+| Stage 5 | `/git-pr` reports blockers or fails |
 
 ---
 

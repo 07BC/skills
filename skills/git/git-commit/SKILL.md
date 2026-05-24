@@ -34,10 +34,10 @@ description: Stages specific files and commits with a short imperative message. 
    git add path/to/file1 path/to/file2
    ```
 
-6. Commit using HEREDOC:
+6. Commit using HEREDOC with the skill sentinel so the pre-tool hook allows it:
 
    ```bash
-   git commit -m "$(cat <<'EOF'
+   CLAUDE_SKILL_COMMIT=1 git commit -m "$(cat <<'EOF'
    PROJ-123: short description
    EOF
    )"

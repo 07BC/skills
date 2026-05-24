@@ -31,7 +31,7 @@ The parser extracts the first ```` ```yaml ```` block that contains a top-level 
 
 | Key | Required | Type | Default | Meaning |
 |---|---|---|---|---|
-| `ticket_prefix` | recommended | string | (none) | Ticket prefix for branch naming and `/jls:git-commit`. E.g. `NAT`. When absent, the pipeline derives branch names from spec ID without a prefix. |
+| `ticket_prefix` | recommended | string | (none) | Ticket prefix for branch naming and `/git-commit`. E.g. `NAT`. When absent, the pipeline derives branch names from spec ID without a prefix. |
 | `workspace` | yes | string | — | `.xcworkspace` file at repo root. |
 | `scheme` | yes | string | — | Xcode scheme name (quote if contains spaces). |
 | `destination` | yes | string | — | Full `-destination` argument value (quote it). |

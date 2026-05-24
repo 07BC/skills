@@ -6,7 +6,7 @@ A running record of audit passes against this skill library. Each dated section 
 
 ## 2026-05-19
 
-Introduction of `/jls:spec-pipeline` — a top-level orchestrator skill that drives the existing per-domain skills end-to-end (input → spec → plan → per-task implement → whole-diff review → PR). This is the library's first orchestrator-shaped skill. Design rationale, fork-by-fork decisions, and verification plan are recorded in `~/.claude/plans/on-the-plan-before-temporal-starfish.md`.
+Introduction of `/spec-pipeline` — a top-level orchestrator skill that drives the existing per-domain skills end-to-end (input → spec → plan → per-task implement → whole-diff review → PR). This is the library's first orchestrator-shaped skill. Design rationale, fork-by-fork decisions, and verification plan are recorded in `~/.claude/plans/on-the-plan-before-temporal-starfish.md`.
 
 ### New skill
 
@@ -27,7 +27,7 @@ The four-stage inner loop plus the top-level orchestrator and the whole-diff rev
 | `agents/test-writer.md` | Swift Testing only. Targeted-suite run via `mcp__xcode__RunSomeTests` when Xcode is open. AC-mapped tests. |
 | `agents/concurrency-auditor.md` | Self-gated. Scans task diff for triggers (`async`, `actor`, `Sendable`, `@MainActor`, `Task`, `AsyncSequence`, `NSLock`, `Mutex`, `DispatchQueue`, `nonisolated`); short-circuits with `PASS-NO-CONCERN` if none. Otherwise applies the `swift-concurrency-expert` checklist. |
 | `agents/task-reviewer.md` | Bounded per-task reviewer. One task's diff against one task's spec slice. `VERDICT: PASS \| BLOCKED`. Does NOT do cross-task coherence. |
-| `agents/swift-spec-implement.md` | Per-task orchestrator. Drives `engineer → test-writer → concurrency-auditor → task-reviewer`. Commits via `/jls:git-commit` semantics on all-PASS. Max one inner retry per gate. |
+| `agents/swift-spec-implement.md` | Per-task orchestrator. Drives `engineer → test-writer → concurrency-auditor → task-reviewer`. Commits via `/git-commit` semantics on all-PASS. Max one inner retry per gate. |
 | `agents/swift-spec-review.md` | Whole-diff outer gate. Integrative checks (every AC covered, scope cohesion, architecture uniformity in aggregate). `VERDICT: PASS \| BLOCKED`. Cited file+line on every blocker row. |
 | `agents/spec-distiller.md` | Converts `(raw_text, spec_id)` → `docs/specs/`, `docs/plans/`, `master-plan.md`. Idempotent. Marks status `🟡 BLOCKED on Open Questions` rather than guessing. |
 | `agents/planner.md` | Read-only validator for the distiller's plan. Returns `PLAN VALID` or `PLAN NEEDS AMENDMENT: <reason>`. Never rewrites. |
@@ -43,7 +43,7 @@ Captured at length in the plan file. Summary of the load-bearing decisions:
 - **All pipeline artefacts gitignored.** `docs/specs/`, `docs/plans/`, `master-plan.md` live only in worktrees. The Obsidian audit log at `$OBSIDIAN_VAULT/AI/plans/<spec-id>.md` is the durable record and contains the full spec + full plan verbatim.
 - **Cycle budget = 3.** One BLOCKED + two retries before escalation. Configurable per-project via `cycle_budget`.
 - **Concurrency-auditor self-gates** on diff triggers — skips itself when no concurrency surface area is touched.
-- **Commits reuse `/jls:git-commit`.** No `Verified by:` template. Short imperative + ticket prefix from branch. No AI attribution. Audit trail lives in Obsidian, not git log.
+- **Commits reuse `/git-commit`.** No `Verified by:` template. Short imperative + ticket prefix from branch. No AI attribution. Audit trail lives in Obsidian, not git log.
 
 ### Repo housekeeping
 
@@ -53,9 +53,9 @@ Captured at length in the plan file. Summary of the load-bearing decisions:
 
 ### Skills NOT changed (and why)
 
-- `/jls:git-pr`, `/jls:git-commit`, `/jls:git-push` — Stage 5 invokes `git-pr` rather than duplicating PR creation. Existing `preflight.sh` is reused for ticket-prefix extraction during per-task commits. No edits needed.
-- `/jls:swift-engineer`, `/jls:swift-testing`, `/jls:swift-concurrency-expert`, `/jls:swift-code-review` — read by the new inner-loop agents as authoritative skill bodies. The agents reference them by path; the skills themselves are unchanged.
-- `/jls:swift-test-all` — Stage 5's full-suite run delegates to the same `xcodebuild test` invocation pattern. Could optionally call this skill directly in a future audit; left inline for now.
+- `/git-pr`, `/git-commit`, `/git-push` — Stage 5 invokes `git-pr` rather than duplicating PR creation. Existing `preflight.sh` is reused for ticket-prefix extraction during per-task commits. No edits needed.
+- `/swift-engineer`, `/swift-testing`, `/swift-concurrency-expert`, `/swift-code-review` — read by the new inner-loop agents as authoritative skill bodies. The agents reference them by path; the skills themselves are unchanged.
+- `/swift-test-all` — Stage 5's full-suite run delegates to the same `xcodebuild test` invocation pattern. Could optionally call this skill directly in a future audit; left inline for now.
 
 ### Known follow-ups
 
