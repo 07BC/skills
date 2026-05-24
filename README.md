@@ -11,7 +11,7 @@ Claude Code's skill system lets you encode domain expertise into focused `SKILL.
 
 Without skills, Claude pattern-matches on its training data. That works for generic tasks, but it falls apart for domain-specific ones. The `swift-tvos` skill exists because tvOS focus engine bugs are a case where Claude confidently shuffles code around and declares the bug fixed when nothing has changed — the skill enforces the diagnostic discipline that prevents that failure mode. The `swift-engineer` skill locks in the MV (Model-View) pattern rather than defaulting to MVVM. The `swift-audit` skill knows to check Swift 6 concurrency, actor isolation, and `@unchecked Sendable` usage — not just style.
 
-This repo is the source of truth for those skills. It installs via `make install`, which symlinks skills into `~/.claude/skills/` and agents into `~/.claude/agents/`.
+This repo is the source of truth for those skills. It installs via `make install`, which symlinks skills into `~/.claude/skills/`.
 
 ## How skills work
 
@@ -173,24 +173,6 @@ the only durable copy.
 
 ---
 
-### Agents involved
-
-The driver is the `/jls:spec-pipeline` SKILL itself — it runs at the top
-level and dispatches each leaf agent below in turn.
-
-| Agent | Model | Role |
-|---|---|---|
-| `spec-scope-guardian` | Opus | Stage 0 — thematic scope check for Jira tickets |
-| `spec-distiller` | Opus | Stage 1 — raw input → canonical spec + implementation plan |
-| `planner` | Sonnet | Stage 2 — validates plan fits the codebase (read-only) |
-| `engineer` | Sonnet | Stage 3 — implements one task, builds clean |
-| `test-writer` | Sonnet | Stage 3 — writes Swift Testing `@Test` / `@Suite` tests per task |
-| `concurrency-auditor` | Opus | Stage 3 — audits async/actor/Sendable correctness |
-| `task-reviewer` | Sonnet | Stage 3 — verifies task against spec slice |
-| `swift-spec-review` | Opus | Stage 4 — whole-diff review against the full spec |
-
----
-
 ## Install
 
 ### Prerequisites
@@ -211,7 +193,6 @@ make install
 ```
 
 Skills are then available as `/<skill-name>` — e.g. `/swift-engineer`, `/swift-tvos`.
-Agents are available automatically; Claude loads them by `name:` from `~/.claude/agents/`.
 
 ### Keeping up to date
 
@@ -314,9 +295,8 @@ Model and flow key from the broader skill library:
 ## Layout
 
 ```
-Makefile                        — install, link, agents, hook, unlink, unagent targets
+Makefile                        — install, link, hook, unlink targets
 scripts/link-skills.sh          — symlinks skills into ~/.claude/skills/
-agents/                         — Claude Code agents (symlinked into ~/.claude/agents/)
 skills/engineering/             — Swift / iOS / Xcode / CI skills
 skills/git/                     — generic git workflow skills
 skills/obsidian/                — Obsidian vault management skills
@@ -329,6 +309,6 @@ skills/deprecated/              — retired skills; skipped by link-skills.sh
 
 1. Create `skills/<bucket>/<name>/SKILL.md` with `name:` and `description:` frontmatter.
 2. Add a row to the table above using the `/<name>` format.
-3. Run `make link` to expose it locally, or `make unlink` to remove the symlinks.
+3. Run `make link` to expose it locally.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full bucket convention and the `in-progress` / `deprecated` lifecycle.
