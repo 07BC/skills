@@ -76,7 +76,7 @@ wiring. Each run lives in its own git worktree and commits as it goes.
 
 ### Agentic flow
 
-The pipeline is driven by the `/jls:spec-pipeline` SKILL itself, which
+The pipeline is driven by the `/spec-pipeline` SKILL itself, which
 runs at the top level and dispatches a chain of specialist agents in
 sequence. You are interrupted only at defined gates.
 
@@ -106,7 +106,7 @@ SKILL: spec-pipeline (top-level driver — runs all stages inline)
 │              Whole-diff review of the branch against the full spec.
 │              VERDICT: PASS → continue │ VERDICT: BLOCKED → loop back (max 3 cycles)
 │
-└─ Stage 5  ── /jls:git-pr (Sonnet)
+└─ Stage 5  ── /git-pr (Sonnet)
                Push branch, run tests, code review, draft PR body,
                await your confirmation before `gh pr create`.
 ```

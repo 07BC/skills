@@ -1,6 +1,6 @@
 > **Playbook reference only — not a registered agent.**
 >
-> The `/jls:spec-pipeline` SKILL inlines this per-task chain
+> The `/spec-pipeline` SKILL inlines this per-task chain
 > (engineer → test-writer → concurrency-auditor → task-reviewer) directly,
 > because in this Claude Code build the `Agent` tool is gated to top-level
 > sessions only — subagents cannot dispatch further subagents. To
@@ -122,7 +122,7 @@ failures or concurrency issues.
 
 ## Step 5 — Commit
 
-Use `/jls:git-commit` semantics. Extract the ticket prefix from the current
+Use `/git-commit` semantics. Extract the ticket prefix from the current
 branch name (the `git-commit` skill ships `preflight.sh` for this; absolute
 path provided by the caller's invocation prompt, or inline the equivalent):
 
@@ -156,7 +156,7 @@ EOF
 
 Run `git status` to confirm clean tree.
 
-Hard rules (inherited from `/jls:git-commit`):
+Hard rules (inherited from `/git-commit`):
 
 - Never `git add -A` or `git add .`
 - Never `--no-verify`
