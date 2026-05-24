@@ -123,9 +123,10 @@ strategy, migration plan, any legacy Core Data remnants.
 *Read reference:* `references/swiftdata.md`
 
 ### Layer 5 — Concurrency Model
-`actor` boundaries, `@MainActor` annotation strategy, `Mutex` vs legacy
-`NSLock`, Swift 6 strict-concurrency decisions, `sendable` conformances,
-`AsyncStream` / `AsyncThrowingStream` usage.
+`actor` boundaries, `@MainActor` annotation strategy, any lock primitives
+present (`Mutex`, `NSLock`, `os_unfair_lock`, `DispatchSemaphore` — all
+treated as drift from actor-first), Swift 6 strict-concurrency decisions,
+`Sendable` conformances, `AsyncStream` / `AsyncThrowingStream` usage.
 
 *Read reference:* `references/concurrency.md`
 
@@ -204,7 +205,7 @@ Before presenting the document, check:
 | `references/project-setup.md` | Writing Layer 1 (targets, SPM, local packages) |
 | `references/mv-architecture.md` | Writing Layers 3 & 7 (modules, SwiftUI MV) |
 | `references/swiftdata.md` | Writing Layer 4 (persistence) |
-| `references/concurrency.md` | Writing Layer 5 (actors, Mutex, Swift 6) |
+| `references/concurrency.md` | Writing Layer 5 (actors, Swift 6 strict concurrency, lock-primitive drift) |
 | `references/testing.md` | Writing Layer 8 (Swift Testing, mocks, CI) |
 
 ## Scripts
@@ -215,7 +216,7 @@ emits sectioned plain-text output suitable for piping into the doc draft.
 | Script | Output |
 |---|---|
 | `scripts/explore.sh` | Project shape — top-level swift files, directory listing, package graph, Xcode project settings, entry points, local packages |
-| `scripts/pattern-inventory.sh` | MV vs MVVM verdict, `@Observable` / `ObservableObject` / `@Published` counts, named ViewModels, actor declarations, `@MainActor` annotations, `Mutex` / `NSLock` / `os_unfair_lock` usage, `@unchecked Sendable` flags |
+| `scripts/pattern-inventory.sh` | MV vs MVVM verdict, `@Observable` / `ObservableObject` / `@Published` counts, named ViewModels, actor declarations, `@MainActor` annotations, lock-primitive drift (`Mutex` / `NSLock` / `NSRecursiveLock` / `os_unfair_lock` / `OSAllocatedUnfairLock` / `DispatchSemaphore` / `@synchronized`), `@unchecked Sendable` flags |
 | `scripts/di-inventory.sh` | DI style verdict, `@Entry` vs `EnvironmentKey` counts, `@StateObject` / `@ObservedObject` / `@EnvironmentObject` counts, `.shared` singletons, `AppDependencies` / `@Inject` detection |
 | `scripts/persistence-inventory.sh` | Persistence verdict, SwiftData (`@Model`, `ModelContainer`, `@Query`), Core Data (`NSManagedObject`, `NSPersistentContainer`), `UserDefaults` / `@AppStorage`, Keychain, `NSCoding` legacy archival, image cache |
 | `scripts/networking-inventory.sh` | `*ClientProtocol` / `*APIProtocol` boundaries, `URLSession` references and layering check, decoding sites, `async throws` / `AsyncStream` / `AsyncThrowingStream` adoption, WebSocket transport, auth header usage |

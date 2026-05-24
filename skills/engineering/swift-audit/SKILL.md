@@ -144,7 +144,7 @@ Content:
 - `OperationQueue` where Swift Concurrency would be idiomatic
 - `NotificationCenter` observers not converted to `AsyncSequence`
 - `@objc` callbacks driving UI updates without `@MainActor` guarantees
-- `DispatchSemaphore` / `NSLock` where `Mutex` (iOS 18+) or actors apply
+- Any lock primitive (`Mutex`, `NSLock`, `NSRecursiveLock`, `os_unfair_lock`, `OSAllocatedUnfairLock`, `DispatchSemaphore`, `@synchronized`) guarding mutable state — the answer is always an `actor`
 
 **Data races**
 - Mutable state shared across concurrent contexts without protection
@@ -528,7 +528,7 @@ Check the following conventions across every file and report the pass rate:
 | Named constants (no magic numbers/strings) | All named | N | N |
 | `nonisolated init(from:)` on all `Decodable` models | Present | N | N |
 | `@Observable` over `ObservableObject` | `@Observable` | N | N |
-| `Mutex` over `NSLock` / `DispatchQueue` for synchronisation | `Mutex` | N | N |
+| `actor` for any type with mutating shared state — no `Mutex`, `NSLock`, `DispatchSemaphore`, `DispatchQueue.sync`, `@synchronized` | `actor` | N | N |
 | SwiftData over CoreData | SwiftData | N | N |
 
 For each convention with violations, list the specific files.

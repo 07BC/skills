@@ -477,77 +477,56 @@ actor LoggingActor {
 
 > **Course Deep Dive**: This topic is covered in detail in [Lesson 5.9: Using a custom actor executor](https://www.swiftconcurrencycourse.com?utm_source=github&utm_medium=agent-skill&utm_campaign=lesson-reference)
 
-## Mutex: Alternative to Actors
+## Why not `Mutex`?
 
-Synchronous locking without async/await overhead (iOS 18+, macOS 15+).
+`Mutex` from `Swift.Synchronization` is a synchronous lock. You will see it in older codebases and in some Apple sample code. It is not an approved primitive in this project. Anything with mutating shared state must be an actor.
 
-### Basic usage
+### The counter, done properly
 
 ```swift
-import Synchronization
-
-final class Counter {
-    private let count = Mutex<Int>(0)
-    
-    var currentCount: Int {
-        count.withLock { $0 }
-    }
-    
-    func increment() {
-        count.withLock { $0 += 1 }
-    }
+actor Counter {
+    private(set) var currentCount = 0
+    func increment() { currentCount += 1 }
 }
 ```
 
-### Sendable access to non-Sendable types
+### Sharing a non-Sendable object across tasks
+
+A `Mutex`-wrapped non-Sendable object (e.g. `NSBezierPath`) tempts you into a class with a synchronous API. The actor equivalent keeps the non-Sendable state inside the isolation domain and exposes only `Sendable` operations:
 
 ```swift
-final class TouchesCapturer: Sendable {
-    let path = Mutex<NSBezierPath>(NSBezierPath())
-    
+actor TouchesCapturer {
+    private let path = NSBezierPath()
+
     func storeTouch(_ point: NSPoint) {
-        path.withLock { path in
-            path.move(to: point)
-        }
+        path.move(to: point)
     }
 }
 ```
 
-### Error handling
+### Errors out of an actor
+
+`throws` works identically inside an actor — no special wrapper needed:
 
 ```swift
-func decrement() throws {
-    try count.withLock { count in
-        guard count > 0 else {
-            throw Error.reachedZero
-        }
+actor Counter {
+    enum Error: Swift.Error { case reachedZero }
+    private var count = 0
+
+    func decrement() throws {
+        guard count > 0 else { throw Error.reachedZero }
         count -= 1
     }
 }
 ```
 
-### Mutex vs Actor
+### Why an actor and not a lock?
 
-| Feature | Mutex | Actor |
-|---------|-------|-------|
-| Synchronous | ✅ | ❌ (requires await) |
-| Async support | ❌ | ✅ |
-| Thread blocking | ✅ | ❌ (cooperative) |
-| Fine-grained locking | ✅ | ❌ (whole actor) |
-| Legacy code integration | ✅ | ❌ |
+- **Compile-time isolation.** The compiler enforces that every accessor goes through the actor's serialised queue. A lock guards only the call sites that remember to take it.
+- **Composes with async/await.** Callers `await` the actor; no `withLock` closure, no risk of holding a lock across a suspension point.
+- **One mental model.** Engineers reading the code only need to understand actors. `Mutex`, `NSLock`, `os_unfair_lock`, `DispatchSemaphore` are not vocabulary the rest of the codebase uses.
 
-**Use Mutex when**:
-- Need synchronous access
-- Working with legacy non-async APIs
-- Fine-grained locking required
-- Low contention, short critical sections
-
-**Use Actor when**:
-- Can adopt async/await
-- Need logical isolation
-- Working in async context
-
-> **Course Deep Dive**: This topic is covered in detail in [Lesson 5.10: Using a Mutex as an alternative to actors](https://www.swiftconcurrencycourse.com?utm_source=github&utm_medium=agent-skill&utm_campaign=lesson-reference)
+If you find yourself wanting `Mutex` because the call site is synchronous, the call site is the thing to refactor, not the state.
 
 ## Common Patterns
 
@@ -608,30 +587,27 @@ actor Database {
 
 ## Best Practices
 
-1. **Prefer actors over manual locks** for async code
-2. **Use @MainActor for UI** - all view models, UI updates
-3. **Minimize work in actors** - keep critical sections short
-4. **Watch for reentrancy** - don't assume state unchanged after await
-5. **Use nonisolated sparingly** - only for truly immutable data
-6. **Avoid assumeIsolated** - prefer explicit isolation
-7. **Custom executors are rare** - default is usually best
-8. **Consider Mutex for sync code** - when async overhead not needed
-9. **Complete actor work before suspending** - prevent reentrancy bugs
-10. **Use isolated parameters** - reduce suspension points
+1. **Actors over any lock primitive** — `Mutex`, `NSLock`, `os_unfair_lock`, `DispatchSemaphore` are not approved.
+2. **Use @MainActor for UI** — all view models and UI updates.
+3. **Minimise work in actors** — keep critical sections short.
+4. **Watch for reentrancy** — don't assume state is unchanged after an `await`.
+5. **Use `nonisolated` sparingly** — only for truly immutable data.
+6. **Avoid `assumeIsolated`** — prefer explicit isolation.
+7. **Custom executors are rare** — the default is usually best.
+8. **Refactor sync call sites, don't lock the state** — a synchronous-feeling API around mutable state belongs in an actor.
+9. **Complete actor work before suspending** — prevent reentrancy bugs.
+10. **Use isolated parameters** — reduce suspension points.
 
 ## Decision Tree
 
 ```
 Need thread-safe mutable state?
-├─ Async context?
-│  ├─ Single instance? → Actor
-│  ├─ Global/shared? → Global Actor (@MainActor, custom)
-│  └─ UI-related? → @MainActor
-│
-└─ Synchronous context?
-   ├─ Can refactor to async? → Actor
-   ├─ Legacy code integration? → Mutex
-   └─ Fine-grained locking? → Mutex
+├─ UI-related? → @MainActor
+├─ Single shared instance? → Actor (or Global Actor if process-wide)
+└─ Synchronous call site forced on you?
+   └─ Refactor the call site to `await`, then use an Actor.
+       Locks (`Mutex`, `NSLock`, `os_unfair_lock`, `DispatchSemaphore`)
+       are not approved primitives — see "Why not Mutex?" above.
 ```
 
 ## Further Learning

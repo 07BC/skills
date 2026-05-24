@@ -133,7 +133,7 @@ before `app.launch()`.
 Apply to every prompt unless the user's request contradicts them:
 
 - Architecture: SwiftUI MV — no ViewModels, views bind directly to `@Observable` services
-- Concurrency: Swift 6 strict, `Mutex` over `NSLock`, `actor` for off-main work
+- Concurrency: Swift 6 strict; `actor` for any type with mutating shared state; locks (`Mutex`, `NSLock`, `os_unfair_lock`, `DispatchSemaphore`) are not approved
 - Unit testing: Swift Testing (`@Test`, `#expect`) — never XCTest for unit tests
 - UI testing: XCUITest / XCTestCase only — never Swift Testing
 - Storage: SwiftData

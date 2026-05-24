@@ -56,7 +56,7 @@ future sessions.
 
 | Category | What to extract |
 |---|---|
-| **architecture** | SwiftUI MV patterns, service design, actor/Mutex usage, DI decisions, naming conventions |
+| **architecture** | SwiftUI MV patterns, service design, `actor` boundaries, DI decisions, naming conventions |
 | **prohibitions** | Things that must NOT be done — anti-patterns caught, wrong approaches corrected |
 | **bugs** | Root causes of real bugs found, how they were diagnosed, what the fix was |
 | **prompting** | Prompt patterns that worked well, patterns that failed, model/mode choices that paid off |
@@ -72,7 +72,7 @@ Each entry is a single markdown bullet:
 
 Example:
 ```
-- [2026-04-26] Use `Mutex` instead of `NSLock` for Swift 6 strict concurrency — NSLock is not Sendable
+- [2026-04-26] Mutating shared state must live in an `actor` — locks (`NSLock`, `Mutex`, `os_unfair_lock`, `DispatchSemaphore`) are not approved primitives in this project
 - [2026-04-26] Never combine plan and execute phases in one Claude Code prompt — always split into two sessions
 ```
 

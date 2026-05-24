@@ -202,7 +202,7 @@ Load these files as needed for specific topics:
 - **`tasks.md`** - Task lifecycle, cancellation, priorities, task groups, structured vs unstructured
 - **`threading.md`** - Thread/task relationship, suspension points, isolation domains, nonisolated
 - **`memory-management.md`** - Retain cycles in tasks, memory safety patterns
-- **`actors.md`** - Actor isolation, @MainActor, global actors, reentrancy, custom executors, Mutex
+- **`actors.md`** - Actor isolation, @MainActor, global actors, reentrancy, custom executors, why locks (`Mutex`, `NSLock`, `DispatchSemaphore`) are not approved
 - **`sendable.md`** - Sendable conformance, value/reference types, @unchecked, region isolation
 - **`linting.md`** - Concurrency-focused lint rules and SwiftLint `async_without_await`
 - **`async-sequences.md`** - AsyncSequence, AsyncStream, when to use vs regular async methods

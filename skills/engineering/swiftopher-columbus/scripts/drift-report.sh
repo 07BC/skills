@@ -54,12 +54,19 @@ SD=$(count_only '@Model\b|import SwiftData')
 CD=$(count_only '\bNSManagedObject\b|\bNSPersistentContainer\b')
 MTX=$(count_only '\bMutex<')
 NSL=$(count_only '\bNSLock\(')
+NRL=$(count_only '\bNSRecursiveLock\b')
+OUL=$(count_only '\bos_unfair_lock\b')
+OAUL=$(count_only '\bOSAllocatedUnfairLock\b')
+DSM=$(count_only '\bDispatchSemaphore\b')
+SYN=$(count_only '@synchronized')
+LOCK_DRIFT=$(( MTX + NSL + NRL + OUL + OAUL + DSM + SYN ))
 UNCK=$(count_only '@unchecked Sendable')
 
 echo "Pattern:        @Observable=$OBS  ObservableObject=$OO  @Published=$PUB  ViewModel=$VM  actor=$ACT"
 echo "Environment:    @Entry=$ENTRY  EnvironmentKey=$ENVKEY"
 echo "Persistence:    SwiftData=$SD  CoreData=$CD"
-echo "Concurrency:    Mutex<=$MTX  NSLock=$NSL  @unchecked Sendable=$UNCK"
+echo "Lock drift:     total=$LOCK_DRIFT  (Mutex=$MTX  NSLock=$NSL  NSRecursiveLock=$NRL  os_unfair_lock=$OUL  OSAllocatedUnfairLock=$OAUL  DispatchSemaphore=$DSM  @synchronized=$SYN)"
+echo "Sendable:       @unchecked=$UNCK"
 echo
 
 # Recommendation logic — opinionated. The skill body explains why.
@@ -86,6 +93,6 @@ fi
 if [ "$UNCK" -gt 0 ]; then
   echo "  Flag: $UNCK @unchecked Sendable conformance(s) need a concurrency audit."
 fi
-if [ "$NSL" -gt 0 ] && [ "$MTX" -eq 0 ]; then
-  echo "  Flag: $NSL NSLock usage(s) and no Mutex — pre-Swift-6 synchronisation only."
+if [ "$LOCK_DRIFT" -gt 0 ]; then
+  echo "  Flag: $LOCK_DRIFT lock-primitive usage(s) — actor-first policy: every one should be an actor."
 fi

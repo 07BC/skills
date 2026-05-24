@@ -101,7 +101,7 @@ The shape of a mock depends on what it stands in for. **Picking the wrong shape 
 
 | Mock stands in for | Mock shape | Why |
 |---|---|---|
-| Shared mutable system state (UserDefaults, Keychain, FileManager, NotificationCenter, in-memory caches) | `actor` | Read/modify/write needs serialisation across calls. An actor is the only correct primitive — `Mutex` works but forces synchronous call sites that clash with `async` test bodies. |
+| Shared mutable system state (UserDefaults, Keychain, FileManager, NotificationCenter, in-memory caches) | `actor` | Read/modify/write needs serialisation across calls. An actor is the only correct primitive — locks (`Mutex`, `NSLock`, `os_unfair_lock`, `DispatchSemaphore`) are not approved and force synchronous call sites that clash with `async` test bodies. |
 | Pure call recorder / argument captor with no read-after-write semantics | `final class` with `let` properties, OR closure-captured state via `@Sendable` callback | If callers only ever write (e.g. recording the last endpoint hit), an actor is overkill. Use a `Sendable` final class or capture state in a closure the SUT calls. |
 | `URLSession` and HTTP-layer mocking | `URLProtocol` subclass registered per-test | `URLProtocol` is the supported Apple extension point. The system handles request isolation; do not wrap in an actor. |
 | `Date`, `UUID`, `Locale`, `Calendar`, clocks | `@TaskLocal` provider, or constructor-injected closure (`() -> Date`) | Tests scope the value to a single test via `$now.withValue(...) { ... }`. No shared mutable state across tests. |

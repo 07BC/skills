@@ -274,66 +274,46 @@ store.filter { [query] contact in
 
 ## @unchecked Sendable
 
-**Use as last resort.** Tells compiler to skip verification—you guarantee thread-safety.
+**Reach for an actor first.** `@unchecked Sendable` exists as an escape hatch for the small number of classes you genuinely cannot make into an actor — typically wrappers around third-party non-Sendable types you don't own, or types constrained to be a `class` by an external protocol.
 
-### When to use
+### The default: actor
 
-Manual locking mechanisms the compiler can't verify:
-
-```swift
-final class Cache: @unchecked Sendable {
-    private let lock = NSLock()
-    private var items: [String: Data] = [:]
-    
-    func get(_ key: String) -> Data? {
-        lock.lock()
-        defer { lock.unlock() }
-        return items[key]
-    }
-    
-    func set(_ key: String, value: Data) {
-        lock.lock()
-        defer { lock.unlock() }
-        items[key] = value
-    }
-}
-```
-
-### Risks
-
-- No compile-time safety
-- Easy to introduce data races
-- Must manually ensure all access uses lock
-
-```swift
-final class Cache: @unchecked Sendable {
-    private let lock = NSLock()
-    private var items: [String: Data] = [:]
-    
-    // ⚠️ Forgot lock - data race!
-    var count: Int {
-        items.count
-    }
-}
-```
-
-**Better**: Use actor instead:
+For anything with mutating shared state, the answer is an actor:
 
 ```swift
 actor Cache {
     private var items: [String: Data] = [:]
-    
+
     var count: Int { items.count }
-    
-    func get(_ key: String) -> Data? {
-        items[key]
-    }
-    
-    func set(_ key: String, value: Data) {
-        items[key] = value
-    }
+
+    func get(_ key: String) -> Data? { items[key] }
+
+    func set(_ key: String, value: Data) { items[key] = value }
 }
 ```
+
+### The escape hatch
+
+Only when the class shape is forced on you and you cannot adopt an actor, wrap the underlying non-Sendable object in a single serial `DispatchQueue`-free actor adapter, or — if you truly cannot — keep it as a class and serialise through an internal actor:
+
+```swift
+final class ThirdPartyClientWrapper: @unchecked Sendable {
+    private let inbox = MessageInbox() // actor, defined elsewhere
+
+    func send(_ message: Message) async {
+        await inbox.enqueue(message)
+    }
+}
+
+actor MessageInbox {
+    private var pending: [Message] = []
+    func enqueue(_ message: Message) { pending.append(message) }
+}
+```
+
+### Risks of using @unchecked without an actor underneath
+
+If you keep `@unchecked Sendable` without an actor doing the serialisation, you've turned off the compiler's only check. It is easy to forget a synchronisation step on a new code path and silently introduce a data race. Always run the actor; reserve `@unchecked Sendable` for the outer shape only.
 
 > **Course Deep Dive**: This topic is covered in detail in [Lesson 4.7: Using @unchecked Sendable](https://www.swiftconcurrencycourse.com?utm_source=github&utm_medium=agent-skill&utm_campaign=lesson-reference)
 
@@ -456,21 +436,23 @@ Use `private(set)` to limit mutation points.
 
 > **Course Deep Dive**: This topic is covered in detail in [Lesson 4.9: Concurrency-safe global variables](https://www.swiftconcurrencycourse.com?utm_source=github&utm_medium=agent-skill&utm_campaign=lesson-reference)
 
-## Custom Locks + Sendable
+## Migrating Lock-Based Legacy Code
 
-### Legacy code with locks
+You will inherit code that uses `NSLock`, `os_unfair_lock`, or `DispatchSemaphore` to guard mutable state. The target shape is always an actor.
+
+### Before — legacy class with a lock
 
 ```swift
 final class BankAccount: @unchecked Sendable {
     private var balance: Int = 0
     private let lock = NSLock()
-    
+
     func deposit(amount: Int) {
         lock.lock()
         balance += amount
         lock.unlock()
     }
-    
+
     func getBalance() -> Int {
         lock.lock()
         defer { lock.unlock() }
@@ -479,28 +461,25 @@ final class BankAccount: @unchecked Sendable {
 }
 ```
 
-### Migration strategy
+> Prefer an actor — the lock + `@unchecked Sendable` combination has no compile-time guarantee that every accessor takes the lock.
 
-**New code**: Use actors
-
-**Existing code**: 
-1. If isolated and small scope → migrate to actor
-2. If widely used → use `@unchecked Sendable`, file migration ticket
+### After — actor
 
 ```swift
-// Better: Migrate to actor
 actor BankAccount {
     private var balance: Int = 0
-    
-    func deposit(amount: Int) {
-        balance += amount
-    }
-    
-    func getBalance() -> Int {
-        balance
-    }
+
+    func deposit(amount: Int) { balance += amount }
+
+    func getBalance() -> Int { balance }
 }
 ```
+
+### Migration order
+
+1. **New code**: always an actor. Locks are not on the menu.
+2. **Existing code, small scope**: migrate to actor in the same PR.
+3. **Existing code, widely used**: keep the class temporarily, but route its state-touching methods through an internal actor (see "The escape hatch" above). File a follow-up to remove the outer class.
 
 > **Course Deep Dive**: This topic is covered in detail in [Lesson 4.10: Combining Sendable with custom Locks](https://www.swiftconcurrencycourse.com?utm_source=github&utm_medium=agent-skill&utm_campaign=lesson-reference)
 
@@ -515,9 +494,9 @@ Need to share type across isolation domains?
 ├─ Reference type (class)?
 │  ├─ Can be final + immutable? → Sendable
 │  ├─ Needs mutation?
-│  │  ├─ Can use actor? → Use actor (automatic Sendable)
-│  │  ├─ Main thread only? → @MainActor
-│  │  └─ Has custom lock? → @unchecked Sendable (temporary)
+│  │  ├─ UI-bound? → @MainActor
+│  │  ├─ Can be an actor? → Yes — make it an actor (automatic Sendable)
+│  │  └─ Class shape forced by external constraint? → @unchecked Sendable wrapping an internal actor
 │  └─ Can be struct instead? → Refactor to struct
 │
 └─ Function/closure? → @Sendable attribute

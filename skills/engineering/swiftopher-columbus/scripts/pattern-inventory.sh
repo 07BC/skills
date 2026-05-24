@@ -48,11 +48,14 @@ report '(^|[[:space:]])actor [A-Z]' 'actor declarations'
 report '@MainActor' '@MainActor annotations (any position)'
 report '@MainActor[[:space:]]+(final[[:space:]]+)?class' '@MainActor class-level annotations'
 
-section "Concurrency primitives"
-report '\bMutex<' 'Mutex<...> generic usages'
-report '\bNSLock\(' 'NSLock() instances'
-report '\bNSRecursiveLock\b' 'NSRecursiveLock usages'
-report '\bos_unfair_lock\b' 'os_unfair_lock usages'
+section "Lock-primitive drift (non-actor synchronisation — all flagged)"
+report '\bMutex<' 'Mutex<...> generic usages (drift)'
+report '\bNSLock\(' 'NSLock() instances (drift)'
+report '\bNSRecursiveLock\b' 'NSRecursiveLock usages (drift)'
+report '\bos_unfair_lock\b' 'os_unfair_lock usages (drift)'
+report '\bOSAllocatedUnfairLock\b' 'OSAllocatedUnfairLock usages (drift)'
+report '\bDispatchSemaphore\b' 'DispatchSemaphore usages (drift)'
+report '@synchronized' '@synchronized blocks (drift)'
 
 section "Sendable audit flags"
 report '@unchecked Sendable' '@unchecked Sendable conformances'

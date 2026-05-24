@@ -75,7 +75,7 @@ to act on.
 
 **prohibitions** — Things explicitly told not to do
 Hard rules the user stated or corrected toward. Lead with "Never".
-- "Never use `NSLock` — use `Mutex`"
+- "Never use locks (`NSLock`, `Mutex`, `os_unfair_lock`, `DispatchSemaphore`) for mutable state — make the type an `actor`"
 - "Never combine plan and execute phases into one prompt"
 - "Never write `@Test` functions in XCUITest targets"
 
@@ -125,7 +125,7 @@ Claude Code command/agent patterns, `.system/` skill lessons, MCP config.
 **patterns** — Reusable code patterns below architecture level
 Snippets, idioms, or small structures worth repeating. Not style, not
 architecture — things you'd copy-paste as a starting point.
-- "Bridge async throws to sync using `Task { try await ... }.value` inside a `Mutex`-locked block"
+- "Bridge async-only state into a sync-only surface by owning the state in an `actor` and forcing the outer protocol to be `async`; do not reach for `Task { ... }.value` inside a lock"
 - "Use `UIDevice.orientationDidChangeNotification` not `viewWillTransition` for physical rotation detection in streaming"
 - "Inject test credentials via `XCUIApplication().launchEnvironment` — never hardcode in test files"
 
