@@ -87,6 +87,12 @@ Model and flow key from the broader skill library:
 | [/git-push](./skills/git/git-push/SKILL.md) | Runs the project formatter, commits, then pushes. Builds on git-commit. | Sonnet · Direct |
 | [/git-pr](./skills/git/git-pr/SKILL.md) | Commits, pushes, runs tests and code review, then creates a PR with a summary and end-user test plan. Builds on git-push. | Sonnet · Direct |
 
+### Planning
+
+| Skill | What it does | Model · Flow |
+|---|---|---|
+| [/story-to-spec](./skills/engineering/story-to-spec/SKILL.md) | Takes a story from Jira, a local file, or a prompt and distils it into a structured spec document. Spec authoring only — no worktrees, plans, or PRs. | Opus · Direct |
+
 ### Building
 
 | Skill | What it does | Model · Flow |
