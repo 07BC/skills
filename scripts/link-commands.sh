@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Links all commands in this repo to ~/.claude/commands/ so they can be loaded by Claude Code.
-# Each command's .md file is symlinked into ~/.claude/agents with a flattened name.
+# Each command's .md file is symlinked into ~/.claude/commands preserving the .md extension.
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="$HOME/.claude/commands"
@@ -22,7 +22,7 @@ mkdir -p "$DEST"
 
 find "$REPO/commands" -name "*.md" -not -path '*/deprecated/*' -print0 |
 while IFS= read -r -d '' cmd_md; do
-  name="$(basename "$cmd_md" .md)"
+  name="$(basename "$cmd_md")"
   target="$DEST/$name"
 
   if [ -e "$target" ] && [ ! -L "$target" ]; then
