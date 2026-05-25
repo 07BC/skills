@@ -11,7 +11,7 @@ Claude Code's skill system lets you encode domain expertise into focused `SKILL.
 
 Without skills, Claude pattern-matches on its training data. That works for generic tasks, but it falls apart for domain-specific ones. The `swift-tvos` skill exists because tvOS focus engine bugs are a case where Claude confidently shuffles code around and declares the bug fixed when nothing has changed — the skill enforces the diagnostic discipline that prevents that failure mode. The `swift-engineer` skill locks in the MV (Model-View) pattern rather than defaulting to MVVM. The `swift-audit` skill knows to check Swift 6 concurrency, actor isolation, and `@unchecked Sendable` usage — not just style.
 
-This repo is the source of truth for those skills. It installs via `make install`, which symlinks skills into `~/.claude/skills/` and commands into `~/.claude/agents/`.
+This repo is the source of truth for those skills. It installs via `make install`, which symlinks skills into `~/.claude/skills/` and commands into `~/.claude/commands/`.
 
 ## How skills work
 
@@ -155,7 +155,7 @@ Model and flow key from the broader skill library:
 
 ## Commands
 
-Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code loads as slash commands from `~/.claude/agents/`. They differ from skills in that they are simpler invocation prompts rather than full SKILL.md modules.
+Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code loads as slash commands from `~/.claude/commands/`. They differ from skills in that they are simpler invocation prompts rather than full SKILL.md modules.
 
 ### Mr Will
 
@@ -169,7 +169,7 @@ Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code
 ```
 Makefile                        — install, link, commands, hook, unlink, unlink-commands targets
 scripts/link-skills.sh          — symlinks skills into ~/.claude/skills/
-scripts/link-commands.sh        — symlinks commands into ~/.claude/agents/
+scripts/link-commands.sh        — symlinks commands into ~/.claude/commands/
 commands/                       — slash command markdown files
 skills/engineering/             — Swift / iOS / Xcode / CI skills
 skills/git/                     — generic git workflow skills

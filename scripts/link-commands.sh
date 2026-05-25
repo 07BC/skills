@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Links all commands in this repo to ~/.claude/agents/ so they can be loaded by Claude Code.
+# Links all commands in this repo to ~/.claude/commands/ so they can be loaded by Claude Code.
 # Each command's .md file is symlinked into ~/.claude/agents with a flattened name.
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-DEST="$HOME/.claude/agents"
+DEST="$HOME/.claude/commands"
 
 if [ -L "$DEST" ]; then
   resolved="$(readlink -f "$DEST")"
