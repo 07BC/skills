@@ -1,7 +1,7 @@
 ---
 name: swift-cidi
 description: >
-  GitHub Actions CI/CD workflows for Kick iOS and tvOS Xcode projects. Use
+  GitHub Actions CI/CD workflows for iOS and tvOS Xcode projects. Use
   this skill whenever the user is debugging a CI failure, modifying a workflow
   file, investigating a flaky test, updating runner images, wiring up
   xcresult artifacts, or asking about xctestplan setup. Also trigger when
@@ -11,10 +11,13 @@ description: >
   without it.
 ---
 
-# CI/CD Skill — Kick Apple (iOS & tvOS)
+# CI/CD Skill — iOS & tvOS GitHub Actions
 
-This skill covers GitHub Actions CI for the Kick Apple project (`kick-apple-public`).
+This skill covers GitHub Actions CI for Xcode projects.
 It encodes lessons from real PR failures — not just general best practice.
+
+> **Note:** Examples reference `kick-apple-public` and `Chagi` scheme names.
+> Substitute your own project name and scheme where these appear.
 
 ---
 
@@ -95,7 +98,7 @@ workspace-relative location:
 - name: Run tests
   uses: sersoft-gmbh/xcodebuild-action@v3
   with:
-    scheme: Chagi-Debug
+    scheme: [YOUR-SCHEME]   # e.g. Chagi-Debug
     destination: platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=latest
     action: test
     result-bundle-path: TestResults.xcresult   # ← add this
@@ -183,10 +186,11 @@ created, broken on CI runners and other local clones.
 
 ```xml
 <!-- ❌ Fragile — breaks when parent directory name differs -->
-<TestPlanReference location = "container:../kick-apple-public/Chagi-Debug.xctestplan">
+<!-- Example from kick-apple-public — substitute your own project name -->
+<TestPlanReference location = "container:../your-project/YourScheme.xctestplan">
 
 <!-- ✅ Robust — relative to the workspace -->
-<TestPlanReference location = "container:Chagi-Debug.xctestplan">
+<TestPlanReference location = "container:YourScheme.xctestplan">
 ```
 
 **Symptom:** Non-deterministic test execution; the session takes wildly
@@ -220,7 +224,7 @@ reference and the plan file does not remove the workspace reference.
 
 ```xml
 <!-- Remove this if present after deleting the xctestplan -->
-<FileRef location = "group:../kick-apple-public/Chagi-Debug.xctestplan">
+<FileRef location = "group:../your-project/YourScheme.xctestplan">
 ```
 
 Note: `*.xcworkspace` may be in the global gitignore (`~/.gitignore_global`).
@@ -263,17 +267,17 @@ Fix: Switch to xcbeautify before retrying.
 
 ## Step 6 — Flaky Unit Tests on CI Simulators
 
-These are pre-existing flakes in the Kick codebase, documented here because
-they surface regularly on slow CI simulators and can mask real failures.
+The examples below are from the Kick codebase. The patterns apply generally —
+substitute your own test names and file paths.
 
-### `LoginViewModelTests.testLogin()`
-**File:** `ChagiTests/LoginViewTests/LoginViewModelTests.swift:75`
+### Example: Timeout-bound async test
+**Pattern seen in:** `LoginViewModelTests.testLogin()` (`ChagiTests/LoginViewTests/LoginViewModelTests.swift:75`)
 **Symptom:** `wait(for: [expect], timeout: N)` expires on slow CI simulator
 **Current band-aid:** timeout bumped from 5s → 15s in `7b53badc`
 **Real fix needed:** Rewrite as `async throws` test — drive `startLoginProcess()` with `await` so completion is structural, not time-bounded. Inject a deterministic scheduler rather than relying on wallclock.
 
-### `StreamplayerViewModelTests.testSuccesfullChannelPlay()`
-**File:** `ChagiTests/StreamplayerViewModelTests/StreamplayerViewModelTests.swift:58`
+### Example: AVPlayer state assertion
+**Pattern seen in:** `StreamplayerViewModelTests.testSuccesfullChannelPlay()` (`ChagiTests/StreamplayerViewModelTests/StreamplayerViewModelTests.swift:58`)
 **Symptom:** `wait(for: [expectPlay], timeout: 1)` — 1 second for AVPlayer to reach `.playing` status is too tight on a loaded CI simulator
 **Current band-aid:** none yet; increase to at least 5s
 **Real fix needed:** Assert on observable ViewModel state rather than a real AVPlayer's runtime status.
@@ -292,11 +296,11 @@ Bumping the timeout is a band-aid that defers the problem to the next slow run.
 |---|---|---|---|
 | DerivedData artifact always empty | Both workflow files, `Package DerivedData` step | No usable artifact on failure | Pass `result-bundle-path` to xcodebuild-action, zip that path |
 | xcpretty drops Xcode 26 output | Both workflows, `output-formatter` | Silent failures on new runner | Switch to xcbeautify |
-| `*.xcworkspace` in global gitignore | `~/.gitignore_global` | Workspace edits need `git add -f` | Add `!Chagi.xcworkspace/` to project `.gitignore` (low priority) |
+| `*.xcworkspace` in global gitignore | `~/.gitignore_global` | Workspace edits need `git add -f` | Add `![YourApp].xcworkspace/` to project `.gitignore` (low priority) |
 
 ---
 
 ## References
 
 - **`swift-uitest` skill** — xctestplan rules, xcbeautify, and diagnostic patterns also appear there in the context of authoring UI tests.
-- **`kick-commit` skill** — for committing CI/workflow changes under the correct NAT ticket.
+- **`kick-commit` skill** — for committing CI/workflow changes under the correct project ticket.

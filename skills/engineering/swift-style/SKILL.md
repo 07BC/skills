@@ -10,6 +10,8 @@ description: >
   @Observable (access / withMutation), didSet side effects, Sendable
   conformance, typed throws, and data race safety. For auditing or
   rewriting existing messy code, use swift-quality instead.
+  NOT a standalone skill — loaded as a dependency by swift-engineer and
+  swift-code-review. Do not invoke directly.
 ---
 
 # Swift Style
