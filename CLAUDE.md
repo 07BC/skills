@@ -22,7 +22,7 @@ The [Target Architecture](docs/target_architecture/README.md) contains the layou
 
 This repo is installed locally via `make install`. 
 - Skills are symlinked into `~/.claude/skills/`
-- Commands are symlinked into `~/.claude/agents/`
+- Commands are symlinked into `~/.claude/commands/`
 - Hooks are installed into `~/.claude/hooks/`
 
 ## Layout

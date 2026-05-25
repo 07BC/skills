@@ -2,15 +2,15 @@
 
 HOOKS_DEST  := $(HOME)/.claude/hooks
 SKILLS_DEST := $(HOME)/.claude/skills
-AGENTS_DEST := $(HOME)/.claude/agents
+COMMANDS_DEST := $(HOME)/.claude/commands
 
 help:
 	@echo "Targets:"
 	@echo "  install          full install — skills, commands, hooks"
 	@echo "  link             refresh skill symlinks in ~/.claude/skills/"
 	@echo "  unlink           remove skill symlinks from ~/.claude/skills/ that point into this repo"
-	@echo "  commands         refresh command symlinks in ~/.claude/agents/"
-	@echo "  unlink-commands  remove command symlinks from ~/.claude/agents/ that point into this repo"
+	@echo "  commands         refresh command symlinks in ~/.claude/commands/"
+	@echo "  unlink-commands  remove command symlinks from ~/.claude/commands/ that point into this repo"
 	@echo "  hook             install hooks from hooks/ to ~/.claude/hooks/"
 	@echo "  test             run all tests"
 	@echo "  test-python      run Python script tests"
@@ -37,7 +37,7 @@ unlink:
 
 unlink-commands:
 	@REPO="$$(cd . && pwd)"; \
-	find "$(AGENTS_DEST)" -maxdepth 1 -type l | while read -r sym; do \
+	find "$(COMMANDS_DEST)" -maxdepth 1 -type l | while read -r sym; do \
 	  target="$$(readlink "$$sym")"; \
 	  case "$$target" in \
 	    "$$REPO"/commands/*) rm "$$sym" && echo "removed $$(basename $$sym)";; \
