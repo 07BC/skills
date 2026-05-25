@@ -11,7 +11,7 @@ Claude Code's skill system lets you encode domain expertise into focused `SKILL.
 
 Without skills, Claude pattern-matches on its training data. That works for generic tasks, but it falls apart for domain-specific ones. The `swift-tvos` skill exists because tvOS focus engine bugs are a case where Claude confidently shuffles code around and declares the bug fixed when nothing has changed — the skill enforces the diagnostic discipline that prevents that failure mode. The `swift-engineer` skill locks in the MV (Model-View) pattern rather than defaulting to MVVM. The `swift-audit` skill knows to check Swift 6 concurrency, actor isolation, and `@unchecked Sendable` usage — not just style.
 
-This repo is the source of truth for those skills. It installs via `make install`, which symlinks skills into `~/.claude/skills/`.
+This repo is the source of truth for those skills. It installs via `make install`, which symlinks skills into `~/.claude/skills/` and commands into `~/.claude/agents/`.
 
 ## How skills work
 
@@ -39,139 +39,6 @@ The five Swift skills below form a feature-development pipeline. Pick by
 swift:architect ──► swift:engineer ──► swift:quality ──► swift:code-review ──► swift:audit
     (design)           (build)            (clean)             (review)              (audit)
 ```
-
-## Spec Pipeline
-
-> [!CAUTION]
-> This is very much a work in progress and has not been successfull so far.
-
-`/spec-pipeline` is the centrepiece of this repo — a fully agentic
-pipeline that takes a Jira ticket, an existing spec, or a free-form
-prompt and drives it all the way to a merged-ready PR with zero manual
-wiring. Each run lives in its own git worktree and commits as it goes.
-
-### Invoke
-
-```bash
-/spec-pipeline --from-jira NAT-1234    # fetch ticket from Jira
-/spec-pipeline --from-spec docs/my-spec.md
-/spec-pipeline --from-prompt "Add pull-to-refresh to the feed"
-/spec-pipeline NAT-1234                # shorthand for --from-jira
-```
-
-### Prerequisites
-
-- A `spec_pipeline` YAML block in the project's `CLAUDE.md`
-  ([SCHEMA.md](./skills/engineering/spec-pipeline/SCHEMA.md) documents
-  every field)
-- Atlassian MCP connected (for `--from-jira` input)
-- Docs to gitignore inside each worktree:
-  ```
-  docs/specs/
-  docs/plans/
-  master-plan.md
-  ```
-
----
-
-### Agentic flow
-
-The pipeline is driven by the `/spec-pipeline` SKILL itself, which
-runs at the top level and dispatches a chain of specialist agents in
-sequence. You are interrupted only at defined gates.
-
-```
-SKILL: spec-pipeline (top-level driver — runs all stages inline)
-│
-├─ Stage 0  ── 🛂 spec-scope-guardian (Opus)            [Jira only]
-│              Checks ticket scope before any work starts.
-│              SCOPE: OK → continue │ SCOPE: SPLIT → create sub-tasks + halt
-│
-├─ Stage 1  ── 📐 spec-distiller (Opus)
-│              Distils raw input → engineering spec + implementation plan.
-│              Asks one question per conflict and one per UI decision.
-│
-├─ Stage 2  ── 🗺 planner (Sonnet)
-│              Validates the plan fits the existing codebase.
-│              PLAN VALID → continue │ PLAN NEEDS AMENDMENT → re-distil (1 retry)
-│
-├─ Stage 3  ── Per-task loop (driven inline by the SKILL)
-│  │
-│  ├──── 🔨 engineer (Sonnet)              implement one task, build clean
-│  ├──── ✅ test-writer (Sonnet)           write @Test / @Suite tests for it
-│  ├──── 🔒 concurrency-auditor (Opus)     check Sendable / actor / async safety
-│  └──── 🔍 task-reviewer (Sonnet)         verify task against spec slice
-│
-├─ Stage 4  ── 🧐 swift-spec-review (Opus)
-│              Whole-diff review of the branch against the full spec.
-│              VERDICT: PASS → continue │ VERDICT: BLOCKED → loop back (max 3 cycles)
-│
-└─ Stage 5  ── /git-pr (Sonnet)
-               Push branch, run tests, code review, draft PR body,
-               await your confirmation before `gh pr create`.
-```
-
----
-
-### Stage 0 — Scope guardian
-
-The scope guardian runs **before any worktree is created** — making it
-cheap to abort on oversized tickets. It is skipped when:
-
-- The ticket already has a parent (it's already a sub-task)
-- The ticket already has sub-tasks (the split has already happened)
-- A worktree for this spec-id already exists (resume path)
-
-**Threshold — thematic separation only.** The guardian splits only when
-ACs cluster around clearly different user-visible outcomes (e.g. model +
-UI + analytics bundled into one ticket, or "phase 1 / phase 2" wording).
-A focused 8-AC ticket all about one screen stays whole. AC
-countable-independence alone is not enough to trigger a split.
-
-When a split is proposed:
-1. The guardian writes a YAML proposal to a tmpdir file listing 2+
-   sub-tasks, each with a title, summary, rationale, and ACs lifted
-   **verbatim** from the parent. Every parent AC lands in exactly one
-   child — no orphans, no duplicates. If a clean distribution is
-   impossible, it emits `SCOPE: OK` instead.
-2. The SKILL shows you the proposed split via `AskUserQuestion`.
-3. On approval, the SKILL creates Jira sub-tickets, posts a comment on
-   the parent, and halts. You re-invoke `/spec-pipeline` per child.
-4. On cancel, nothing is written. You re-scope the parent in Jira and
-   re-invoke.
-
----
-
-### User gates
-
-You are always asked at these points — the pipeline will not proceed
-without explicit confirmation:
-
-| Gate | When |
-|---|---|
-| **Lightweight confirmation** | Before any disk or worktree operation |
-| **Scope-split confirmation** | When Stage 0 proposes Jira sub-tasks (may be zero) |
-| **Conflict resolution** | Once per conflicting requirement detected in Stage 1 |
-| **UI design decisions** | Once per open UI question in Stage 1 (navigation, states, etc.) |
-| **PR body review** | Before `gh pr create` in Stage 5 |
-
----
-
-### Durable artefacts
-
-After a run completes (or is split):
-
-| Artefact | Location | Notes |
-|---|---|---|
-| Pull request | GitHub | The shipped deliverable |
-| Audit log | `$OBSIDIAN_VAULT/AI/plans/<spec-id>.md` | Full spec + plan + stage log. Written even if the worktree is removed. |
-| Worktree | `../<repo>-<spec-id>/` | Preserved until you run `git worktree remove` post-merge |
-
-Spec and plan files inside the worktree (`docs/specs/`, `docs/plans/`,
-`master-plan.md`) are gitignored by design — the Obsidian audit log is
-the only durable copy.
-
----
 
 ## Install
 
@@ -219,12 +86,6 @@ Model and flow key from the broader skill library:
 | [/git-commit](./skills/git/git-commit/SKILL.md) | Stages specific files and commits with a short imperative message. Extracts a ticket prefix from the branch name if present. | Sonnet · Direct |
 | [/git-push](./skills/git/git-push/SKILL.md) | Runs the project formatter, commits, then pushes. Builds on git-commit. | Sonnet · Direct |
 | [/git-pr](./skills/git/git-pr/SKILL.md) | Commits, pushes, runs tests and code review, then creates a PR with a summary and end-user test plan. Builds on git-push. | Sonnet · Direct |
-
-### End-to-end pipelines
-
-| Skill | What it does | Model · Flow |
-|---|---|---|
-| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | Jira ticket / spec / prompt → PR, fully agentic. Stage 0 checks ticket scope (Jira only) and splits oversized tickets into Jira sub-tasks before any work starts. Then: distil spec → validate plan → per-task `engineer → test-writer → concurrency-auditor → task-reviewer` loop → whole-diff review → PR. Each run gets its own git worktree. Durable audit log in Obsidian. See the [Spec Pipeline](#spec-pipeline) section for the full flow. | Opus (scope + distil) · Sonnet (rest) · Direct |
 
 ### Building
 
@@ -292,11 +153,24 @@ Model and flow key from the broader skill library:
 | [/yt-research](./skills/productivity/yt-research/SKILL.md) | Fetches transcripts and extracts prompts from a YouTube channel's recent videos, saving each as markdown. | Sonnet · Direct |
 | [/yt-distill](./skills/productivity/yt-distill/SKILL.md) | Distils a folder of YouTube transcript markdown files (output of yt-research) into a structured Obsidian reference library — skills, plugins, prompts, and techniques categories plus a master index. | Sonnet · Direct |
 
+## Commands
+
+Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code loads as slash commands from `~/.claude/agents/`. They differ from skills in that they are simpler invocation prompts rather than full SKILL.md modules.
+
+### Mr Will
+
+| Command | What it does |
+|---|---|
+| `/audit-codebase` | Runs a structured codebase audit |
+| `/workflow` | Guides through a standard development workflow |
+
 ## Layout
 
 ```
-Makefile                        — install, link, hook, unlink targets
+Makefile                        — install, link, commands, hook, unlink, unlink-commands targets
 scripts/link-skills.sh          — symlinks skills into ~/.claude/skills/
+scripts/link-commands.sh        — symlinks commands into ~/.claude/agents/
+commands/                       — slash command markdown files
 skills/engineering/             — Swift / iOS / Xcode / CI skills
 skills/git/                     — generic git workflow skills
 skills/obsidian/                — Obsidian vault management skills
@@ -310,5 +184,11 @@ skills/deprecated/              — retired skills; skipped by link-skills.sh
 1. Create `skills/<bucket>/<name>/SKILL.md` with `name:` and `description:` frontmatter.
 2. Add a row to the table above using the `/<name>` format.
 3. Run `make link` to expose it locally.
+
+## Adding a command
+
+1. Create `commands/<bucket>/<name>.md` with the command definition.
+2. Add a row to the Commands table above.
+3. Run `make commands` to expose it locally.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full bucket convention and the `in-progress` / `deprecated` lifecycle.
