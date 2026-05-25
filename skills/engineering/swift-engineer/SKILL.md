@@ -22,8 +22,9 @@ Before writing any Swift code, load this skill:
 - Read skill `swift-style` — code style, quality rules, and Swift 6
   language essentials (Sendable, isolation, typed throws). Apply every
   rule in that skill when generating new code.
-
-Load `swift-testing` when writing tests, and `swift-concurrency` when
+- Read skill `swift-mv-guardian` -- MV architecture rules and anti-patterns. Apply every rule when
+  generating new code.
+- Load `swift-testing` when writing tests, and `swift-concurrency` when
 adding async / actor / Sendable work.
 
 ## Core Principles
@@ -39,7 +40,11 @@ adding async / actor / Sendable work.
 4. **Explicit error handling** — Use typed throws where beneficial; never
    force-unwrap in production
 5. **Testability** — Design for dependency injection via the environment;
-   avoid singletons; never add code just for tests unless in mocks
+   **never use singletons in production code** (no `.shared`, no `static let shared`, no global instances — inject dependencies via initialisers or `@Environment` instead); never add code just for tests unless in mocks
+6. **SwiftUI for UI** — Use SwiftUI for all new UI work; no new UIKit unless
+7. **One view per file** — Keep views small and focused; one view per file is the standard convention
+8. No global functions. Static functions **must** be inside an enum or struct. Top-level code is forbidden.
+9. NO GOD OBJECTS. Services over 400 lines or with more than 10 properties must be broken down into smaller services.
 
 ## Swift 6 Essentials
 > See `swift-style` for Data Race Safety, Isolation Boundaries, and Typed Throws.
@@ -128,12 +133,14 @@ extension EnvironmentValues {
 }
 
 // ✅ Prefer: @Entry macro — one place for every injected service
+// No Service should be Optional
+
 extension EnvironmentValues {
   @Entry
-  var timerService: TimerService? = nil
+  var timerService: TimerService = TimerService()
 
   @Entry
-  var activityDetailService: ActivityDetailService? = nil
+  var activityDetailService: ActivityDetailService = ActivityDetailService()
 
   @Entry
   var settingsService: SettingsService = SettingsService()
