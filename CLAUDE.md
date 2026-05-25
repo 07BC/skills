@@ -22,8 +22,8 @@ The [Target Architecture](docs/target_architecture/README.md) contains the layou
 
 This repo is installed locally via `make install`. 
 - Skills are symlinked into `~/.claude/skills/`
-- Agents are symlinked into `~/.claude/agents/`.
-- Commands are symlinkedi int `~/.claude/agents/`.
+- Commands are symlinked into `~/.claude/agents/`
+- Hooks are installed into `~/.claude/hooks/`
 
 ## Layout
 
@@ -45,7 +45,12 @@ Every shipped skill must be referenced in `README.md` using the `/<name>` prefix
 
 1. Create `skills/<bucket>/<name>/SKILL.md` (frontmatter: `name`, `description`).
 2. Add a row to the table in `README.md` with `/<name>` as the skill label.
-3. Run `make link` to expose it locally, or `make agents` to refresh agent symlinks.
+3. Run `make link` to expose it locally.
+
+## Adding a new command
+
+1. Create `commands/<bucket>/<name>.md` with command definition.
+2. Run `make commands` to expose it locally.
 
 ## Removing or deprecating
 
