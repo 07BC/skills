@@ -5,8 +5,9 @@ description: >
   this skill whenever the user says "focus is broken", "focus is stuck",
   "focus jumps to the wrong cell", "wrong screen pushes", "remote doesn't
   work", "the back button doesn't go back", "navigation is broken on tvOS",
-  "focus engine", "this screen on Apple TV", "KickTV bug", or any variant
-  involving Apple TV navigation. Also trigger when the user asks Claude
+  "focus engine", "this screen on Apple TV", or any variant
+  involving Apple TV navigation. Also triggers on project-specific phrasing
+  like "KickTV bug" — substitute your own app name. Also trigger when the user asks Claude
   Code to "look into", "investigate", "figure out why", or "debug" anything
   on tvOS, regardless of how the symptom is phrased. Always use this skill —
   do not attempt tvOS navigation diagnosis ad hoc. tvOS focus engine bugs
@@ -153,7 +154,7 @@ where the bug is."
 
 ```bash
 # The view itself and its parent
-find . -name "*.swift" -path "*KickTV*" | xargs grep -ln "<ScreenName>"
+find . -name "*.swift" | xargs grep -ln "<ScreenName>"
 
 # Any custom focus modifiers or focus state
 grep -rn "@FocusState\|\.focusable\|\.focusSection\|\.prefersDefaultFocus\|FocusedValue" \
@@ -245,7 +246,7 @@ A third session reviews the diff against:
 
 - The original diagnosis document — did the fix address the confirmed
   root cause, or did it drift?
-- KickTV conventions — `Console` over `print()`, one type per file,
+- Project conventions — `Console` over `print()` (or your project's logging approach), one type per file,
   named constants, `nonisolated init(from:)` on models, private actor
   fetchers, actors stay actors.
 - Swift 6 concurrency — no new `nonisolated(unsafe)`, no new
@@ -298,7 +299,7 @@ Before declaring a tvOS navigation bug fixed, verify:
       manual sequence with screenshots.
 - [ ] Phase 3 reviewed the diff against the diagnosis.
 - [ ] No invented symbols were referenced.
-- [ ] KickTV conventions and Swift 6 concurrency rules are preserved.
+- [ ] Project conventions and Swift 6 concurrency rules are preserved.
 - [ ] No unrelated refactoring snuck into the patch.
 
 ---
@@ -314,6 +315,6 @@ Before declaring a tvOS navigation bug fixed, verify:
 - [`references/tooling.md`](references/tooling.md) —
   `_printChanges`, `_whyIsThisViewNotFocusable`, Quick Look, XCUIRemote
 - **`swift-uitest` skill** — writing the XCUITest that verifies the fix
-- **`swift-quality` skill** — patch matches KickTV architecture rules
+- **`swift-quality` skill** — patch matches project architecture rules
 - **`prompt` skill** — writing the Phase 2 and Phase 3 prompts
 - **`learn` skill** — capture new tvOS gotchas at session end

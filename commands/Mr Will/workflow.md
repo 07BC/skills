@@ -1,4 +1,4 @@
-# Mr Will: Agentic Swift MV Workflow Coordinator
+# Agentic Workflow Coordinator
 ## Jira Ticket → Subtasks → Architect → Engineer → Test → Review → PR
 
 ---
@@ -92,7 +92,7 @@ task: (paste the block below as the subagent prompt)
 > listed there exactly. Apply Swift conventions:
 >
 > - Architecture: SwiftUI MV — no ViewModels, views bind to `@Observable` services
-> - Concurrency: Swift 6 strict; `actor` for any type with mutating shared state; no `Mutex` / `NSLock` / `DispatchSemaphore`
+> - Concurrency: Swift 6 strict, `Mutex` over `NSLock`, `actor` for off-main work
 > - Services: `@MainActor @Observable final class`
 > - Storage: SwiftData
 > - DI: `@Environment` / `AppDependencies`
@@ -196,7 +196,7 @@ Review against:
 
 **Swift 6 concurrency**
 - No `DispatchQueue` where actor/async should be used
-- `actor` for any type with mutating shared state — no `Mutex`, `NSLock`, `os_unfair_lock`, or `DispatchSemaphore`
+- `Mutex` used instead of `NSLock`
 - No `@unchecked Sendable` without explanatory comment
 - No retain cycles in `Task { }` closures
 

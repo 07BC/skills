@@ -1,5 +1,5 @@
 ---
-name: swift-audit
+name: swift-deep-audit
 description: >
   Perform an exhaustive, opinionated code audit of a Swift/SwiftUI codebase.
   Use for deep audits, architecture reviews, and full codebase analysis — not
