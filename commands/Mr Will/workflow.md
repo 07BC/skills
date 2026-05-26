@@ -173,7 +173,7 @@ task: (paste the block below as the subagent prompt)
 > - Services: `@MainActor @Observable final class`
 > - Storage: SwiftData
 > - DI: `@Environment` / `AppDependencies`
-> - Style: 2-space indentation, no inline comments
+> - Style: 2-space indentation, write no comments — no doc comments (`///`), no inline comments, no block comments. MARK sections are the only exception where swift-quality requires them.
 >
 > Build must pass with zero errors and zero warnings. Run:
 >

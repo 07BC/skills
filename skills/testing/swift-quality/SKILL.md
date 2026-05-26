@@ -888,20 +888,16 @@ struct KickAPIClient: KickAPIClientProtocol {
 
 ---
 
-### Documentation comments
+### Comments
 
-Public and internal protocol-satisfying methods have documentation comments
-using `///` format. Never `/** ... */`.
+Write no comments by default. Only add one when the **why** is non-obvious: a
+hidden constraint, a subtle invariant, a workaround for a specific bug, or
+behaviour that would surprise a reader. If removing the comment wouldn't
+confuse a future reader, don't write it.
 
-```swift
-/// Fetches the full channel detail for the given slug.
-///
-/// - Parameter slug: The channel's URL slug (e.g. "whatever").
-/// - Returns: A fully decoded `Channel` including playback URL and chatroom ID.
-/// - Throws: `KickError.httpError` for non-2xx responses,
-///   `KickError.decodingFailed` if the response cannot be decoded.
-func fetchChannel(slug: String) async throws -> Channel
-```
+Do not write doc comments (`///` or `/** */`) — well-named identifiers and
+types already document what a method does. Do not explain what the code does;
+explain only why it does something unexpected.
 
 Private helpers do not require documentation comments but should have a
 single-line `//` comment explaining why they exist if the name alone is
