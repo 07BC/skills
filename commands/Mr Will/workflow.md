@@ -162,8 +162,11 @@ task: (paste the block below as the subagent prompt)
 > 1. `[SKILL: ~/.claude/skills/swift-quality/SKILL.md]`
 > 2. `CLAUDE.md`
 > 3. `${HOME}/Developer/obsidian/${project_name}/plans/[SUBTASK-KEY]-discovery.md`
+> 4. `[SKILL: ~/.claude/skills/swift-concurrency/SKILL.md]` —
+>    read only if the subtask involves async work, `Task { }`, or actor boundaries
 >
-> Do not write any code until you have read all three.
+> Do not write any code until you have read items 1–3 (and item 4 if the
+> subtask involves async work).
 >
 > Implement the subtask according to the discovery note. Follow all constraints
 > listed there exactly. Apply Swift conventions:

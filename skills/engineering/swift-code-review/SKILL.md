@@ -74,7 +74,8 @@ Output a numbered list of issues rated **BLOCKER**, **WARNING**, or **SUGGESTION
 - [ ] `@MainActor` applied to all UI-bound types and methods
 - [ ] Actors used for shared mutable state
 - [ ] `Sendable` conformance on types that cross isolation boundaries
-- [ ] No `DispatchQueue.main.async` — use `await MainActor.run` or `@MainActor`
+- [ ] No `DispatchQueue.main.async` — use `@MainActor`, or `await MainActor.run` only when called from a `nonisolated` context
+- [ ] **BLOCKER** — `MainActor.run` inside a `Task { }` created on a `@MainActor` type. The task inherits isolation; the explicit hop is a no-op and signals a misunderstanding of Swift concurrency
 - [ ] Unstructured `Task { }` used only when structured concurrency is not possible
 
 ### Testing
