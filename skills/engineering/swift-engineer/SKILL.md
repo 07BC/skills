@@ -27,6 +27,42 @@ Before writing any Swift code, load this skill:
 - Load `swift-testing` when writing tests, and `swift-concurrency` when
 adding async / actor / Sendable work.
 
+## Build vs SourceKit — truth source
+
+When editing Swift files, `<new-diagnostics>` system reminders may surface
+SourceKit IDE diagnostics like:
+
+- `Cannot find type X in scope`
+- `Cannot find Y`
+- `No exact matches in call to initializer`
+- `No such module 'Testing'`
+- `Generic parameter 'SelectionValue' could not be inferred`
+
+If these fire **within 30 seconds of any file edit** and reference symbols,
+types, or modules that exist in the project (you've grepped or just edited
+the surrounding code), treat them as suspected SourceKit indexing lag, not
+real failures. The IDE-side index can lag behind the compiler.
+
+**Resolution:** a clean `xcodebuild build` (exit 0, zero errors, zero
+warnings) is the authoritative answer. Trust it. Do not re-spawn an agent or
+roll back changes on the SourceKit diagnostic alone.
+
+When suppressed, emit one acknowledgement line:
+`SourceKit indexing lag suppressed — build clean.` and continue.
+
+**This rule does NOT apply to:**
+
+- Diagnostics that persist after a clean build.
+- Diagnostics on a file you have not recently edited — those may indicate a
+  real regression you introduced indirectly (e.g. a removed type used
+  elsewhere).
+- Compiler errors surfaced inside `xcodebuild` output itself — those are
+  always real.
+
+The asymmetry: SourceKit can lie about the build state, but the build
+itself cannot. Always re-verify with the build before acting on a
+diagnostic.
+
 ## Core Principles
 
 1. **MV pattern only** — `@MainActor @Observable` services own state; views
@@ -186,6 +222,126 @@ struct ContentView: View {
         }
     }
 }
+```
+
+### Functions
+
+// ❌ — NEVER GOD Method. Functions over 20 lines or with more than 4 parameters must be broken down into smaller functions with single responsibilities. If a function is doing too much, break it down into helper functions.
+```swift
+// ❌ — one method doing validation, derivation, loop iteration, and result assembly
+func processOrder() throws -> [OrderLine] {
+    guard !items.isEmpty else { return [] }
+    let baseRate = pricing.rate(for: customer.tier)
+    if baseRate == nil { return [] }                       // silent failure on nil
+    let discountedRate = baseRate! * (1 - customer.discountFactor)  // force-unwrap
+    let maxAttempts = max(items.count * 2, items.count + 10)
+    var results: [OrderLine] = []
+    results.reserveCapacity(items.count)
+    for i in 0..<maxAttempts {                             // single-letter loop var
+        if i >= items.count { break }
+        let item = items[i]
+        var lineTotal = item.quantity * item.unitPrice * discountedRate
+        var tax = lineTotal * taxRate
+        var taxRounded = Decimal()
+        NSDecimalRound(&taxRounded, &tax, 2, .bankers)
+        if lineTotal + taxRounded > spendingCap {
+            lineTotal = spendingCap - taxRounded
+        }
+        if let voucher, voucher.appliesTo == item.id {
+            if voucher.amount > lineTotal { throw OrderError.voucherExceedsLineTotal }
+            lineTotal -= voucher.amount
+        }
+        results.append(OrderLine(itemID: item.id, total: lineTotal, tax: taxRounded))
+    }
+    return results
+}
+
+// ✅ — four named responsibilities, each under 20 lines
+func processOrder() throws -> [OrderLine] {
+    guard !items.isEmpty else { return [] }
+    let effectiveRate = try deriveEffectiveRate()
+    return try buildOrderLines(effectiveRate: effectiveRate)
+}
+
+private func deriveEffectiveRate() throws -> Decimal {
+    guard let baseRate = pricing.rate(for: customer.tier) else {
+        throw OrderError.noRateForTier(customer.tier)      // thrown, not silenced
+    }
+    return baseRate * (1 - customer.discountFactor)
+}
+
+private func buildOrderLines(effectiveRate: Decimal) throws -> [OrderLine] {
+    var results: [OrderLine] = []
+    results.reserveCapacity(items.count)
+    for item in items {                                    // iterate the collection directly
+        let line = try buildLine(item: item, effectiveRate: effectiveRate)
+        results.append(line)
+    }
+    return results
+}
+
+private func buildLine(item: Item, effectiveRate: Decimal) throws -> OrderLine {
+    var lineTotal = min(item.quantity * item.unitPrice * effectiveRate, spendingCap)
+    let tax = rounded(lineTotal * taxRate)
+    if let voucher, voucher.appliesTo == item.id {
+        guard voucher.amount <= lineTotal else { throw OrderError.voucherExceedsLineTotal }
+        lineTotal -= voucher.amount
+    }
+    return OrderLine(itemID: item.id, total: lineTotal, tax: tax)
+}
+
+private nonisolated func rounded(_ value: Decimal) -> Decimal {
+    var raw = value
+    var result = Decimal()
+    NSDecimalRound(&result, &raw, 2, .bankers)
+    return result
+}
+```
+
+// ❌ Avoid: Global functions or static functions on classes
+```swift
+func formatDate(_ date: Date) -> String {
+    // ...
+}   
+
+// ✅ Prefer: Static functions on structs or enums
+enum DateFormatter {
+    static func format(_ date: Date) -> String {
+        // ...
+    }
+}
+``` 
+
+// ❌ Avoid: Functions with more than 4 parameters
+```swift
+func createUser(name: String, email: String, age: Int, isAdmin: Bool, avatarURL: URL) -> User {
+    // ...
+}   
+
+// ✅ Prefer: Parameter objects for complex data
+struct CreateUserRequest {
+    let name: String
+    let email: String
+    let age: Int
+    let isAdmin: Bool
+    let avatarURL: URL
+}
+
+func createUser(request: CreateUserRequest) -> User {
+    // ...
+}
+```
+
+# Variables
+
+// ❌ Avoid: Missing types when they can't be inferred, or when they improve readability
+```swift
+let user = functionThatReturnsAUser() // Type of 'user' is not clear   
+```
+
+// ✅ Prefer: Explicit types for clarity
+```swift`
+let user: User = functionThatReturnsAUser() // Clear that 'user' is of type User
 ```
 
 ## Swift Testing

@@ -737,6 +737,27 @@ prompt so the agent can read its config without re-parsing CLAUDE.md.
 
 ---
 
+## Step 5.5 — Pipeline pre-flight
+
+Before dispatching the spec distiller, run the shared pre-flight skill to
+surface drift between the parent repo's state and the docs the pipeline
+trusts (merged PRs vs progress doc, out-of-scope story markers, dirty
+working tree on the parent repo's `main`).
+
+Apply `[SKILL: ~/.claude/skills/pipeline-preflight/SKILL.md]`.
+
+The skill produces signals only — the orchestrator owns the user-facing
+decision. When a signal fires, ask the user how to proceed via
+`AskUserQuestion` before dispatching the distiller. When the skill emits
+`Pre-flight clean.`, proceed to Stage 1 without further prompting.
+
+The existing parent-repo cleanliness check inside Step 4 (worktree create
+path) is narrower than this pre-flight — both run; they are not redundant.
+The worktree-side check guards the worktree creation itself; the pipeline
+pre-flight guards the pipeline's downstream assumptions about doc accuracy.
+
+---
+
 ## Step 6 — Stage 1: Spec Distiller
 
 Append stage-start entry:
@@ -857,6 +878,18 @@ per pipeline run.
 ---
 
 ## Step 8 — Stage 3: Per-task implementation loop
+
+**SourceKit diagnostics during this stage:** when `<new-diagnostics>` system
+reminders fire post-edit but the agent's own `xcodebuild build` ran clean,
+apply the "Build vs SourceKit truth" rule in
+`~/.claude/skills/swift-engineer/SKILL.md`. The build is the truth source;
+do not re-spawn the agent on the diagnostic alone.
+
+**Subagent crashes during this stage:** if a dispatched agent returns no
+usable result (raw API error, socket-closed, timeout — distinct from a
+reported failure), apply
+`[SKILL: ~/.claude/skills/subagent-reliability/SKILL.md]`. A
+recover-in-place or resumed outcome does not consume a retry-budget slot.
 
 Append stage-start entry:
 
