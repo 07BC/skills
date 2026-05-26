@@ -65,22 +65,28 @@ diagnostic.
 
 ## Core Principles
 
-1. **MV pattern only** — `@MainActor @Observable` services own state; views
+1. **No comments** — write no comments by default. Only add one when the WHY
+   is non-obvious: a hidden constraint, a subtle invariant, a workaround for a
+   specific bug, or behaviour that would surprise a reader. Never write doc
+   comments (`///`). Never explain what the code does — well-named identifiers
+   do that. If removing the comment wouldn't confuse a future reader, don't
+   write it.
+3. **MV pattern only** — `@MainActor @Observable` services own state; views
    observe them via `@Environment`. No ViewModel layer, no `ObservableObject`,
    no `@Published`. Heavy work lives behind a private `actor` composed into
    the service.
-2. **Strict concurrency by default** — All new code must compile with
+4. **Strict concurrency by default** — All new code must compile with
    `SWIFT_STRICT_CONCURRENCY=complete`
-3. **Value semantics first** — Prefer structs; use classes only for identity,
+5. **Value semantics first** — Prefer structs; use classes only for identity,
    reference semantics, or an `@Observable` service
-4. **Explicit error handling** — Use typed throws where beneficial; never
+6. **Explicit error handling** — Use typed throws where beneficial; never
    force-unwrap in production
-5. **Testability** — Design for dependency injection via the environment;
+7. **Testability** — Design for dependency injection via the environment;
    **never use singletons in production code** (no `.shared`, no `static let shared`, no global instances — inject dependencies via initialisers or `@Environment` instead); never add code just for tests unless in mocks
-6. **SwiftUI for UI** — Use SwiftUI for all new UI work; no new UIKit unless
-7. **One view per file** — Keep views small and focused; one view per file is the standard convention
-8. No global functions. Static functions **must** be inside an enum or struct. Top-level code is forbidden.
-9. NO GOD OBJECTS. Services over 400 lines or with more than 10 properties must be broken down into smaller services.
+8. **SwiftUI for UI** — Use SwiftUI for all new UI work; no new UIKit unless
+9. **One view per file** — Keep views small and focused; one view per file is the standard convention
+10. No global functions. Static functions **must** be inside an enum or struct. Top-level code is forbidden.
+11. NO GOD OBJECTS. Services over 400 lines or with more than 10 properties must be broken down into smaller services.
 
 ## Swift 6 Essentials
 > See `swift-style` for Data Race Safety, Isolation Boundaries, and Typed Throws.
@@ -332,7 +338,7 @@ func createUser(request: CreateUserRequest) -> User {
 }
 ```
 
-# Variables
+### Variables
 
 // ❌ Avoid: Missing types when they can't be inferred, or when they improve readability
 ```swift
@@ -340,8 +346,22 @@ let user = functionThatReturnsAUser() // Type of 'user' is not clear
 ```
 
 // ✅ Prefer: Explicit types for clarity
-```swift`
+```swift
 let user: User = functionThatReturnsAUser() // Clear that 'user' is of type User
+```
+
+
+### Optionals
+
+// ❌ NEVER: Force-unwrapping optionals in production code
+```swift 
+let httpResponse = response as! HTTPURLResponse // swiftlint:disable:this force_cast
+```
+// ✅ Always: Use safe unwrapping with guard or if-let, and handle nil cases explicitly
+```swift
+guard let httpResponse = response as? HTTPURLResponse else {
+    throw NetworkError.invalidResponse
+}
 ```
 
 ## Swift Testing
