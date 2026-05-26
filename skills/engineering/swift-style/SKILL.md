@@ -72,6 +72,30 @@ actor DataStore {
 }
 ```
 
+### Task Isolation Inheritance — Anti-Pattern
+
+A `Task { }` created inside a `@MainActor` type (e.g. a `@MainActor @Observable` service)
+inherits `@MainActor` isolation automatically. Do NOT use `MainActor.run` inside it.
+
+```swift
+// ❌ NEVER: Redundant MainActor.run inside an inherited-isolation Task
+Task { [weak self] in
+    guard let self else { return }
+    await MainActor.run {
+        self.someProperty = value   // already on main actor — this hop is a no-op
+    }
+}
+
+// ✅ ALWAYS: Trust the inherited isolation
+Task { [weak self] in
+    guard let self else { return }
+    someProperty = value            // compiler guarantees main actor here
+}
+```
+
+The only valid use of `MainActor.run` is inside a `Task.detached { }` or a
+`nonisolated` context where the isolation is not inherited.
+
 ### Typed Throws (Swift 6)
 
 ```swift
