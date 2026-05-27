@@ -22,6 +22,22 @@ Output a numbered list of issues rated **BLOCKER**, **WARNING**, or **SUGGESTION
 
 ---
 
+## Severity mapping
+
+Apply this mapping when grading a finding:
+
+- **BLOCKER** — every item in *Correctness* and *Concurrency*, plus any
+  Xcode navigator error surfaced via `mcp__xcode__XcodeListNavigatorIssues`.
+- **WARNING** — *Code Quality*, *Naming*, *Structure and Organisation*, and
+  *SwiftUI* violations that don't trip a Correctness rule.
+- **SUGGESTION** — *Comments*, *Testing-coverage gaps*, and
+  *Platform-compatibility* hints that don't overlap a higher rule.
+
+A single finding may match more than one category; grade it at the highest
+severity it matches.
+
+---
+
 ## Checklist
 
 ### Correctness
@@ -56,10 +72,11 @@ Output a numbered list of issues rated **BLOCKER**, **WARNING**, or **SUGGESTION
 - [ ] No inline type definitions inside function bodies
 - [ ] One SwiftUI view per file — no `private struct` subviews or computed property views
 
-### Documentation
-- [ ] All public and internal protocol-satisfying methods have `///` documentation
-- [ ] `///` format used — never `/** */` block comments
-- [ ] Parameters, return values, and throws are documented where non-obvious
+### Comments and documentation
+- [ ] No `///` doc comments — well-named identifiers replace them (per `swift-engineer` Core Principle #1)
+- [ ] No `/** */` block comments
+- [ ] No inline `//` comments unless the WHY is non-obvious (hidden constraint, subtle invariant, workaround for a specific bug)
+- [ ] `MARK: -` sections used per `swift-quality` for types with more than two logical groupings
 
 ### SwiftUI
 - [ ] Views are small and focused (body ≤ 50 lines preferred)

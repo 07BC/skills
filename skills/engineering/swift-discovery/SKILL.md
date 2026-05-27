@@ -127,10 +127,20 @@ Based on the subtask requirements and the architecture docs, identify:
 
 ## Phase 5 — Write the Discovery Note
 
-Write the discovery note to:
-`docs/working/[SUBTASK-KEY]-discovery.md`
+Derive the output path:
 
-Use this format exactly:
+```bash
+project_name="$(basename "$(git rev-parse --show-toplevel)")"
+discovery_note="${HOME}/Developer/obsidian/${project_name}/plans/[SUBTASK-KEY]-discovery.md"
+```
+
+Write the discovery note to `$discovery_note`. This location matches the
+global plan-storage rule (plans live in the Obsidian vault, never inside
+the repo) and is what the orchestrator's PR gate reads from.
+
+Use this format exactly — every section header below must be present.
+Pipeline orchestrators grep for these headers to validate the note before
+handing off to the engineer.
 
 ```markdown
 # Discovery: [SUBTASK-KEY] — [Subtask title]
@@ -195,7 +205,24 @@ Do not produce a discovery note with unverified type names or file paths.
 
 ## Output
 
-A single file at `docs/working/[SUBTASK-KEY]-discovery.md`.
+A single file at `${HOME}/Developer/obsidian/${project_name}/plans/[SUBTASK-KEY]-discovery.md`.
 
 The engineer reads this file first — before `CLAUDE.md`, before any other
 architecture doc. It must stand alone as a complete brief.
+
+Every required section header below must appear verbatim, so orchestrators
+can grep for them:
+
+- `## Baseline`
+- `## Types in scope`
+- `## Injection`
+- `## Patterns to follow`
+- `## Concurrency notes`
+- `## Edge cases to handle`
+- `## Failure paths to handle`
+- `## Must NOT touch`
+- `## Definition of done`
+
+If a section truly has nothing to record for a given subtask, write
+`None for this subtask.` underneath the header rather than omitting the
+header.

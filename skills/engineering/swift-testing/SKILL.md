@@ -211,6 +211,27 @@ func registersDefault() async throws {
 
 **If the production code reaches for a singleton directly,** the production code is the bug — refactor it to accept the store via initialiser before writing the test. Do not work around it by mutating the singleton in `init()` / `deinit`.
 
+### When refactor is genuinely out of scope
+
+If the production code reaches for a global singleton and refactoring it
+sits outside the current subtask's scope (e.g. you are adding a test next
+to legacy code you must not touch), follow this order:
+
+1. **Document the dependency.** Write a one-line TODO at the top of the
+   test file naming the singleton and linking to a follow-up ticket.
+2. **Write against an injected fake anyway.** If the SUT has a seam — an
+   init parameter, a protocol, an optional override — use it. Sometimes
+   the seam exists but isn't obvious; read the SUT before assuming there
+   is none.
+3. **If no seam exists, surface as a BLOCKER.** Report the missing
+   injection point as a finding — do not write the test. Writing a test
+   that touches the singleton and hoping CI doesn't notice is silent
+   coverage loss that flakes on another developer's machine.
+
+Never reach for `.serialized` to paper over this. `.serialized` does not
+serialise across suites and will still race against any other test that
+touches the same singleton.
+
 ## Avoid Tautological Tests
 
 **Never write tests that only verify what was just set.** These tests always pass and verify nothing:
