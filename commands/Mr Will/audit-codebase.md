@@ -1,326 +1,295 @@
 # Mr Will: Audit Codebase
-## Codebase → Findings → Prioritised Remediation
+
+## Codebase → Findings → Prioritised Remediation → Workflow Handoff
 
 ---
 
 ## Overview
 
 This command audits the codebase against the target architecture and produces
-a prioritised remediation plan. It is the companion to `ticket-to-pr` — audit
-output feeds directly into `ticket-to-pr` input, one subtask at a time.
+a prioritised remediation plan. It is the companion to `workflow` — audit
+output feeds directly into `workflow` input, one batch at a time.
 
-The orchestrator (Opus) owns all phases. There are no Sonnet subagents —
-this workflow is entirely analysis and judgement, not execution.
+The orchestrator (Opus) owns all branching. Sonnet subagents handle the
+per-layer audit execution so the orchestrator's context isn't burned reading
+every file in the codebase.
+
+---
+
+## Variables
+
+Define these once. Every later phase references them.
+
+| Variable | Source | Example |
+| --- | --- | --- |
+| `SUBAGENT_MODEL` | constant | `claude-sonnet-4-6` |
+| `PROJECT_NAME` | `basename $(git rev-parse --show-toplevel)` | `kick-tvos` |
+| `PLANS_DIR` | `${HOME}/Developer/obsidian/${PROJECT_NAME}/plans` | per global plan-storage rule |
+| `AUDIT_DIR` | scope-dependent (see below) | — |
+| `SCOPE` | flag — `ticket` or `all` | — |
+| `SCOPE_KEY` | ticket key (`NAT-1234`) or `full-YYYY-MM-DD` | — |
+
+`AUDIT_DIR = ${PLANS_DIR}/audit/${SCOPE_KEY}` — every artefact this command
+produces lives under that directory in the obsidian vault.
 
 ---
 
 ## Flags
 
-This command supports two modes. You must specify one:
+This command supports two scope modes. You must specify one:
 
 ```
 /audit-codebase --scope=ticket NAT-1234
 ```
+
 Audits files relevant to the ticket's acceptance criteria. Findings are
 created as Jira subtasks on the ticket. Use when remediating a known problem.
 
 ```
 /audit-codebase --scope=all
 ```
+
 Audits the entire codebase. Findings are written to local docs only — no
 Jira interaction. Use for health checks, onboarding, or pre-milestone sweeps.
 
+The phases below run the same way in both modes, differing only where the
+phase body checks `SCOPE`.
+
 ---
 
-## Mode: --scope=ticket
+## Phase 0 — Preflight — Opus, plan mode
 
-**Input required:** Jira ticket key (e.g. `NAT-1234`)
+Apply skill `pipeline-preflight`. The skill produces signals (working tree
+state, base branch position, progress-doc drift). When any signal fires,
+the orchestrator asks via `AskUserQuestion` and follows the same
+Reconcile / Proceed / Abort semantics that `workflow.md` Phase 0 documents.
 
-### Phase 1 — Orientation (ticket)
-#### Opus, plan mode
+Do not proceed to Phase 1 until preflight emits `Pre-flight clean.` or the
+user chooses Proceed anyway.
+
+---
+
+## Phase 1 — Orientation — Opus, plan mode
 
 Read the following before doing anything:
-1. `[SKILL: ~/.claude/skills/user/swift-architect/SKILL.md]`
-2. `CLAUDE.md` — follow every linked doc from it
-3. The Jira ticket via Atlassian MCP
-4. All acceptance criteria on the ticket
-5. All files in `docs/` — these are the target architecture
 
-Do not proceed until you have read all of the above.
+1. Apply skill `swift-architect` (read-only; for the target-architecture
+   summary).
+2. `CLAUDE.md` — follow every linked doc from it.
+3. If `SCOPE=ticket`: the Jira ticket via Atlassian MCP, plus every
+   acceptance criterion on the ticket.
+4. All files in `docs/` — these are the target architecture.
+
+Resolve the scope key:
+
+- `SCOPE=ticket`: `SCOPE_KEY = ${TICKET-KEY}` (e.g. `NAT-1234`).
+- `SCOPE=all`: `SCOPE_KEY = full-$(date +%Y-%m-%d)`.
 
 Produce a one-paragraph audit baseline:
-- What the target architecture expects
-- What layers and patterns are authoritative
-- Which files are in scope based on the ticket AC
 
-Write baseline to: `docs/audit/[TICKET-KEY]/baseline.md`
+- What the target architecture expects.
+- What layers and patterns are authoritative.
+- For `SCOPE=ticket`: which files are in scope based on the ticket AC.
 
-### Phase 2 — Scoped Discovery (ticket)
-#### Opus, plan mode
+Write the baseline to `${AUDIT_DIR}/baseline.md`.
 
-Map only the files relevant to the ticket scope:
+---
 
-1. Identify files touched by or related to the ticket AC
-2. List them grouped by layer (Services, Views, Actors, Models, etc.)
-3. Note any file that does not map to a known layer in the target arch
-4. Do not flag findings yet — discovery only
+## Phase 2 — Codebase Discovery — Opus, plan mode
 
-Write the map to: `docs/audit/[TICKET-KEY]/codebase-map.md`
+Map the in-scope files:
 
-### Phase 3 — Audit Execution (ticket)
-#### Opus, plan mode
+- `SCOPE=ticket`: identify files touched by or related to the ticket AC.
+  Group by layer (Services, Views, Actors, Models, Tests).
+- `SCOPE=all`: list every Swift file grouped by folder. Identify all
+  layers present. Note any folder or file that does not map to a known
+  layer in the target architecture.
 
-Read:
-1. `[SKILL: ~/.claude/skills/user/swift-code-review/SKILL.md]`
-2. `docs/audit/[TICKET-KEY]/codebase-map.md`
+Do not flag findings yet — discovery only.
 
-Audit every file in scope against the target architecture. For each file check:
+Write the map to `${AUDIT_DIR}/codebase-map.md` with files grouped under
+these layer headings:
 
-**Architecture conformance**
-- No ViewModels present
-- Views bind only to `@Observable` services via `@Environment` or init injection
-- Domain logic not placed in views
-- No god objects or coordinator types
+```
+## Domain models and API types
+## Actors and services
+## Views and view composition
+## Tests
+## Unmapped
+```
 
-**Swift 6 concurrency**
-- No `DispatchQueue` where actor/async should be used
-- `Mutex` used instead of `NSLock`
-- No `@unchecked Sendable` without documented justification
-- No retain cycles in `Task { }` closures
-- `actor` used only where mutable shared state genuinely requires it
-- `@MainActor @Observable final class` for services
+The four named layers are the per-subagent audit boundaries used in
+Phase 3.
 
-**Swift quality**
-- No force cast or force try without explanation
-- No abbreviations in type or method names
-- No inline comments
-- No `class func` — use `static func`
-- Named constants over magic literals
+---
 
-**Test coverage**
-- Public methods have Swift Testing coverage
-- No XCTest used for unit tests
-- No XCUITest mixed into unit test targets
+## Phase 3 — Audit Execution — Spawn Sonnet subagents per layer
 
-**Scope creep indicators**
-- Files that touch more than one layer
-- Types with more than one responsibility
-- Services that own UI state or vice versa
+Spawn one `model: SUBAGENT_MODEL, mode: normal` subagent per non-empty
+layer from Phase 2. Each subagent receives the prompt below with its
+layer-specific file list inlined.
 
-For each finding record:
-- File and line (where applicable)
-- Finding category (Architecture / Concurrency / Quality / Tests / Scope)
-- Severity: `blocking` | `major` | `minor`
-- One-line description of the violation
-- One-line description of what correct looks like
+> Apply skill `swift-code-review`. The bundle below contains the layer
+> file list and the target-architecture summary — do not re-read those
+> from disk.
+>
+> [layer files inline]
+> BASELINE: <full contents of ${AUDIT_DIR}/baseline.md>
+>
+> Review every file in the layer. Apply the full BLOCKER / WARNING /
+> SUGGESTION checklist per the severity mapping in `swift-code-review`.
+>
+> Report findings as a structured list. Each finding must include:
+>
+> - file path and line (where applicable)
+> - severity: `BLOCKER` / `WARNING` / `SUGGESTION`
+> - category: Correctness / Concurrency / Code Quality / Naming /
+>   Structure / SwiftUI / Comments / Testing / Platform / Scope
+> - one-line description of the violation
+> - one-line description of what correct looks like
 
-Write all findings to: `docs/audit/[TICKET-KEY]/findings.md`
+Run the four layer subagents in parallel where possible. The orchestrator
+consolidates the four structured reports into a single findings file at
+`${AUDIT_DIR}/findings.md`, grouped first by severity then by file.
 
-### Phase 4 — Prioritisation (ticket)
-#### Opus, plan mode
+**Crash recovery.** If any subagent returns no usable result, apply skill
+`subagent-reliability` before consuming a retry slot.
 
-Read `docs/audit/[TICKET-KEY]/findings.md`.
+---
+
+## Phase 4 — Prioritisation — Opus, plan mode
+
+Read `${AUDIT_DIR}/findings.md`.
 
 Group findings into remediation batches. Each batch must:
-- Be implementable as a single `ticket-to-pr` run
-- Contain findings from the same file or closely related files
-- Have a clear, testable definition of done
-- Not depend on another batch that hasn't been completed first
+
+- Be implementable as a single `workflow` run.
+- Contain findings from the same file or closely related files.
+- Have a clear, testable definition of done.
+- Not depend on another batch that hasn't been completed first.
 
 Order batches by dependency and severity:
-1. `blocking` findings that other work depends on — first
-2. `blocking` findings that are independent — second
-3. `major` findings — third
-4. `minor` findings — last
 
-Write the prioritised batch list to:
-`docs/audit/[TICKET-KEY]/remediation-plan.md`
+1. `BLOCKER` findings that other work depends on — first.
+2. `BLOCKER` findings that are independent — second.
+3. `WARNING` findings — third.
+4. `SUGGESTION` findings — last.
 
-Format each batch as:
+For each batch, apply skill `swift-discovery` to produce a discovery note
+in the canonical format. This means each batch is ready to be picked up by
+`workflow` as a subtask with zero translation. Write each note to
+`${PLANS_DIR}/[BATCH-KEY]-discovery.md` where `BATCH-KEY` is either the
+Jira subtask key (Phase 5, `SCOPE=ticket`) or a synthetic
+`${SCOPE_KEY}-batch-N` identifier (`SCOPE=all`).
 
-```
+Write the prioritised batch list itself (index of batch keys, severities,
+and one-line titles) to `${AUDIT_DIR}/remediation-plan.md`:
+
+```markdown
 ## Batch N — [Short title]
-Severity: [blocking|major|minor]
+Severity: [BLOCKER|WARNING|SUGGESTION]
 Depends on: [Batch X, or none]
-Files in scope: [list]
-Findings addressed: [finding IDs or descriptions]
-Definition of done: [one sentence]
+Discovery note: ${PLANS_DIR}/[BATCH-KEY]-discovery.md
 ```
 
-### Phase 5 — Create Jira Subtasks (ticket)
-#### Opus, plan mode
+---
 
-For each batch in `docs/audit/[TICKET-KEY]/remediation-plan.md`:
+## Phase 5 — Jira Sync — Opus, plan mode — `SCOPE=ticket` only
 
-1. Create a Jira subtask as a child of the audit ticket via Atlassian MCP
-2. Subtask title: `[Batch N] [Short title]`
+> Skip this phase when `SCOPE=all`. Proceed directly to Phase 6.
+
+For each batch in `${AUDIT_DIR}/remediation-plan.md`:
+
+1. Create a Jira subtask as a child of the audit ticket via Atlassian MCP.
+2. Subtask title: `[Batch N] [Short title]`.
 3. Subtask description: paste the batch block from the remediation plan
-4. Set priority in Jira:
-   - `blocking` → Critical
-   - `major` → High
-   - `minor` → Medium
-5. Record the subtask key returned by Jira
+   plus a link to the discovery note path.
+4. Set Jira priority by severity:
+   - `BLOCKER` → Critical
+   - `WARNING` → High
+   - `SUGGESTION` → Medium (or `Low` if the project uses a five-tier scale)
+5. Record the subtask key returned by Jira and rename the discovery note
+   file to use the Jira key (so `workflow` can pick it up by ticket).
 
 After all subtasks are created, add a comment to the parent ticket:
 
 ```
 | Subtask | Severity | Files | Status |
 |---|---|---|---|
-| NAT-XXXX | blocking | FooService.swift | To Do |
-| NAT-XXXX | major | BarView.swift | To Do |
+| NAT-XXXX | BLOCKER | FooService.swift | To Do |
+| NAT-XXXX | WARNING | BarView.swift | To Do |
 ```
 
-### Phase 6 — Audit Report (ticket)
-#### Opus, plan mode
+---
 
-Write final report to: `docs/audit/[TICKET-KEY]/report.md`
+## Phase 6 — Audit Report — Opus, plan mode
+
+Write the final report to `${AUDIT_DIR}/report.md`.
 
 Report must contain:
-1. **Audit baseline** — from Phase 1
-2. **Findings summary** — total count by severity and category
-3. **Remediation plan** — batch list with Jira subtask keys linked
-4. **Risks** — findings that, if left unaddressed, will block future work
-5. **Next step** — "Run `ticket-to-pr` for [NAT-XXXX] first"
+
+1. **Audit baseline** — from Phase 1.
+2. **Findings summary** — total count by severity and category.
+3. **Remediation plan** — batch list with discovery note paths (and Jira
+   subtask keys linked when `SCOPE=ticket`).
+4. **Risks** — findings that, if left unaddressed, will block future work.
+5. **Next step** — `Run /workflow <BATCH-KEY>` for the first batch.
 
 Report to the user:
-- Total findings (by severity)
-- Number of Jira subtasks created
-- The first subtask key to hand to `ticket-to-pr`
+
+- Total findings (by severity and category).
+- For `SCOPE=ticket`: number of Jira subtasks created.
+- For `SCOPE=all`: total number of remediation batches.
+- The first batch key to hand to `workflow`.
 
 ---
 
-## Mode: --scope=all
-
-**Input required:** none
-
-### Phase 1 — Orientation (all)
-#### Opus, plan mode
-
-Read the following before doing anything:
-1. `[SKILL: ~/.claude/skills/user/swift-architect/SKILL.md]`
-2. `CLAUDE.md` — follow every linked doc from it
-3. All files in `docs/` — these are the target architecture
-
-Do not proceed until you have read all of the above.
-
-Set the output folder to: `docs/audit/full-[YYYY-MM-DD]/`
-where `[YYYY-MM-DD]` is today's date.
-
-Produce a one-paragraph audit baseline:
-- What the target architecture expects
-- What layers and patterns are authoritative
-
-Write baseline to: `docs/audit/full-[YYYY-MM-DD]/baseline.md`
-
-### Phase 2 — Full Codebase Discovery (all)
-#### Opus, plan mode
-
-Map the entire codebase:
-
-1. List every Swift file grouped by folder
-2. Identify all layers present (Services, Views, Actors, Models, etc.)
-3. Note any folder or file that does not map to a known layer in the target arch
-4. Do not flag findings yet — discovery only
-
-Write the map to: `docs/audit/full-[YYYY-MM-DD]/codebase-map.md`
-
-### Phase 3 — Audit Execution (all)
-#### Opus, plan mode
-
-Read:
-1. `[SKILL: ~/.claude/skills/user/swift-code-review/SKILL.md]`
-2. `docs/audit/full-[YYYY-MM-DD]/codebase-map.md`
-
-Audit every file in the codebase against the target architecture using the
-same checklist as `--scope=ticket` Phase 3 above.
-
-Work layer by layer — complete one layer before moving to the next:
-1. Domain models and API types
-2. Actors and services
-3. Views and view composition
-4. Tests
-
-Write all findings to: `docs/audit/full-[YYYY-MM-DD]/findings.md`
-
-### Phase 4 — Prioritisation (all)
-#### Opus, plan mode
-
-Read `docs/audit/full-[YYYY-MM-DD]/findings.md`.
-
-Group findings into remediation batches using the same rules as
-`--scope=ticket` Phase 4 above.
-
-Write the prioritised batch list to:
-`docs/audit/full-[YYYY-MM-DD]/remediation-plan.md`
-
-### Phase 5 — Audit Report (all)
-#### Opus, plan mode
-
-**No Jira interaction in this phase.** Write local docs only.
-
-Write final report to: `docs/audit/full-[YYYY-MM-DD]/report.md`
-
-Report must contain:
-1. **Audit baseline** — from Phase 1
-2. **Findings summary** — total count by severity and category
-3. **Remediation plan** — full batch list in priority order
-4. **Risks** — findings that, if left unaddressed, will block future work
-5. **Suggested next step** — which batch to tackle first and why
-
-Report to the user:
-- Total findings (by severity and category)
-- Number of remediation batches
-- Suggested first batch to hand to `ticket-to-pr`
-- Path to the full report
-
----
-
-## Halt Conditions (both modes)
+## Halt Conditions
 
 The orchestrator must halt and report (never silently continue) if:
-- No `docs/` folder or architecture docs are found in Phase 1
-- The codebase map in Phase 2 is empty
-- Any Jira MCP call fails (`--scope=ticket` only)
 
-On halt: report the reason to the user and stop. Do not attempt to audit
-without a readable target architecture.
+- No `docs/` folder or architecture docs are found in Phase 1.
+- The codebase map in Phase 2 is empty.
+- Any Phase 3 subagent returns no usable result after applying skill
+  `subagent-reliability` (recover-in-place / resume / re-spawn).
+- Any required Jira MCP call fails (`SCOPE=ticket` only).
+
+On halt: report the reason to the user and write a halt summary to
+`${AUDIT_DIR}/blocked.md`. Do not attempt to audit without a readable
+target architecture.
 
 ---
 
 ## Output Summary
 
-### --scope=ticket
+Every artefact lives under `${AUDIT_DIR} = ${PLANS_DIR}/audit/${SCOPE_KEY}`.
 
 | Artefact | Location |
 |---|---|
-| Baseline | `docs/audit/[TICKET-KEY]/baseline.md` |
-| Codebase map | `docs/audit/[TICKET-KEY]/codebase-map.md` |
-| Raw findings | `docs/audit/[TICKET-KEY]/findings.md` |
-| Remediation plan | `docs/audit/[TICKET-KEY]/remediation-plan.md` |
-| Final report | `docs/audit/[TICKET-KEY]/report.md` |
-| Jira subtasks | Child tickets of `[TICKET-KEY]` |
-
-### --scope=all
-
-| Artefact | Location |
-|---|---|
-| Baseline | `docs/audit/full-[YYYY-MM-DD]/baseline.md` |
-| Codebase map | `docs/audit/full-[YYYY-MM-DD]/codebase-map.md` |
-| Raw findings | `docs/audit/full-[YYYY-MM-DD]/findings.md` |
-| Remediation plan | `docs/audit/full-[YYYY-MM-DD]/remediation-plan.md` |
-| Final report | `docs/audit/full-[YYYY-MM-DD]/report.md` |
+| Baseline | `${AUDIT_DIR}/baseline.md` |
+| Codebase map | `${AUDIT_DIR}/codebase-map.md` |
+| Raw findings | `${AUDIT_DIR}/findings.md` |
+| Remediation plan (index) | `${AUDIT_DIR}/remediation-plan.md` |
+| Per-batch discovery notes | `${PLANS_DIR}/[BATCH-KEY]-discovery.md` |
+| Final report | `${AUDIT_DIR}/report.md` |
+| Jira subtasks (`SCOPE=ticket` only) | Child tickets of `[TICKET-KEY]` |
 
 ---
 
-## Handoff to ticket-to-pr
+## Handoff to `workflow`
 
-Once this command completes, run `ticket-to-pr` once per remediation batch,
-in the order specified in the remediation plan. Each batch is already scoped
-and sequenced — for `--scope=ticket`, pass the Jira subtask key directly.
-For `--scope=all`, use the batch definition from the remediation plan as
-the ticket input.
+Once this command completes, run `/workflow <BATCH-KEY>` once per
+remediation batch, in the order specified in the remediation plan. Each
+batch already has a `swift-discovery`-shaped note ready in `${PLANS_DIR}`
+— `workflow` Phase 3 picks it up without re-running discovery.
+
+- `SCOPE=ticket`: pass the Jira subtask key directly. `workflow` derives
+  the discovery-note path from the key.
+- `SCOPE=all`: pass the synthetic batch key (e.g.
+  `full-2026-05-27-batch-1`).
 
 ---
 
-**Model & mode:** Opus, plan mode — pure analysis and judgement workflow.
-No execution subagents. Opus runs all phases.
+**Model & mode:** Opus, plan mode for orchestration. Sonnet subagents
+handle Phase 3 (per-layer audit) only. Opus runs every branching
+decision and every Jira call.

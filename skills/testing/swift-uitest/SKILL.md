@@ -34,6 +34,55 @@ user flows. They are **not** unit tests and do not use the Swift Testing framewo
 5. **Explicit waits, never `sleep`** — Use `XCTNSPredicateExpectation` or
    `waitForExistence(timeout:)`. `Thread.sleep` is always wrong.
 
+### tvOS hard stops (see detailed section below)
+
+When targeting tvOS, these patterns silently break UI tests:
+
+- `.searchable()` does not produce a `searchField` element. Query the
+  underlying `textField` instead.
+- `opacity: 0` removes all children from the accessibility tree —
+  unreachable from tests. Use `.hidden()` only when tests don't need
+  to query those children; never `opacity(0)` on something a test
+  must inspect.
+- `.accessibilityElement(children: .ignore)` breaks SwiftUI's
+  `.focused()` binding — `hasFocus` reports accessibility focus
+  correctly but the bound state desyncs. Query the rendered state, not
+  the focus signal.
+- Count-based remote presses race against focus animations. Use
+  wait-driven navigation, not fixed press counts.
+
+Full tvOS quirks appear later in this skill ("tvOS element type
+quirks" and "tvOS SwiftUI layout gotchas that break UI tests"). Treat
+the four bullets above as hard stops — never write a tvOS test that
+relies on the broken behaviour.
+
+---
+
+## Escalation — when a test is not automatable
+
+Some AC items cannot be driven by `XCUIApplication`:
+
+- System UI with no accessibility surface (in-app purchase sheets,
+  permission dialogs on certain OS versions, OS-level keyboard).
+- Visual-correctness assertions (colour, exact spacing, animation
+  smoothness) that the accessibility tree doesn't expose.
+- Behaviour that requires reading app-internal state the UI does not
+  surface.
+
+**Do not weaken the assertion to make it automatable.** Do not assert
+on the wrong thing to make a test pass. Instead:
+
+1. Stop writing the test.
+2. Record the unautomatable AC item in the discovery / plan note with
+   one line on *why* (which surface, which API limitation).
+3. Surface as a `manual` row in the AC coverage table that the calling
+   pipeline produces. The reviewer follows the manual step from the
+   PR description.
+
+The same rule applies when `swift-uitest-debug` declares a test
+unautomatable after its escalation ladder exhausts: replace the test
+with a manual step, do not weaken it.
+
 ---
 
 ## Step 0 — Understand the App Before Writing
