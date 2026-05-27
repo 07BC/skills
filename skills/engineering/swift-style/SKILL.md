@@ -26,13 +26,13 @@ before commit or PR, use `swift-code-review`.
 ### Data Race Safety
 
 ```swift
-// ✅ Sendable conformance for cross-isolation transfer
+// Sendable conformance for cross-isolation transfer
 struct UserData: Sendable {
     let id: UUID
     let name: String
 }
 
-// ✅ Actor for mutable shared state
+// Actor for mutable shared state
 actor CacheManager {
     private var cache: [String: Data] = [:]
     
@@ -44,7 +44,7 @@ actor CacheManager {
 ### Isolation Boundaries
 
 ```swift
-// ✅ MainActor @Observable service owns view-facing state
+// MainActor @Observable service owns view-facing state
 @MainActor
 @Observable
 final class FeatureService {
@@ -61,7 +61,7 @@ final class FeatureService {
     }
 }
 
-// ✅ nonisolated for sync access to immutable data
+// nonisolated for sync access to immutable data
 actor DataStore {
     nonisolated let identifier: String
     private var data: [String: Any] = [:]
@@ -78,7 +78,7 @@ A `Task { }` created inside a `@MainActor` type (e.g. a `@MainActor @Observable`
 inherits `@MainActor` isolation automatically. Do NOT use `MainActor.run` inside it.
 
 ```swift
-// ❌ NEVER: Redundant MainActor.run inside an inherited-isolation Task
+// NEVER: Redundant MainActor.run inside an inherited-isolation Task
 Task { [weak self] in
     guard let self else { return }
     await MainActor.run {
@@ -86,7 +86,7 @@ Task { [weak self] in
     }
 }
 
-// ✅ ALWAYS: Trust the inherited isolation
+// ALWAYS: Trust the inherited isolation
 Task { [weak self] in
     guard let self else { return }
     someProperty = value            // compiler guarantees main actor here
@@ -120,7 +120,7 @@ func fetchUser(id: UUID) throws(NetworkError) -> User {
 20 lines maximum per method. If a method exceeds this, extract named private helpers with descriptive names.
 
 ```swift
-// ❌ Avoid: One method doing everything
+// Avoid: One method doing everything
 func submit() async throws {
     // URL construction
     // validation
@@ -130,7 +130,7 @@ func submit() async throws {
     // analytics
 }
 
-// ✅ Prefer: Named responsibilities
+// Prefer: Named responsibilities
 func submit() async throws {
     try validate()
     let request = try buildRequest()
@@ -145,10 +145,10 @@ func submit() async throws {
 Maximum 3 parameters. Beyond 3, introduce a dedicated parameter type.
 
 ```swift
-// ❌ Avoid
+// Avoid
 func fetch(page: Int, limit: Int, sort: String, category: String?, subcategory: String?) async throws -> [Item]
 
-// ✅ Prefer
+// Prefer
 struct FetchOptions {
     let page: Int
     let limit: Int
@@ -165,10 +165,10 @@ func fetch(_ options: FetchOptions) async throws -> [Item]
 Boolean parameters that toggle behaviour belong in separate functions or an enum.
 
 ```swift
-// ❌ Avoid
+// Avoid
 func load(forceRefresh: Bool)
 
-// ✅ Prefer
+// Prefer
 func load()
 func reload()
 ```
@@ -182,12 +182,12 @@ Every function does one thing at one level of abstraction. If you need the word 
 Identify any pattern appearing more than twice and extract it into a named helper. Apply generics and closures to capture variation; keep call sites readable.
 
 ```swift
-// ❌ Avoid: Copy-pasted loop body
+// Avoid: Copy-pasted loop body
 for item in listA { item.cancel() }
 for item in listB { item.cancel() }
 for item in listC { item.cancel() }
 
-// ✅ Prefer: Named helper
+// Prefer: Named helper
 [listA, listB, listC].forEach { $0.forEach { $0.cancel() } }
 // or a dedicated named method when the operation is complex
 ```
@@ -197,11 +197,11 @@ for item in listC { item.cancel() }
 Design names for clarity at the point of use, not at the declaration site. The call site should read as natural English.
 
 ```swift
-// ❌ Avoid: Abbreviated or ambiguous
+// Avoid: Abbreviated or ambiguous
 func remove(_ x: Int)
 func fetch(_ s: String) async throws
 
-// ✅ Prefer: Reads as prose
+// Prefer: Reads as prose
 func remove(at index: Int)
 func fetch(channel slug: String) async throws
 ```
@@ -209,11 +209,11 @@ func fetch(channel slug: String) async throws
 **Boolean properties read as assertions:**
 
 ```swift
-// ❌
+// Avoid
 var empty: Bool
 var valid: Bool
 
-// ✅
+// Prefer
 var isEmpty: Bool
 var isValid: Bool
 ```
@@ -232,18 +232,20 @@ func appending(_ item: Item) -> [Item]
 
 ### Documentation Comments
 
-All public and internal protocol-satisfying methods require `///` documentation. Private helpers do not unless the name alone is insufficient.
+Default: **no `///` doc comments.** Well-named identifiers and types
+replace them. This matches `swift-engineer` Core Principle #1 and
+`swift-code-review`'s expectation.
 
-```swift
-/// Fetches the full channel detail for the given slug.
-///
-/// - Parameter slug: The channel's URL slug (e.g. "whatever").
-/// - Returns: A fully decoded `Channel` including playback URL.
-/// - Throws: `NetworkError.httpError` for non-2xx responses.
-func fetchChannel(slug: String) async throws -> Channel
-```
+Inline `//` comments are reserved for the non-obvious WHY: a hidden
+constraint, a subtle invariant, a workaround for a specific bug, or
+behaviour that would surprise a reader. If removing the comment
+wouldn't confuse a future reader, don't write it.
 
 Never use `/** */` block comments.
+
+If the user explicitly requests DocC docs for a file or scope, use the
+`swift-document` skill — never add `///` ad hoc as part of a general
+authoring or review pass.
 
 ### Column Limit
 
@@ -274,7 +276,7 @@ Instead, back UserDefaults-persisted properties using the two observation
 primitives the `@Observable` macro exposes: `access` and `withMutation`.
 
 ```swift
-// ✅ Correct: UserDefaults in an @Observable service
+// Correct: UserDefaults in an @Observable service
 @MainActor
 @Observable
 final class SettingsService {
@@ -309,7 +311,7 @@ stored property.
 view-local preferences that do not need to be shared across services:
 
 ```swift
-// ✅ Correct: @AppStorage in a view
+// Correct: @AppStorage in a view
 struct AppearanceView: View {
   @AppStorage("useDarkMode") private var useDarkMode = false
 
@@ -331,10 +333,10 @@ update the other. Decide on a single owner and stick to it.
 **Keys must always be named constants** — never inline string literals:
 
 ```swift
-// ❌ Avoid
+// Avoid
 defaults.bool(forKey: "isNotificationsEnabled")
 
-// ✅ Prefer
+// Prefer
 defaults.bool(forKey: Keys.isNotificationsEnabled)
 ```
 
@@ -343,7 +345,7 @@ defaults.bool(forKey: Keys.isNotificationsEnabled)
 Never use `didSet` property observers for side effects like persistence, networking, or analytics. Use explicit setter methods instead:
 
 ```swift
-// ❌ Avoid: didSet with side effects
+// Avoid: didSet with side effects
 @Observable
 final class SettingsService {
     var volume: Double = 0.5 {
@@ -354,7 +356,7 @@ final class SettingsService {
     }
 }
 
-// ✅ Prefer: Explicit setter methods
+// Prefer: Explicit setter methods
 @Observable
 final class SettingsService {
     private(set) var volume: Double = 0.5
@@ -398,7 +400,7 @@ struct SettingsView: View {
 Prefer early returns over nested if-else blocks. Invert conditions and return early to reduce nesting:
 
 ```swift
-// ❌ Avoid: Nested conditionals
+// Avoid: Nested conditionals
 func process() {
     if isValid {
         // long block of valid logic
@@ -407,7 +409,7 @@ func process() {
     }
 }
 
-// ✅ Prefer: Early return
+// Prefer: Early return
 func process() {
     guard isValid else {
         // handle invalid
@@ -422,7 +424,7 @@ func process() {
 Use `switch` statements instead of long if-else chains for better readability and exhaustiveness checking:
 
 ```swift
-// ❌ Avoid: Long if-else chains
+// Avoid: Long if-else chains
 if keyPath == \.resolution {
     // ...
 } else if keyPath == \.bitrate {
@@ -433,7 +435,7 @@ if keyPath == \.resolution {
     return
 }
 
-// ✅ Prefer: Switch statement
+// Prefer: Switch statement
 switch keyPath {
 case \.resolution:
     // ...
@@ -453,7 +455,7 @@ This applies to KeyPath matching, enum cases, and any branching with 3+ conditio
 Use `overlay` and `background` modifiers instead of deeply nested VStacks, HStacks, and ZStacks for layering content:
 
 ```swift
-// ❌ Avoid: Nested stacks for layering
+// Avoid: Nested stacks for layering
 ZStack {
     VStack {
         HStack {
@@ -471,7 +473,7 @@ ZStack {
     }
 }
 
-// ✅ Prefer: Overlay modifiers
+// Prefer: Overlay modifiers
 contentView
     .overlay(alignment: .topTrailing) {
         closeButton
@@ -480,7 +482,7 @@ contentView
         bottomBar
     }
 
-// ✅ Prefer: safeAreaInset for edge-pinned content
+// Prefer: safeAreaInset for edge-pinned content
 contentView
     .safeAreaInset(edge: .bottom) {
         bottomBar
@@ -504,7 +506,7 @@ contentView
 Every SwiftUI view must be in its own file. Never use `private struct` views, computed properties, or functions to create subviews within a parent view file.
 
 ```swift
-// ❌ Avoid: Private subviews in same file
+// Avoid: Private subviews in same file
 struct AboutView: View {
     var body: some View {
         VStack {
@@ -514,14 +516,14 @@ struct AboutView: View {
     }
 }
 
-private struct ProfilePhotoSection: View { ... }  // ❌ Wrong file
+private struct ProfilePhotoSection: View { ... }  // Wrong file
 
-// ❌ Avoid: Computed property subviews
+// Avoid: Computed property subviews
 struct AboutView: View {
-    private var profilePhotoSection: some View { ... }  // ❌ Never do this
+    private var profilePhotoSection: some View { ... }  // Never do this
 }
 
-// ✅ Correct: Separate files
+// Correct: Separate files
 // ProfilePhotoSection.swift
 struct ProfilePhotoSection: View {
     var body: some View {

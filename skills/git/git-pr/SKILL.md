@@ -15,12 +15,26 @@ description: Commits, pushes, and creates a pull request for the current branch.
 
 1. **Read git-push** and complete all steps (format → commit → push).
 
-2. **Run the project's unit tests** if a test suite is present. Skip UI/integration test targets. If any tests fail, stop and report the failures — do not create the PR until they pass.
+2. **Run the project's unit tests** if a test suite is present. Skip
+   UI/integration test targets. If any tests fail, stop and report
+   the failures — do not create the PR until they pass.
+
+   Read `SCHEME`, `DESTINATION`, `TEST_TARGET`, and `UI_TEST_TARGET`
+   from the project's `CLAUDE.md`. If those values aren't declared,
+   fall back to the project's documented test command.
 
    Examples:
-   - Swift/Xcode: `xcodebuild test -scheme <scheme> -destination 'platform=iOS Simulator,...' -skip-testing:<UITestTarget>`
-   - JS/TS: `npm test` or `npx jest --passWithNoTests`
-   - Python: `pytest`
+   - Swift/Xcode (Xcode open): `mcp__xcode__RunSomeTests` with
+     `$TEST_TARGET` only — skips UI tests by virtue of selecting just
+     the unit target.
+   - Swift/Xcode (Xcode closed): `xcodebuild test -scheme $SCHEME
+     -destination '$DESTINATION' -only-testing:$TEST_TARGET`.
+   - JS/TS: `npm test` or `npx jest --passWithNoTests`.
+   - Python: `pytest`.
+
+   **Timeout: 5 minutes.** If tests don't complete in that window,
+   terminate, report the timeout, and halt PR creation. Do not raise
+   a PR over a hung test suite.
 
    If no test suite exists, skip and continue.
 
@@ -30,7 +44,21 @@ description: Commits, pushes, and creates a pull request for the current branch.
    git diff main...HEAD
    ```
 
-   Apply the project's code review skill if available (e.g. `swift-code-review`), otherwise review for: correctness, security issues, obvious bugs, missing error handling at boundaries, and leftover debug code. Report any BLOCKER findings. If blockers exist, stop and ask the user to fix them before continuing.
+   Apply the project's code review skill if available (prefer
+   `swift-code-review` for Swift projects). Use its severity mapping
+   end-to-end: `BLOCKER` / `WARNING` / `SUGGESTION`. If no skill is
+   available, review for correctness, security issues, obvious bugs,
+   missing error handling at boundaries, and leftover debug code.
+
+   **What blocks the PR:**
+
+   - **BLOCKER findings** halt PR creation. Fix or reroute (e.g.
+     spawn a fix subagent) before continuing.
+   - **WARNING findings** do not halt. Include them in the PR
+     description's "Review notes" section so reviewers know which
+     items the author chose to ship anyway.
+   - **SUGGESTION findings** do not halt and do not need to appear in
+     the PR description.
 
 4. Summarise what is in this branch by running `scripts/branch_summary.sh`
    (defaults to `main` as the base; pass another branch name to override).

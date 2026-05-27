@@ -16,8 +16,22 @@ description: >
 This skill covers GitHub Actions CI for Xcode projects.
 It encodes lessons from real PR failures — not just general best practice.
 
-> **Note:** Examples reference `kick-apple-public` and `Chagi` scheme names.
-> Substitute your own project name and scheme where these appear.
+## Variables
+
+Examples below use placeholders. Substitute your own values from
+`CLAUDE.md` or the project's Xcode settings:
+
+| Placeholder | Meaning | Example |
+| --- | --- | --- |
+| `$REPO` | GitHub repo (org/name) | `kick-apple-public` |
+| `$SCHEME` | Xcode scheme | `Chagi`, `Chagi-Debug` |
+| `$WORKSPACE` | Xcode workspace file | `Chagi.xcworkspace` |
+| `$UNIT_TEST_TARGET` | Unit test target | `ChagiTests` |
+| `$UI_TEST_TARGET` | UI test target | `ChagiUITests` |
+
+Concrete names that appear in examples below (`kick-apple-public`,
+`Chagi`, `ChagiTests`) are illustrative — replace with your own
+values.
 
 ---
 

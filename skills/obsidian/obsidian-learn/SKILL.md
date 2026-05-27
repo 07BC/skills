@@ -157,11 +157,16 @@ Read the compact index first using the `Read` tool:
 Read ~/Developer/obsidian/knowledge/_index.md
 ```
 
-The index contains one line per stored entry (key phrase only). If an entry
-you want to write is already represented there, skip it.
+The index contains one line per stored entry (key phrase only). If an
+entry you want to write is already represented there, skip it.
 
-If the index doesn't exist, that's fine — skip to 2b and create it after
-writing.
+**If the index is absent or older than 30 days**, treat it as
+unreliable and rebuild by re-reading every category file under
+`~/Developer/obsidian/knowledge/`. Update the index after writing
+(Step 3) so the next run hits the fast path.
+
+`stat -f %m ~/Developer/obsidian/knowledge/_index.md` gives the
+mtime; compare against `date -v -30d +%s` (30 days ago).
 
 ### 2b — Read any file that still has candidates
 
@@ -186,8 +191,8 @@ Use `--dry-run` first to preview the change set. The script appends entries
 under a `## YYYY-MM-DD` heading, deduplicates against the existing file
 contents, and creates the parent directory if needed.
 
-If a category file does not yet exist, the script creates it as a plain
-markdown file (no frontmatter). Add frontmatter manually the first time:
+If a category file does not yet exist, `scripts/kb_append.py`
+auto-writes frontmatter on first creation:
 
 ```markdown
 ---
@@ -196,6 +201,9 @@ tags: [ai-knowledge, <category>]
 
 # <Category Title>
 ```
+
+No manual step required. The category-to-tag mapping is hardcoded in
+the script and matches the file map below.
 
 ### File map
 

@@ -19,6 +19,13 @@ pre-extracts candidates (verbatim prompts, blockquotes, slash-commands,
 keyword paragraphs) into compact JSONL so the model synthesises from
 structured data rather than re-reading every raw transcript.
 
+## Prerequisite — yt-research
+
+This skill processes the output of `yt-research`. If the user hasn't
+run `yt-research` yet, run that first to produce the transcript folder
+under `<vault>/AI/<channel-slug>/transcript`, then return here. The
+source folder this skill expects is precisely that path.
+
 ---
 
 ## Step 0 — Resolve inputs

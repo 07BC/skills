@@ -47,20 +47,29 @@ nothing is mutated.
 
 ## Step 2 — Extract knowledge entries
 
-For each session, read the transcript and extract entries in these five
-categories. Only extract entries that are **durable and reusable** — skip
-one-off decisions, user-specific config, or anything that won't apply to
-future sessions.
+For each session, read the transcript and extract entries in these nine
+categories. The list matches `obsidian-learn`'s category set so both
+skills append to the same knowledge files. Only extract entries that are
+**durable and reusable** — skip one-off decisions, user-specific config,
+or anything that won't apply to future sessions.
 
 ### Categories
 
 | Category | What to extract |
 |---|---|
+| **style** | Code style corrections, formatting rules reinforced, indentation or naming patterns |
 | **architecture** | SwiftUI MV patterns, service design, `actor` boundaries, DI decisions, naming conventions |
 | **prohibitions** | Things that must NOT be done — anti-patterns caught, wrong approaches corrected |
 | **bugs** | Root causes of real bugs found, how they were diagnosed, what the fix was |
 | **prompting** | Prompt patterns that worked well, patterns that failed, model/mode choices that paid off |
-| **style** | Code style corrections, formatting rules reinforced, indentation or naming patterns |
+| **tooling** | Claude Code tooling, MCP servers, skill / command authoring lessons |
+| **patterns** | Reusable code or design patterns that recurred across sessions |
+| **research** | External references, papers, posts, or docs worth pinning |
+| **git** | Git workflow lessons, commit / branch / rebase practices |
+
+If a session has fewer than 2 entries across all nine categories, still
+mark it processed (Step 4); report in the Step 5 summary that no
+durable learnings were extracted.
 
 ### Entry format
 
@@ -86,29 +95,35 @@ For each category with extracted entries, write entries to a temp file
 deduplicates against the existing file contents. Use `--dry-run` first to
 preview the change set.
 
-Category → target file (inside `~/Developer/obsidian/knowledge/`):
+Category → target file (inside `~/Developer/obsidian/knowledge/`).
+**Filenames match `obsidian-learn`'s** so both skills feed the same
+knowledge files:
 
 | Category | File |
 |---|---|
-| architecture | `swift-architecture.md` |
-| prohibitions | `swift-prohibitions.md` |
-| bugs | `swift-bugs.md` |
-| prompting | `prompting-patterns.md` |
 | style | `swift-style.md` |
+| architecture | `architecture.md` |
+| prohibitions | `prohibitions.md` |
+| bugs | `bugs.md` |
+| prompting | `prompting.md` |
+| tooling | `tooling.md` |
+| patterns | `patterns.md` |
+| research | `research.md` |
+| git | `git.md` |
 
-If a category file does not yet exist, the script creates it as a plain
-markdown file (no frontmatter). The first time, add a frontmatter header
-manually:
+`scripts/kb_append.py` auto-writes frontmatter on first creation:
 
 ```markdown
 ---
-tags: [ai-knowledge, claude-code]
+tags: [ai-knowledge, <category>]
 ---
 
 # {Title}
 
 > Auto-generated from Claude Code sessions. Do not edit manually.
 ```
+
+No manual frontmatter step required.
 
 ---
 
@@ -131,11 +146,15 @@ Print a short summary:
 ```
 Processed N session(s)
 Added:
-  • architecture: N entries → swift-architecture.md
-  • prohibitions: N entries → swift-prohibitions.md
-  • bugs: N entries → swift-bugs.md
-  • prompting: N entries → prompting-patterns.md
-  • style: N entries → swift-style.md
+  - style: N entries → swift-style.md
+  - architecture: N entries → architecture.md
+  - prohibitions: N entries → prohibitions.md
+  - bugs: N entries → bugs.md
+  - prompting: N entries → prompting.md
+  - tooling: N entries → tooling.md
+  - patterns: N entries → patterns.md
+  - research: N entries → research.md
+  - git: N entries → git.md
 ```
 
 ---

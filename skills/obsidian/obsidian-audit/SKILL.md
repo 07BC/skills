@@ -53,11 +53,23 @@ For each candidate file:
 
 ### Step 3 — Tag commit threshold
 
-After Pass 1 finishes, before Pass 2:
-- For each entry in `new_tag_candidates`, count occurrences. Any tag with count `< 2` is **rejected** — strip it from every per-file change set.
-- Tags with count `>= 2` are accepted as new vault tags.
+The 2+ rule is applied **once**, here, after Pass 1 has read every
+file and before Pass 2 writes anything. The flow:
 
-This is the only place the 2+ rule is enforced. Existing-tag pruning happens per-file in Pass 1.
+1. After Pass 1 finishes, every per-file change set is still in
+   memory but **no edits have been written**.
+2. For each entry in `new_tag_candidates`, count occurrences. Any tag
+   with count `< 2` is **rejected** — strip it from every per-file
+   change set.
+3. Tags with count `>= 2` are accepted as new vault tags and remain
+   in every per-file change set that proposed them.
+4. After Step 3 completes, every tag still in any change set is
+   guaranteed to appear in at least 2 files post-Pass 2.
+
+This is the only place the 2+ rule is enforced. Existing-tag pruning
+happens per-file in Pass 1 (a separate concern: removing tags already
+in a file's frontmatter that don't belong, regardless of vault-wide
+count).
 
 ### Step 4 — Pass 2: apply
 
@@ -67,7 +79,17 @@ For each candidate file, apply its (now-filtered) change set:
 3. **Inline-field lifting** — direct file edit: remove the bullet line(s), add the corresponding property to frontmatter.
 4. After each file, append a per-file diff entry to the run changelog.
 
-If any file edit fails, log the error in the changelog under a `## Errors` section and continue with the next file.
+**Error handling.** Two classes:
+
+- **Caught (logged and continue):** file not found at write time
+  (deleted between Pass 1 and Pass 2), permission denied, malformed
+  JSON in the change set, partial-write that leaves the file
+  syntactically valid. Each is appended to a `## Errors` section in
+  the changelog and the audit continues with the next file.
+- **Uncaught (halt and report):** YAML parse error in a note file
+  (already had broken frontmatter), disk full, repo locked. The
+  audit halts. The changelog written so far is preserved. Print the
+  failing file path and the exception class to the user.
 
 ### Step 5 — Write changelog and update state
 

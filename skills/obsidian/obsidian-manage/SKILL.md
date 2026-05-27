@@ -11,8 +11,19 @@ and direct file operations.
 ## Vault root
 
 ```bash
-VAULT=$(obsidian vault info=path)   # resolves to $HOME/Developer/obsidian
+VAULT=$(obsidian vault info=path)   # resolves to $HOME/Developer/obsidian by default
 ```
+
+If you run multiple Obsidian vaults, `obsidian vault info=path` returns
+the currently-selected one — which may not be the vault the user
+wants this skill to touch. Two options:
+
+- **Switch the CLI's default**: `obsidian vault switch=/path/to/correct/vault`.
+- **Override per-command**: pass `--vault=/path/to/vault` to every
+  `obsidian` invocation below.
+
+When the user is explicit about which vault to use, prefer the
+per-command override — it avoids changing global CLI state.
 
 Use the Obsidian CLI (`obsidian`) for all vault reads and writes — task lists,
 tags, backlinks, search, daily-note path, creating notes, appending content,
@@ -203,7 +214,12 @@ obsidian delete path=<rel> permanent  # bypasses trash — irreversible
 
 - **File naming**: kebab-case for general notes, `YY-MM-D.md` for daily notes,
   `NAT-[number]-[description].md` for specs.
-- **Links**: Use markdown links `[text](path/to/file.md)`, not wikilinks.
+- **Links**: the Obsidian CLI emits markdown links `[text](path/to/file.md)`.
+  When grepping vault content for outgoing links, match the markdown
+  form, not the wikilink form. Wikilinks `[[name]]` may appear in
+  notes authored inside Obsidian itself — when you need to match both,
+  search for both patterns explicitly. CLI move / rename commands
+  update both formats automatically.
 - **Frontmatter**: All notes should have YAML frontmatter with at least `tags`.
 - **Spelling**: Australian English (colour, behaviour, organisation).
 - **New notes**: Default to `inbox/` unless a specific location is given.

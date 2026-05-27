@@ -42,19 +42,37 @@ proceeding. Do not guess a URL.
 
 ### Resolve output directory (always Obsidian vault)
 
-1. Get the vault path:
+This skill always writes output to the user's Obsidian vault — that
+choice is intentional, not configurable. The transcript folder lives
+under `<vault_path>/AI/<channel-slug>/transcript` so all research
+artefacts collect in one place. If you need to save elsewhere, copy
+the folder manually after the run.
+
+1. Confirm the Obsidian CLI is installed:
+
+   ```bash
+   if ! command -v obsidian >/dev/null 2>&1; then
+     echo "Obsidian CLI not found. Install with 'brew install obsidian-cli' or set OBSIDIAN_VAULT_PATH and re-run." >&2
+     exit 1
+   fi
+   ```
+
+   If `$OBSIDIAN_VAULT_PATH` is set as an env override, skip the
+   `obsidian vault` lookup and use that path directly.
+
+2. Get the vault path:
    ```
    obsidian vault
    ```
    Parse the `path` field from the output (tab-separated `name<TAB>path<TAB>...`).
 
-2. Get the channel/uploader name from the URL using yt-dlp:
+3. Get the channel/uploader name from the URL using yt-dlp:
    ```
    yt-dlp --print "%(uploader)s" --playlist-end 1 <url>
    ```
    Slugify it: lowercase, spaces → hyphens, strip non-alphanumeric characters except hyphens.
 
-3. Set output directory:
+4. Set output directory:
    ```
    <vault_path>/AI/<channel-slug>/transcript
    ```

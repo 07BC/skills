@@ -12,7 +12,29 @@ description: >
 # prompt:writer
 
 Produces a Claude Code prompt for an iOS/Swift task. Every prompt is saved
-as a `.md` file and presented via `present_files` — never pasted inline.
+as a `.md` file in the Obsidian plans directory and the absolute path is
+reported to the user.
+
+## Canonical prompt ordering
+
+Every prompt this skill produces follows this exact section order:
+
+1. **XCUITest rules** (Step 4) — only when XCUITest work is involved;
+   appears before everything else so the executing session sees it
+   first.
+2. **Preamble** (Step 3) — repository check + files-to-read list +
+   "Do not write any code until you have read these".
+3. **Task statement** (Step 3) — what is being built or fixed.
+4. **Constraints** (Step 3) — what must NOT change.
+5. **Implementation steps** (Step 3) — ordered, dependency-aware.
+6. **Verification** (Step 3) — build, test, grep.
+7. **Correction Detection block** (Step 6) — inclusion of the
+   `## Corrections` recording rule from this skill.
+8. **Model & mode footer** (Step 3).
+
+If any section is genuinely not applicable (e.g. a tiny bug fix with
+no implementation steps), omit the heading rather than leaving an
+empty section.
 
 ---
 
@@ -147,6 +169,30 @@ Apply to every prompt unless the user's request contradicts them:
 
 Include these guards in prompts wherever they are relevant. They are drawn
 from recurring failure patterns across real sessions.
+
+### Correction recording (always include)
+
+In every prompt this skill produces, include the following block — it
+tells the executing session to record self-corrections inline:
+
+```
+## Corrections
+
+If during this task you self-correct — retry a tool call, backtrack
+on an approach, fix your own output, or recover from a
+misunderstanding — append an entry to a `## Corrections` section in
+the active plan file or session scratchpad immediately. Format:
+
+### {Short title of mistake}
+- **What I did**: {one sentence — the wrong thing}
+- **Why it was wrong**: {one sentence — root cause}
+- **What I did instead**: {one sentence — the fix}
+- **Rule to remember**: {one sentence — generalised lesson}
+```
+
+The full taxonomy of what counts as a correction lives in the
+"Correction Detection" section at the bottom of this skill — use that
+text verbatim if the user asks for a long-form version.
 
 ### Build before test
 Always instruct the agent to build before running any test suite. Compile

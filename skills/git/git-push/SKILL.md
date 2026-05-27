@@ -12,12 +12,21 @@ description: Runs the project formatter (if configured), commits, then pushes to
 
 ## Steps
 
-1. **Run the project formatter** if one is configured. Use `scripts/find_formatter.sh`
-   to detect it: invoked without args, the script prints the formatter command
-   (e.g. `swiftformat .`) or an empty line if no config file is present.
-   With `--apply`, the script runs the detected command against the working
-   tree. If the formatter binary is not installed, note it and continue.
-   Include any files changed by the formatter when staging in the next step.
+1. **Run the project formatter** if one is configured. Use
+   `scripts/find_formatter.sh` to detect it: invoked without args, the
+   script prints the formatter command (e.g. `swiftformat .`) or an
+   empty line if no config file is present. With `--apply`, the
+   script runs the detected command against the working tree.
+
+   If the formatter binary is not installed, print exactly:
+
+   ```
+   Formatter `<name>` not installed; skipping format step.
+   Install with `<install-command>` to reformat on future pushes.
+   ```
+
+   Then continue. Include any files changed by the formatter when
+   staging in the next step.
 
 2. **Read git-commit** and complete all commit steps (status → stage → commit).
 
@@ -27,8 +36,16 @@ description: Runs the project formatter (if configured), commits, then pushes to
    git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null
    ```
 
-4. Push:
-   - No upstream set: `CLAUDE_SKILL_PUSH=1 git push -u origin HEAD`
-   - Upstream exists: `CLAUDE_SKILL_PUSH=1 git push`
+   Parse the result. If the upstream is on a remote other than
+   `origin`, halt and ask the user which remote to push to. Do not
+   silently push to `origin` when the branch is tracking a different
+   remote (e.g. `personal` or `mirror`).
 
-5. Confirm the push succeeded by reporting the remote URL and branch name.
+4. Push:
+   - No upstream set: `CLAUDE_SKILL_PUSH=1 git push -u origin HEAD`.
+   - Upstream is `origin/<branch>`: `CLAUDE_SKILL_PUSH=1 git push`.
+   - Upstream is a non-origin remote: pushed only with user
+     confirmation. `CLAUDE_SKILL_PUSH=1 git push <remote> HEAD`.
+
+5. Confirm the push succeeded by reporting the remote URL and branch
+   name.

@@ -15,10 +15,16 @@ description: Stages specific files and commits with a short imperative message. 
 
 ## Steps
 
-1. Run `scripts/preflight.sh` to get the status, diff, and ticket extraction in
-   one call. The script emits three labelled blocks (`=== status ===`, `=== diff ===`,
-   `=== ticket ===`); the ticket block is either a `WORD-NUMBER` match from the
-   branch name (e.g. `NAT-1234`) or empty.
+1. Run `scripts/preflight.sh` (bundled with this skill) to get the
+   status, diff, and ticket extraction in one call. The script emits
+   three labelled blocks (`=== status ===`, `=== diff ===`,
+   `=== ticket ===`); the ticket block is either a `WORD-NUMBER` match
+   from the branch name (e.g. `NAT-1234`) or empty.
+
+   If the script is missing from the skill directory (rare — it ships
+   alongside SKILL.md), fall back to running these three commands by
+   hand: `git status --short`, `git diff`, and
+   `git branch --show-current | grep -oE '[A-Z]+-[0-9]+'`.
 
 2. If the ticket block is non-empty, prefix the commit message:
    `PROJ-123: short description`. Otherwise use a plain message:

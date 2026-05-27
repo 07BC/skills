@@ -27,17 +27,20 @@ hand-rolled view-model layer.
 | **View** | `struct: View` | `@MainActor` (implicit) | Reads service state via `@Environment`; writes state by calling service methods. |
 | **AppDependencies** | `struct` (or `final class`) | `@MainActor` | Builds every service once at launch. Injected into the SwiftUI environment in the `@main` App. |
 
-**Hard rules:**
+**Hard rules — forbidden:**
 
-- ❌ `ObservableObject` conformance — **forbidden**
-- ❌ `@Published` — **forbidden**
-- ❌ Type names ending in `ViewModel` / `VM` — **forbidden**
-- ❌ Business logic, networking, or persistence inside `View.body` — **forbidden**
-- ❌ Services constructed inside a view (`@State private var service = ...`) — **forbidden** (services live in `AppDependencies` and are injected via environment)
-- ✅ Services are `final class @MainActor @Observable`
-- ✅ Off-main work happens in a `private` `actor` owned by the service
-- ✅ Views read via `@Environment(\.someService)`; write via `@Bindable` only at the view boundary
-- ✅ Every cross-isolation type is `Sendable`
+- `ObservableObject` conformance
+- `@Published`
+- Type names ending in `ViewModel` / `VM`
+- Business logic, networking, or persistence inside `View.body`
+- Services constructed inside a view (`@State private var service = ...`) — services live in `AppDependencies` and are injected via environment
+
+**Hard rules — required:**
+
+- Services are `final class @MainActor @Observable`
+- Off-main work happens in a `private` `actor` owned by the service
+- Views read via `@Environment(\.someService)`; write via `@Bindable` only at the view boundary
+- Every cross-isolation type is `Sendable`
 
 ---
 
@@ -56,7 +59,21 @@ grep -E "IPHONEOS_DEPLOYMENT_TARGET|TVOS_DEPLOYMENT_TARGET|SWIFT_VERSION" \
 ```
 
 Required minimums: **iOS 17 / tvOS 17 / macOS 14** (for `@Observable`).
-**Swift 6.0+**. If lower, stop and ask the user to bump the deployment target.
+**Swift 6.0+**.
+
+If the deployment target is below the minimum, ask the user via
+`AskUserQuestion` whether they can bump it:
+
+- **Option A: Bump the deployment target.** Proceed with this skill.
+- **Option B: Can't bump — keep iOS 16- support.** MV (which requires
+  `@Observable`) is not viable on this project. The skill halts and
+  hands off to `swift-architect` for an MVVM scaffold instead. Note
+  the constraint in a one-line comment at the top of the resulting
+  composition root so future readers know why MVVM was chosen over MV.
+- **Option C: Abort.** Stop without scaffolding anything.
+
+Do not silently scaffold MV code that won't compile on the project's
+declared deployment target.
 
 ### Step 2 — Scaffold the four foundation files
 

@@ -80,14 +80,14 @@ Emit a summary banner:
 
 ```
 === jira-bulk: fix-version "26.5" ===
-NAT-123 ✅
-NAT-124 ✅
-NAT-125 ❌ version "26.5" not found in project
+NAT-123 OK
+NAT-124 OK
+NAT-125 FAIL — version "26.5" not found in project
 === 2/3 succeeded ===
 ```
 
 For transition failures, include the available transitions:
 
 ```
-NAT-126 ❌ no transition named "In Review" — available: To Do, In Progress, Done
+NAT-126 FAIL — no transition named "In Review" — available: To Do, In Progress, Done
 ```
