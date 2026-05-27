@@ -79,7 +79,7 @@ If you find yourself typing any of these, stop and re-read this section:
 - **Never write a synchronous `@Test` function.** No `@Test func foo()` — always `@Test func foo() async throws`. Even if the body has no `await` today, the signature must be future-proof.
 - **Never apply `.serialized` to a test or suite.** Not at the `@Test` level, not at the `@Suite(.serialized)` level. The only legitimate reasons for `.serialized` are (a) the suite tests a true process singleton you cannot inject around (rare — usually means a production bug), or (b) the suite drives an ordering-dependent integration scenario explicitly. Neither applies to a unit test. If you think you need `.serialized` to fix a race, you have a shared-state bug — find it.
 - **Never apply `@MainActor` to a `@Test` function.** It serialises every test in the suite onto the main actor and defeats parallelism. To assert on `@MainActor`-isolated state, use `await MainActor.run { #expect(...) }` for the assertion only, or `await` the SUT's method normally and let isolation inference handle the hop. See `references/concurrency.md`.
-- **Never declare a mock as `class Mock: @unchecked Sendable`.** Never use `NSLock`, `os_unfair_lock`, or `Mutex` inside a mock to "make it thread-safe." If the mock holds mutable state, the mock is an `actor`. Full stop. See "Mock taxonomy" below.
+- **Never declare a mock as `class Mock: @unchecked Sendable`.** Never use `NSLock`, `os_unfair_lock`, or `Mutex` inside a mock to "make it thread-safe." If the mock holds mutable state, the mock is an `actor`. If the mock holds no mutable state (pure stub or closure-injected callback), it can be a struct or `final class` conforming to `Sendable` — no actor needed. See "Mock taxonomy" below.
 - **Never use `nonisolated(unsafe) static var` for shared test fixtures.** Each test creates its own mocks. There is no such thing as a shared fixture in a parallel test suite — that is just a race waiting to happen.
 - **Never use `Task.sleep` (or `try await Task.sleep`) to wait for state to settle.** It is flaky by construction. Use `confirmation { }` for callback APIs, `withCheckedContinuation` for completion handlers, or `await` the actor directly. See `references/concurrency.md`.
 - **Never silence Swift 6 concurrency warnings in test targets.** `@preconcurrency import`, `@unchecked Sendable`, and `nonisolated(unsafe)` in test code are not workarounds — they are the bug.
@@ -99,10 +99,16 @@ Before reaching for `.serialized` or `@MainActor`:
 
 The shape of a mock depends on what it stands in for. **Picking the wrong shape is the root cause of most test races.**
 
+**Decision rule — ask two questions before picking a shape:**
+
+1. **Does this mock hold mutable state?** (Records calls, captures arguments, stores a value for the test to read back.) → Yes: `actor`. No: struct or `final class` conforming to `Sendable`.
+2. **Does the production protocol have `async` methods?** → Mock method `async`-ness follows the production protocol. If protocol methods are synchronous, mock methods are synchronous. A stateful mock (`actor`) requires the protocol to have `async` methods so the test can `await` the actor's accessors — if the protocol is synchronous and you need a stateful mock, update the protocol first.
+
 | Mock stands in for | Mock shape | Why |
 |---|---|---|
-| Shared mutable system state (UserDefaults, Keychain, FileManager, NotificationCenter, in-memory caches) | `actor` | Read/modify/write needs serialisation across calls. An actor is the only correct primitive — locks (`Mutex`, `NSLock`, `os_unfair_lock`, `DispatchSemaphore`) are not approved and force synchronous call sites that clash with `async` test bodies. |
-| Pure call recorder / argument captor with no read-after-write semantics | `final class` with `let` properties, OR closure-captured state via `@Sendable` callback | If callers only ever write (e.g. recording the last endpoint hit), an actor is overkill. Use a `Sendable` final class or capture state in a closure the SUT calls. |
+| Shared mutable system state (UserDefaults, Keychain, FileManager, NotificationCenter, in-memory caches) | `actor` | Read/modify/write needs serialisation across calls. Actor is the only correct primitive — locks (`Mutex`, `NSLock`, `os_unfair_lock`, `DispatchSemaphore`) are not approved and force synchronous call sites that clash with `async` test bodies. |
+| Pure stub — returns fixed values, holds no mutable state | `struct` conforming to `Sendable` | No state changes → no actor needed. Mock method `async`-ness matches the protocol. If the protocol is sync, the stub is sync. |
+| Call recorder / argument captor — test reads back what was called | `actor` | Mutable stored state (`var recordedEndpoints: [String]`, `var callCount: Int`) requires actor isolation. Protocol methods must be `async` so the test can `await` the actor's accessors. |
 | `URLSession` and HTTP-layer mocking | `URLProtocol` subclass registered per-test | `URLProtocol` is the supported Apple extension point. The system handles request isolation; do not wrap in an actor. |
 | `Date`, `UUID`, `Locale`, `Calendar`, clocks | `@TaskLocal` provider, or constructor-injected closure (`() -> Date`) | Tests scope the value to a single test via `$now.withValue(...) { ... }`. No shared mutable state across tests. |
 | `@Observable` SwiftUI service (`@MainActor`-isolated) | The real type, exercised from the test with `await` | Don't mock your own `@Observable` services. Construct them with mocked dependencies and `await` their methods. See `references/concurrency.md`. |
@@ -132,6 +138,38 @@ actor MockUserDefaults: KeyValueStore {
 The production code depends on a `KeyValueStore` protocol (with `async` methods), and the real implementation wraps `UserDefaults.standard`. The mock and the real type both conform. Tests construct `MockUserDefaults()` per-test and `await` its methods — no locks, no `@unchecked Sendable`, no `.serialized`.
 
 If you cannot make the protocol's methods `async` because the call site is synchronous, the production code is the bug — preferences access from a synchronous context inside `@MainActor` code is a sign that the property should be hoisted to an `@Observable` service that loads it once at startup.
+
+### Worked example: `struct StubChannelAPI` (stateless)
+
+When the SUT only reads from a dependency (no state change), the mock is a plain struct. No actor, no `await` on mock accesses:
+
+```swift
+// Production protocol — sync, no state changes needed from callers
+protocol ChannelAPIProtocol: Sendable {
+    func fetchFeatured() async throws -> [Channel]
+}
+
+// Stub — fixed return value, no stored mutable state
+struct StubChannelAPI: ChannelAPIProtocol {
+    let channels: [Channel]
+
+    func fetchFeatured() async throws -> [Channel] { channels }
+}
+
+// Test — no actor, no await on the stub itself
+@Test("Displays channels returned by the API")
+func displaysChannels() async throws {
+    let stub = StubChannelAPI(channels: [.fixture(id: "A"), .fixture(id: "B")])
+    let sut = await HomeService(api: stub)
+
+    await sut.activate()
+
+    let state = await MainActor.run { sut.loadState }
+    #expect(state == .loaded(count: 2))
+}
+```
+
+The stub method is `async` because the protocol method is `async` (the SUT `await`s it). The *stub itself* is not an actor — there is nothing to isolate.
 
 ## When NOT to write a test
 
