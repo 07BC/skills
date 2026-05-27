@@ -79,6 +79,21 @@ Concretely look for:
 - **SwiftUI state propagation** — `@StateObject`, `@ObservedObject`, `@Environment` — does the change affect what triggers re-renders, or break the invalidation chain?
 - **Protocol conformances** — does adding/removing a conformance change which extension methods get called?
 
+**Step 3 thoroughness checklist.** Tick each item before moving on; if
+any is unchecked, return to that category and read the matching
+hotspots from `scan-ripples.sh`.
+
+- [ ] KVO observers / `addObserver(_:forKeyPath:)` calls
+- [ ] Combine `sink` / `assign` subscriptions
+- [ ] `NotificationCenter` posts AND observers
+- [ ] `scenePhase` handlers and lifecycle methods
+  (`viewWillAppear`, `applicationDidEnterBackground`, `deinit`)
+- [ ] Shared mutable state: singletons, `static let`, `@AppStorage`,
+  `UserDefaults`, environment values
+- [ ] SwiftUI state wrappers: `@State`, `@StateObject`,
+  `@ObservedObject`, `@Environment`, `@Bindable`
+- [ ] Protocol conformances added/removed
+
 ### Step 4: Check concurrency and threading
 
 Specifically look for:
@@ -92,32 +107,50 @@ Specifically look for:
 
 Do not move on from this step by writing "no concurrency surface" unless you have verified — by reading the code — that every observer or callback touching adjacent state runs on the same isolation domain as the changed code. The trap to avoid is assuming "I didn't add any `async`, so concurrency is clear" when an existing KVO observer or Combine sink is doing the racing.
 
+**Step 4 thoroughness checklist.** Tick each item before declaring
+"no concurrency surface". For deeper analysis on any flagged item,
+apply skill `swift-concurrency-expert` on the specific file.
+
+- [ ] Every new closure / `Task` captured value is `Sendable` (or
+  documented otherwise)
+- [ ] Every cross-isolation call boundary checked against the
+  isolation domain on each side
+- [ ] Existing KVO callbacks, `AVPlayer` periodic time observers,
+  `NotificationCenter` observers verified to fire on the expected
+  queue
+- [ ] No new race between a `@MainActor` reader and a non-isolated
+  writer (or vice versa)
+- [ ] `deinit` order safe: observers / subscriptions released
+- [ ] Long-running tasks have cancellation paths
+
 ### Step 5: Cross-reference against the plan (if one exists)
 
 If auditing against a plan document: does the change match the plan's stated scope, or has scope crept? Out-of-scope changes are themselves a regression risk — they were never reviewed.
 
 ## Output format
 
-Use this exact structure. Severity emoji are part of the format — they make findings scannable.
+Use this exact structure. The severity ladder matches `swift-code-review`
+(BLOCKER / WARNING / SUGGESTION) so findings cross-reference cleanly. No
+emoji per the global rule.
 
 ```markdown
 ## Audit: <change identifier — file path, branch name, or plan title>
 
 **Surface:** <one-line summary of what changed>
 
-### 🔴 BLOCKER
+### BLOCKER
 <Findings that will break something with high confidence. Must be addressed.>
 - `<file>:<line>` — <what breaks, why, what to do>
 
-### 🟡 RISK
+### WARNING
 <Findings that may break something or that depend on assumptions worth checking.>
 - `<file>:<line>` — <what could break, what assumption is in play>
 
-### 🟢 NICE-TO-CHECK
+### SUGGESTION
 <Low-confidence or low-impact observations. Worth a quick look, not worth blocking on.>
 - `<file>:<line>` — <observation>
 
-### ✅ Cleared
+### Cleared
 <Areas explicitly audited and found safe. Brief — one line each. Helps the reader trust the audit.>
 - <area>: <why it's safe>
 ```
@@ -132,11 +165,11 @@ Calibrate findings honestly. Inflating severity erodes trust in future audits.
 - A caller will definitely break (compile error or runtime crash on a normal path).
 - A behavioural change definitely affects user-visible behaviour in a way the author likely didn't intend.
 
-**Flag as RISK** when:
+**Flag as WARNING** when:
 - A caller *probably* breaks but you can't fully verify without running it.
 - A behavioural ripple is plausible but depends on timing or state you can't observe statically.
 
-**Flag as NICE-TO-CHECK** when:
+**Flag as SUGGESTION** when:
 - A pattern looks suspicious but you have no concrete failure case.
 - Documentation, comments, or tests reference the changed area but aren't broken yet.
 
@@ -154,16 +187,16 @@ The output below was produced for an actual change in `Chagi/Shared/Player/VODPl
 
 **Surface:** `handleBackground()` and `handleForeground()` modified to gate resume on `wasPlayingBeforeBackground`.
 
-### 🔴 BLOCKER
+### BLOCKER
 - `VODPlayerViewModel.swift:155` — KVO observer on `currentItem?.status` calls `player.play()` unconditionally when the item enters `.readyToPlay`. This fires on return from background (item re-stabilises), restarting playback regardless of `wasPlayingBeforeBackground`. The new guard in `handleForeground()` is bypassed. Gate the observer on the same flag or remove the auto-play.
 
-### 🟡 RISK
+### WARNING
 - `VODPlayerViewModel.swift:114` — `stopPlayer()` nils `viewModel.player` but `AVPlayerView.updateUIViewController` only assigns the new player when `playerController.player == nil`. The `AVPlayerViewController` retains the old AVPlayer instance after `stopPlayer()` runs. Not the current bug, but unsafe if `loadPlaybackUrl()` runs after `stopPlayer()`.
 
-### 🟢 NICE-TO-CHECK
+### SUGGESTION
 - `Info.plist:24` declares `UIBackgroundModes = [audio]`. This grants the player permission to keep playing in background. Combined with the observer auto-play, this is what makes the timeline advance during the bug window. Worth confirming this background mode is actually required.
 
-### ✅ Cleared
+### Cleared
 - `handleBackground()` / `handleForeground()` themselves: the `wasPlayingBeforeBackground` flag is set/cleared correctly and `player.pause()` is called on the right transitions.
 - Concurrency: no new async work, no new shared state, no isolation changes.
 ```

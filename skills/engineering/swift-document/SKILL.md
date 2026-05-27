@@ -9,6 +9,30 @@ Adds or updates `///` DocC documentation on Swift symbols following Apple's offi
 
 Read [apple-doc-conventions.md](references/apple-doc-conventions.md) before starting.
 
+## Opt-in only — explicit user request required
+
+**Default Swift authoring in this codebase forbids `///`.** Per
+`swift-engineer` Core Principle #1, doc comments are off by default —
+well-named identifiers replace them. This skill is the deliberate
+exception: only run it when the user has explicitly asked for DocC
+documentation on a specific file, type, or scope.
+
+Triggers that count as explicit:
+
+- "document this file" / "add DocC docs" / "/swift-document"
+- "the user has asked me to add `///` here" (in a pasted prompt)
+
+Triggers that do **NOT** count as explicit:
+
+- A passing mention of "comments" in an unrelated request
+- A code-review subagent asking for documentation
+- `swift-engineer` or `swift-code-review` invoking this skill on their
+  own (neither does, and neither should)
+
+If a downstream skill needs documentation, it should add a TODO and
+ask the user to invoke `swift-document` directly. This skill never
+runs as a dependency of another skill.
+
 ## Process
 
 1. **Read** the target file(s) in full before writing anything

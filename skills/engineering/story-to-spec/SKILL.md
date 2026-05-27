@@ -122,19 +122,30 @@ If a referenced file is missing, skip it with a one-line warning — do not halt
 
 ## Step 4 — Resolve output paths
 
+The authoritative copy of every spec lives in the Obsidian vault per
+the global plan-storage rule. The in-repo `docs/specs/` copy is
+optional and only used when the project's `spec_pipeline:` block
+declares it (set `keep_in_repo_specs: true` to opt in).
+
 ```bash
 project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 project_name="$(basename "$project_root")"
 obsidian_vault="${OBSIDIAN_VAULT:-${HOME}/Developer/obsidian}"
 
-spec_output="${project_root}/docs/specs/${spec_id}.md"
+# Authoritative output — in the Obsidian vault
 obsidian_output="${obsidian_vault}/${project_name}/plans/${spec_id}.md"
-
-mkdir -p "$(dirname "$spec_output")"
 mkdir -p "$(dirname "$obsidian_output")"
+
+# Optional in-repo copy — only when the project opts in
+keep_in_repo="$(yq -r '.spec_pipeline.keep_in_repo_specs // false' CLAUDE.md 2>/dev/null)"
+if [ "$keep_in_repo" = "true" ]; then
+  spec_output="${project_root}/docs/specs/${spec_id}.md"
+  mkdir -p "$(dirname "$spec_output")"
+fi
 ```
 
-If `$spec_output` already exists, ask via `AskUserQuestion` before overwriting:
+If `$obsidian_output` already exists, ask via `AskUserQuestion` before
+overwriting:
 - Option A: Overwrite (Recommended if the story has changed)
 - Option B: Abort — I'll choose a different spec ID
 
@@ -155,7 +166,7 @@ in order. Omit a section only if explicitly noted as optional.
 ```markdown
 ---
 spec_id: <spec_id>
-status: 🟢 Ready
+status: ready
 source: <jira:<KEY> | spec:<input_path> | prompt>
 ---
 
@@ -202,22 +213,26 @@ Omit this section entirely if there are no open questions.
 
 **If `## Open Questions` is present**, change the frontmatter status:
 ```
-status: 🟡 BLOCKED on Open Questions
+status: blocked-on-open-questions
 ```
 
 ---
 
 ## Step 6 — Write outputs
 
-Write the spec to `$spec_output`.
+Write the spec to `$obsidian_output` (the authoritative copy in the
+Obsidian vault).
 
-Copy to the Obsidian vault:
+If the in-repo copy is enabled (`keep_in_repo_specs: true`), also
+write to `$spec_output`:
+
 ```bash
-cp "$spec_output" "$obsidian_output"
+cp "$obsidian_output" "$spec_output"
 ```
 
-After writing, check whether `docs/specs/` appears in the project's
-`.gitignore`. If not, print:
+When writing an in-repo copy, check whether `docs/specs/` appears in
+the project's `.gitignore`. If not, print:
+
 ```
 Reminder: add docs/specs/ to .gitignore — specs are not committed.
 ```
@@ -234,7 +249,7 @@ Spec written
   Spec ID:  <spec_id>
   Project:  <spec_output>
   Obsidian: <obsidian_output>
-  Status:   <🟢 Ready | 🟡 BLOCKED on Open Questions>
+  Status:   <ready | blocked-on-open-questions>
 ```
 
 If status is BLOCKED, also print the `## Open Questions` section verbatim so

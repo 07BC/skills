@@ -100,7 +100,14 @@ Ask the user explicitly, before doing anything else:
    "the preview shows it working." If the answer is unacceptable, treat as
    feature implementation.
 
-3. **"Is the screenshot/state you're showing me the current behaviour,
+3. **"Define 'working' for this bug — did focus move to the expected
+   element on the expected screen, AND did the subsequent navigation
+   steps complete successfully?"** Both halves matter. A bug report that
+   says "focus broke" without naming the element AND the screen AND the
+   downstream navigation is too vague to act on — push back for
+   specifics before continuing.
+
+4. **"Is the screenshot/state you're showing me the current behaviour,
    the previous (working) behaviour, or the desired behaviour?"** Never
    assume two screenshots are "before" and "after."
 

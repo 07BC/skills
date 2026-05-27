@@ -5,11 +5,16 @@ description: Grilling session that challenges your plan against the existing dom
 
 <what-to-do>
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+Apply skill `grill-me` to run the interview — it owns the
+question-at-a-time pacing, the codebase-exploration rule, and the
+recommended-answer-per-question discipline. This skill adds a
+documentation layer on top: as the interview produces resolved terms
+and surfaced trade-offs, update `CONTEXT.md` and ADR files inline
+following the rules below.
 
-Ask the questions one at a time, waiting for feedback on each question before continuing.
-
-If a question can be answered by exploring the codebase, explore the codebase instead.
+Do not re-implement the interview logic here. If `grill-me` and this
+skill ever diverge on how the interview is run, `grill-me` is the
+source of truth.
 
 </what-to-do>
 
