@@ -176,3 +176,52 @@ struct GoLiveScreen {
     }
 }
 ```
+
+---
+
+### `LoanInputScreen` (escape)
+
+**File:** `escapeUITests/LoanInputScreen.swift`
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `waitForScreen(timeout:)` | `Bool` | Waits for `loanInput.container` |
+| `enterBalance(_:)` | `LoanInputScreen` | Clears + types balance, commits by tapping rate field |
+| `enterRate(_:)` | `LoanInputScreen` | Clears + types rate, commits by tapping repayment field |
+| `enterRepayment(_:)` | `LoanInputScreen` | Clears + types repayment, commits by tapping a neutral field |
+| `selectTermYears(_:)` | `LoanInputScreen` | Opens menu picker, taps row by label ("30 yr") |
+| `selectTermMonths(_:)` | `LoanInputScreen` | Opens menu picker, taps row by label ("0 mo") |
+| `tapSave()` | `HomeScreen` | Taps Save toolbar action |
+
+### `HomeScreen` (escape)
+
+**File:** `escapeUITests/HomeScreen.swift`
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `waitForScreen(timeout:)` | `Bool` | Waits for `home.container` |
+| `tapEnterLoan()` | `LoanInputScreen` | Empty-state CTA |
+| `tapEditLoan()` | `LoanInputScreen` | Pre-populated state CTA |
+| `tapScenarioA()` | `ScenarioScreen` | Waits for `home.scenario.a`, taps it, returns `ScenarioScreen` |
+
+### `ScenarioScreen` (escape)
+
+**File:** `escapeUITests/ScenarioScreen.swift`
+
+| Property | Element | Notes |
+|----------|---------|-------|
+| `container` | `descendants(matching: .any)["scenario.container"]` | Anchor for `waitForScreen()` |
+| `extraRepaymentField` | `textFields["scenario.extraRepayment"]` | Cents-accumulator semantics |
+| `payoffDateValue` | `staticTexts["scenario.summary.payoffDate"]` | |
+| `timeSavedValue` | `staticTexts["scenario.summary.timeSaved"]` | Default label "No time saved yet" when scenario == baseline |
+| `interestSavedValue` | `staticTexts["scenario.summary.interestSaved"]` | Default label "—" when no savings |
+
+> Chart-related properties intentionally absent: `Chart` inside a `Form Section` does not expose identifiers, legend entries, or axis labels to XCUITest queries. ACs covering chart visuals (axes, legend, summary-above-chart) are documented in the PR's manual test plan rather than automated.
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `waitForScreen(timeout:)` | `Bool` | Waits for `scenario.container` |
+| `waitForResults(timeout:)` | `Bool` | Waits for `payoffDateValue` to exist; results are gated on async baseline compute |
+| `waitForScenarioComputed(timeout:)` | `Bool` | Waits until `timeSavedValue.label != "No time saved yet"` |
+| `enterExtraRepayment(_:)` | `ScenarioScreen` | Taps field, types digits, dismisses keyboard via nav bar |
+| `ensureHittable(_:)` | `Bool` | Returns true if hittable; scrolls up once if not |
