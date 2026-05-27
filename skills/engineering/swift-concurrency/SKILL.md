@@ -9,6 +9,28 @@ user-invocable: false
 
 This skill provides expert guidance on Swift Concurrency, covering modern async/await patterns, actors, tasks, Sendable conformance, and migration to Swift 6. Use this skill to help developers write safe, performant concurrent code and navigate the complexities of Swift's structured concurrency model.
 
+## When to use this skill vs `swift-concurrency-expert`
+
+This skill is **read-only conceptual reference**. It explains patterns,
+answers questions, and helps developers reason about isolation, Sendable,
+and structured concurrency. It does not modify code.
+
+Hand off to `swift-concurrency-expert` when the task is to **fix** code:
+
+| Trigger | Skill to use |
+| --- | --- |
+| "How does @MainActor work?" / "what is Sendable?" | `swift-concurrency` |
+| "Explain the difference between Task and Task.detached" | `swift-concurrency` |
+| "Migrate this file to Swift 6 strict concurrency" | `swift-concurrency-expert` |
+| "Fix this isolation error: Main actor-isolated property X cannot be referenced" | `swift-concurrency-expert` |
+| "Resolve the Sendable conformance warning on type Y" | `swift-concurrency-expert` |
+| "Convert this completion handler to async/await" | `swift-concurrency-expert` |
+
+Rule of thumb: if the request names a specific compiler error, file, or
+diff and expects code changes back, it belongs to
+`swift-concurrency-expert`. If it asks "what should I do here?" without
+demanding a code change in this conversation, it stays here.
+
 ## Agent Behavior Contract (Follow These Rules)
 
 1. Analyze the project/package file to find out which Swift language mode (Swift 5.x vs Swift 6) and which Xcode/Swift toolchain is used when advice depends on it.

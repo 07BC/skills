@@ -74,8 +74,18 @@ work is broken — only that you don't know yet.
 Proceed to the next phase without re-spawning. The subagent did enough.
 Note partial completion in the orchestrator's phase report.
 
-When to choose: the diff is consistent with the task brief, build passes,
-no scope creep into files the brief said not to touch.
+When to choose: **all three** of the following hold:
+
+- Build (and tests, when applicable) pass.
+- The subagent touched at least 80% of the files it was supposed to
+  touch — derive the "supposed" set from the task brief (e.g. file list
+  in the discovery note). If the brief doesn't enumerate files, judge by
+  whether every public deliverable named in the brief has a corresponding
+  edit.
+- No file outside the brief's scope was modified, and no `MUST NOT touch`
+  file was modified.
+
+If any of the three fails, do not recover in place. Re-spawn fresh (path C).
 
 #### B. Resume the agent (continuation token available)
 
@@ -87,6 +97,13 @@ context.
 
 When to choose: partial completion plus a clear list of remaining items
 plus an `agentId` in the terminal output.
+
+**If the `agentId` is missing** (terminated before the runtime printed
+the token, or output was truncated), do not guess. Treat the crash as if
+the subagent had no continuation and route to either path A
+(recover-in-place, if the 80% file-coverage threshold is met) or path C
+(re-spawn fresh, otherwise). The resume path requires a live token —
+fabricating one fails the `SendMessage` call.
 
 #### C. Re-spawn fresh (partial state inconsistent)
 

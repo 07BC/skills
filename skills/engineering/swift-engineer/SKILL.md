@@ -63,6 +63,11 @@ The asymmetry: SourceKit can lie about the build state, but the build
 itself cannot. Always re-verify with the build before acting on a
 diagnostic.
 
+**Slow-build escape hatch.** If a clean build exceeds 60 seconds and no
+incremental build can be triggered, you may accept a single SourceKit
+diagnostic pass as a provisional signal — but never commit on SourceKit
+alone. Re-verify with the build before declaring the task done.
+
 ## Core Principles
 
 1. **No comments** — write no comments by default. Only add one when the WHY
@@ -71,22 +76,33 @@ diagnostic.
    comments (`///`). Never explain what the code does — well-named identifiers
    do that. If removing the comment wouldn't confuse a future reader, don't
    write it.
+2. **No god methods** — functions over 20 lines or with more than 4
+   parameters must be broken down into smaller functions with single
+   responsibilities. If a function is doing too much, extract named private
+   helpers, each one under 20 lines.
 3. **MV pattern only** — `@MainActor @Observable` services own state; views
    observe them via `@Environment`. No ViewModel layer, no `ObservableObject`,
    no `@Published`. Heavy work lives behind a private `actor` composed into
    the service.
-4. **Strict concurrency by default** — All new code must compile with
-   `SWIFT_STRICT_CONCURRENCY=complete`
-5. **Value semantics first** — Prefer structs; use classes only for identity,
-   reference semantics, or an `@Observable` service
-6. **Explicit error handling** — Use typed throws where beneficial; never
-   force-unwrap in production
-7. **Testability** — Design for dependency injection via the environment;
-   **never use singletons in production code** (no `.shared`, no `static let shared`, no global instances — inject dependencies via initialisers or `@Environment` instead); never add code just for tests unless in mocks
-8. **SwiftUI for UI** — Use SwiftUI for all new UI work; no new UIKit unless
-9. **One view per file** — Keep views small and focused; one view per file is the standard convention
-10. No global functions. Static functions **must** be inside an enum or struct. Top-level code is forbidden.
-11. NO GOD OBJECTS. Services over 400 lines or with more than 10 properties must be broken down into smaller services.
+4. **Strict concurrency by default** — all new code must compile with
+   `SWIFT_STRICT_CONCURRENCY=complete`.
+5. **Value semantics first** — prefer structs; use classes only for identity,
+   reference semantics, or an `@Observable` service.
+6. **Explicit error handling** — use typed throws where beneficial; never
+   force-unwrap in production.
+7. **Testability** — design for dependency injection via the environment;
+   **never use singletons in production code** (no `.shared`, no
+   `static let shared`, no global instances — inject dependencies via
+   initialisers or `@Environment` instead); never add code just for tests
+   unless in mocks.
+8. **SwiftUI for UI** — use SwiftUI for all new UI work; no new UIKit unless
+   the platform requires it.
+9. **One view per file** — keep views small and focused; one view per file
+   is the standard convention.
+10. **No global functions.** Static functions must be inside an enum or
+    struct. Top-level code is forbidden.
+11. **No god objects.** Services over 400 lines or with more than 10
+    properties must be broken down into smaller services.
 
 ## Swift 6 Essentials
 > See `swift-style` for Data Race Safety, Isolation Boundaries, and Typed Throws.
@@ -232,7 +248,8 @@ struct ContentView: View {
 
 ### Functions
 
-// ❌ — NEVER GOD Method. Functions over 20 lines or with more than 4 parameters must be broken down into smaller functions with single responsibilities. If a function is doing too much, break it down into helper functions.
+Apply Core Principle #2 ("No god methods") to every function.
+
 ```swift
 // ❌ — one method doing validation, derivation, loop iteration, and result assembly
 func processOrder() throws -> [OrderLine] {
@@ -363,6 +380,31 @@ guard let httpResponse = response as? HTTPURLResponse else {
     throw NetworkError.invalidResponse
 }
 ```
+
+### Prefer enums over static constant clusters
+
+Related constants that share a domain belong in an enum, not as a flat
+list of statics. Enums enforce exhaustiveness, eliminate magic numbers at
+call sites, and make invalid values impossible.
+
+```swift
+// ❌ Avoid: flat static constants with no relationship enforced
+static let httpStatusOK = 200
+static let httpStatusForbidden = 403
+static let httpStatusNotFound = 404
+
+// ✅ Prefer: enum scoping related constants by domain
+enum HTTPStatus: Int {
+    case ok = 200
+    case forbidden = 403
+    case notFound = 404
+}
+```
+
+Use a `RawRepresentable` enum when the underlying value matters (e.g. for
+comparison against an HTTP response code). Use a plain enum with static
+lets only when the values are heterogeneous and cannot share a raw type.
+
 
 ## Swift Testing
 > See `swift-testing` for all unit-test authoring patterns.

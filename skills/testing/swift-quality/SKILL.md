@@ -65,6 +65,11 @@ Apply all fixes. Build. Verify zero errors and zero warnings.
 The public API surface (protocol conformances, method signatures, property
 names) must be identical before and after. If tests exist, they must still pass.
 
+**If a style rule would require a public API rename**, halt and surface
+the requirement as a finding — do not perform the rename. Public renames
+ripple through call sites this skill cannot see; they belong to a
+deliberate refactor, not a style pass.
+
 ---
 
 ## Style Rules
@@ -506,6 +511,12 @@ Within a `struct`, properties are ordered:
 3. Nested types and `enum CodingKeys` last
 
 A blank line separates each group.
+
+`Sendable` is a conformance on the type, not a property attribute — it
+lives in the type's declaration line (e.g. `struct Foo: Sendable, Decodable`),
+never adjacent to individual properties. Nested types that cross an
+isolation boundary declare `Sendable` themselves; do not redeclare on
+each property.
 
 ```swift
 // ✅
@@ -962,18 +973,29 @@ working in other projects.
 ## Verification
 
 After every rewrite, build and run the test suite. Read the workspace,
-scheme, and destination from the project's `CLAUDE.md` (or fall back to
-`xcodebuild -list` and `xcrun simctl list devices available`):
+scheme, and destination from the project's `CLAUDE.md`.
+
+Prefer MCP Xcode tools when Xcode is open:
+
+```
+ToolSearch("select:mcp__xcode__BuildProject,mcp__xcode__RunSomeTests,mcp__xcode__RunAllTests,mcp__xcode__XcodeListNavigatorIssues")
+```
+
+Use `mcp__xcode__BuildProject` for the build pass, `mcp__xcode__RunSomeTests`
+to re-run the affected test target, and `mcp__xcode__XcodeListNavigatorIssues`
+to confirm no new diagnostics. Quality passes can quietly alter behaviour
+through helper extraction or named-constant substitution; never skip the
+test re-run.
+
+Fall back to Bash when Xcode is not open:
 
 ```bash
-# Build must be clean — substitute <workspace>, <scheme>, <destination>
 xcodebuild build \
   -workspace <workspace> \
   -scheme <scheme> \
   -destination '<destination>' \
   2>&1 | grep -E "error:|warning:|BUILD"
 
-# Tests must still pass
 xcodebuild test \
   -workspace <workspace> \
   -scheme <scheme> \
