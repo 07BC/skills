@@ -155,11 +155,61 @@ find . -name '*.swift' -path '*/Views/*' | sort
 
 Do not invent identifiers. Flag gaps in the plan.
 
+### Required output: "Unknowns to probe"
+
+Every plan file MUST include an `## Unknowns to probe` section, even if
+the value is `None.`. Free-form "Risks" prose at the bottom of the plan
+is NOT a substitute — this section is a contract Phase 2 and Phase 3
+both consume.
+
+An Unknown is anything the plan cannot resolve from reading code alone:
+- An accessibility identifier modifier applied in a way you haven't seen
+  succeed before (e.g. on a `Toggle` inside a custom view inside a
+  conditional inside a `Form Section`).
+- A new XCUI element-type assumption (e.g. assuming a SwiftUI
+  `DatePicker` surfaces as `app.datePickers["…"]` when none of the
+  registered Page Objects has proven it).
+- A query against a SwiftUI primitive that historically absorbs
+  modifiers (segmented `Picker`, `Chart`, `Form Section`).
+- A timing assumption (e.g. "the recompute lands within 300 ms" when the
+  flow has multiple chained debounces).
+
+Render the section as a table:
+
+```
+## Unknowns to probe
+
+| # | Unknown | Probe (single minimal test or sim check) | If probe fails |
+|---|---------|-------------------------------------------|----------------|
+| 1 | <one-sentence statement of what is uncertain> | <name the smallest test method(s) that prove it, or the `xcrun simctl` / `xcrun xctrace` check> | <one-line orchestrator hypothesis to attach to Phase 3 when the probe fails> |
+```
+
+The "If probe fails" column is load-bearing: it is the orchestrator
+hypothesis the Triage Gate hands to the debug skill's Fast Path so
+Phase 3 does not re-discover what Phase 1 already predicted.
+
+If a plan has zero genuine unknowns (every identifier is already in the
+registry and proven on the same widget shape, every Page Object exists
+and is exercised by green tests), the section reads exactly `None.` —
+Phase 2 will then collapse its Probe Pass and proceed straight to the
+Full Pass.
+
 Update gate summary. Mark Phase 1 done.
 
 ---
 
 ## Phase 2 — Execute — Sonnet, normal mode
+
+Phase 2 runs as a contract with up to TWO PASSES driven by the plan's
+"Unknowns to probe" section. The Probe Pass exists to catch
+plan-predicted failures cheaply (one test + one run) before the full
+suite is written against an unproven assumption.
+
+- If the plan's `## Unknowns to probe` section is `None.`, the Probe
+  Pass collapses into the Full Pass — same prompt as the legacy
+  one-pass form.
+- Otherwise, dispatch the Probe Pass subagent first. Only on a clean
+  Probe Pass do you dispatch the Full Pass.
 
 Spawn `model: SUBAGENT_MODEL, mode: normal` with the prompt below.
 
@@ -181,9 +231,41 @@ Spawn `model: SUBAGENT_MODEL, mode: normal` with the prompt below.
 > If you find yourself typing `import Testing` or `@Test`, stop. Wrong
 > thing.
 >
-> ### Order of operations
+> Cap your wall-clock at 8 minutes. If you cannot reach a verifiable
+> build + test result within that budget, stop and report what you
+> tried and what remains unknown. Do not continue past 8 minutes — the
+> orchestrator treats a budget exit as a Triage Gate signal and will
+> escalate.
 >
-> 1. Add every missing accessibility identifier from the plan to the
+> ### Two-pass execution
+>
+> Read the plan's `## Unknowns to probe` section first. If it says
+> `None.`, execute the Full Pass directly. Otherwise execute the Probe
+> Pass first; only proceed to the Full Pass if every probe test ran
+> green.
+>
+> #### PROBE PASS (only when Unknowns to probe is non-empty)
+>
+> 1. Add ONLY the accessibility identifiers needed for the probe tests
+>    named in the plan's `## Unknowns to probe` section.
+> 2. Update the Page Objects with ONLY the elements those probe tests
+>    reference.
+> 3. Write ONLY the probe tests named in that section. Typically that
+>    is the simplest baseline test plus the smallest existence/visibility
+>    test that exercises each Unknown row.
+> 4. Build, then run ONLY the probe tests.
+> 5. If every probe test passes, proceed to FULL PASS.
+> 6. If any probe test fails, STOP. Report:
+>    - the name(s) of the failing probe test(s),
+>    - the matched `## Unknowns to probe` row(s),
+>    - the verbatim failure output,
+>    - the list of files created or modified so far.
+>    Exit. Do not write the remaining tests. Do not attempt a fix —
+>    the orchestrator will route through Phase 3.
+>
+> #### FULL PASS
+>
+> 1. Add every remaining accessibility identifier from the plan to the
 >    app target.
 >    - Add `.accessibilityIdentifier("…")` to the correct SwiftUI element.
 >    - Use dot-namespaced lowercase: `screen.element[.variant]`.
@@ -192,7 +274,7 @@ Spawn `model: SUBAGENT_MODEL, mode: normal` with the prompt below.
 > 2. Create or update Page Object structs as described in the plan.
 >    - One struct per screen or flow, in the UI test target.
 >    - Update `swift-uitest/references/page-objects.md`.
-> 3. Write the test methods in the correct `XCTestCase` class.
+> 3. Write the remaining test methods in the correct `XCTestCase` class.
 > 4. Ensure `setUpWithError()` follows this structure exactly:
 >
 >    ```swift
@@ -226,33 +308,112 @@ Spawn `model: SUBAGENT_MODEL, mode: normal` with the prompt below.
 >    If credentials are required: read from environment, never hardcode.
 >    Capture the full output.
 >
-> Report: list of files created or modified, build result, and test
-> result.
+> Report: which pass ran (Probe / Full / Probe+Full), files created or
+> modified, build result, and per-test results. If the Probe Pass
+> stopped, name the matched Unknown row(s).
 
 ### After running
 
-- If all tests pass: update gate summary, mark Phase 2 done, skip to
-  Phase 4a (Phase 3 is N/A).
-- If any test fails: do not proceed to Phase 4. Go to Phase 3.
+- If all tests pass (or the Probe Pass collapsed because the plan had
+  no Unknowns and the Full Pass ran clean): update gate summary, mark
+  Phase 2 done, skip to Phase 4a (Phase 3 is N/A).
+- If the Probe Pass stopped on a probe failure: do not proceed to the
+  Full Pass. Go to Phase 3 with the matched Unknown row attached as
+  the orchestrator hypothesis (Triage Gate condition B).
+- If the Full Pass produced failures: do not proceed to Phase 4. Go to
+  Phase 3.
+- If the subagent exited the 8-minute budget without a verifiable
+  result: go to Phase 3 directly; the orchestrator treats this as a
+  signal that the failure likely matches a plan-predicted unknown or a
+  same-line cluster.
 
 **Crash recovery.** If the subagent returns no usable result, apply
 skill `subagent-reliability`.
 
 ---
 
-## Phase 3 — Debug — Sonnet escalating to Opus
+## Phase 3 — Debug — Triage Gate, then Sonnet escalating to Opus
 
-Triggered only if Phase 2 produced failures.
+Triggered only if Phase 2 produced failures or exited its wall-clock
+budget without a verifiable result.
 
-Apply skill `swift-uitest-debug`. Follow its escalation protocol exactly:
+### Shared attempt log
 
-- **Attempt 1**: Sonnet, targeted fix based on triage category.
-- **Attempt 2**: Sonnet, different angle.
-- **Opus diagnosis**: only if both Sonnet attempts fail. Diagnosis
-  only, no code.
-- **Final Sonnet fix**: implements exactly what diagnosis prescribes.
+At the start of Phase 3, create `${PLANS_DIR}/uitest-${SLUG}-attempt-log.md`
+with a header:
 
-Track the attempt log from the debug skill. Do not exceed the
+```
+# UI test debug attempt log — ${SLUG}
+
+Phase 2 failure summary: <one paragraph>
+Plan reference: ${PLANS_DIR}/uitest-plan-${SLUG}.md
+Branch: <current branch>
+```
+
+Every Phase 3 subagent prompt (Triage Gate dispatches and skill-driven
+attempts alike) MUST be prefixed with:
+
+> Read `${PLANS_DIR}/uitest-${SLUG}-attempt-log.md` in full before
+> doing anything else. After your run completes, append a
+> `## Attempt N — <model> — <approach summary>` block with: the
+> commands you ran (verbatim), the resulting test status, and any
+> hypothesis you formed. Do not delete or rewrite earlier blocks.
+
+This is the only piece of Phase 3 state that survives subagent
+boundaries — keep it accurate.
+
+### Triage Gate (run BEFORE applying the debug skill)
+
+Inspect the Phase 2 failure set before dispatching anything:
+
+**A. Same-line cluster** — if N >= 2 failing tests all fail at the
+   SAME source line / assertion message (string-equality on the
+   `XCTAssert*` message is the simplest matcher; the `:line:` location
+   in the xcresult is the canonical one), treat them as ONE root
+   cause. Dispatch the debug skill's **Opus diagnosis phase directly**,
+   supplying:
+   - the verbatim failure text,
+   - the list of N test names that share it,
+   - a one-line orchestrator hypothesis if you have one (otherwise
+     write `unknown — same-line cluster diagnosis required`).
+
+   After Opus returns the diagnosis memo, run the skill's final Sonnet
+   fix attempt (Phase 4 of the skill) against that diagnosis. Skip the
+   two Sonnet pre-attempts entirely.
+
+**B. Plan-predicted failure** — if the failure message or assertion
+   matches any row from the Phase 1 plan's `## Unknowns to probe`
+   section, dispatch the debug skill's **Opus diagnosis phase
+   directly**, supplying:
+   - the verbatim failure text,
+   - the matched Unknown row verbatim, labelled
+     `Orchestrator hypothesis: <row>`.
+
+   This is the most common Fast Path under the probe-pass contract:
+   the Probe Pass surfaced a probe failure tied to a specific Unknown
+   row, and that row already names the predicted root cause. Skip the
+   two Sonnet pre-attempts entirely.
+
+**C. Otherwise** (diverse failures, no plan match, no same-line
+   cluster) — enter the skill's Standard Path ladder as today:
+   Sonnet attempt 1 → Sonnet attempt 2 → Opus diagnosis → Sonnet final
+   fix.
+
+Conditions A and B are mutually compatible — when both fire, prefer B
+(more specific hypothesis) and mention the cluster in the prompt.
+
+### Apply skill
+
+Apply skill `swift-uitest-debug`. The skill exposes two paths now:
+
+- **Fast Path** — entered when the Triage Gate matched A or B above.
+  The skill's `Inputs Required` accepts `Orchestrator hypothesis`; when
+  present, the skill skips its own Sonnet attempts 1 and 2 and goes
+  straight to the Opus diagnosis phase, then the final Sonnet fix.
+- **Standard Path** — entered when the Triage Gate matched C. The
+  skill runs its full two-Sonnet ladder before Opus diagnosis.
+
+Track the attempt log via the shared file above. Do not exceed the
 escalation ceiling. If Opus diagnosis plus the final Sonnet fix still
 fails, the test is **declared unautomatable** — surface this to the
 user, replace the failing test with a manual test plan step in the PR
