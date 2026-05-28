@@ -82,6 +82,7 @@ If you find yourself typing any of these, stop and re-read this section:
 - **Never declare a mock as `class Mock: @unchecked Sendable`.** Never use `NSLock`, `os_unfair_lock`, or `Mutex` inside a mock to "make it thread-safe." If the mock holds mutable state, the mock is an `actor`. If the mock holds no mutable state (pure stub or closure-injected callback), it can be a struct or `final class` conforming to `Sendable` — no actor needed. See "Mock taxonomy" below.
 - **Never use `nonisolated(unsafe) static var` for shared test fixtures.** Each test creates its own mocks. There is no such thing as a shared fixture in a parallel test suite — that is just a race waiting to happen.
 - **Never use `Task.sleep` (or `try await Task.sleep`) to wait for state to settle.** It is flaky by construction. Use `confirmation { }` for callback APIs, `withCheckedContinuation` for completion handlers, or `await` the actor directly. See `references/concurrency.md`.
+- **Never use a polling helper (`waitUntil`, `pollUntil`, manual `Task.yield()` retry loops) to wait for a SUT method's own work to finish.** If the SUT method launches a `Task` and returns synchronously, the test cannot deterministically know when the work completes — that is a SUT design bug, not a testing problem. Refactor the SUT method to `async` and `await` it from the test. Polling is acceptable ONLY when waiting on genuinely uncontrolled async — Timer-driven loops, KVO `publisher(for:).values`, WebSocket message streams, NotificationCenter posts — and even then, prefer `for await … in .values { }` over polling. A common smell: `vm.doSomething()` followed by `await waitUntil { await mock.callCount == 1 }` — that's a hint that `doSomething` should be `async`. See "Fire-and-forget Tasks are a test smell" in `references/concurrency.md` and the case study below.
 - **Never silence Swift 6 concurrency warnings in test targets.** `@preconcurrency import`, `@unchecked Sendable`, and `nonisolated(unsafe)` in test code are not workarounds — they are the bug.
 - **Crash budget: 5 minutes.** If a test traps at runtime and you cannot fix it without changing the SUT's assertion contract within 5 minutes, **stop and escalate**. Do not rewrite the test to a weaker assertion that sidesteps the crash. That is silent coverage loss. See `references/anti-patterns.md` ("weaker-after-crash").
 - **Never assert on test-built state.** A test that constructs its own collaborators, mutates them, then asserts on its own mutations is testing the collaborator, not the SUT. The test must observe state **through the SUT's own returned instance or its own context**. See `references/anti-patterns.md` ("parallel-setup tests").
@@ -400,6 +401,61 @@ func callsAPI() async throws {
     #expect(callCount == 1)
 }
 ```
+
+### Fire-and-forget Tasks are a test smell
+
+If you're tempted to poll a mock's call count after invoking a SUT method, the SUT method is the problem — not the test.
+
+**Wrong** (SUT method launches an internal `Task` and returns synchronously, forcing the test to poll):
+
+```swift
+// Production:
+@MainActor @Observable final class PlayerViewModel {
+    func openVod(_ vod: VOD) {                       // sync
+        Task { @MainActor in                          // fire-and-forget
+            let source = try? await repo.fetch(vod)
+            self.selectedVod = source.map(SelectedVod.init)
+        }
+    }
+}
+
+// Test (forced to poll because there's no awaitable handle):
+@Test func opensVod() async throws {
+    let mock = MockRepo()
+    let sut = await PlayerViewModel(repo: mock)
+    sut.openVod(vod)
+    await waitUntil { await mock.fetchCallCount == 1 }   // flaky
+    let count = await mock.fetchCallCount
+    #expect(count == 1)
+}
+```
+
+**Right** (SUT method is `async`; test `await`s and reads state immediately afterwards):
+
+```swift
+// Production:
+@MainActor @Observable final class PlayerViewModel {
+    func openVod(_ vod: VOD) async {                  // async
+        let source = try? await repo.fetch(vod)
+        self.selectedVod = source.map(SelectedVod.init)
+    }
+}
+
+// Test (deterministic, no polling):
+@Test func opensVod() async throws {
+    let mock = MockRepo()
+    let sut = await PlayerViewModel(repo: mock)
+    await sut.openVod(vod)
+    let count = await mock.fetchCallCount
+    #expect(count == 1)
+}
+```
+
+The polling version compiles fine but is flaky AND silently breaks the day someone refactors `openVod` to `async` — the test then has a "missing `await`" compile error that's easy to miss in a rebase. Always prefer making the SUT method `async`.
+
+**When polling IS acceptable**: only for genuinely uncontrolled async — Timer-driven loops inside the SUT (e.g. a `liveTime` ticker), KVO `publisher(for:).values` consumers, WebSocket message streams, NotificationCenter handlers. In those cases the SUT cannot expose an awaitable handle because the source itself is push-driven. Even then, prefer `for await event in stream.values { ... }` inside the test where possible — only fall back to `waitUntil`-style polling as a last resort.
+
+**Case study — NAT-1868 rebase (May 2026):** A characterisation test wrote `vm.openVod(vod, channelId: 42)` against a sync `openVod` API and then `await waitUntil { mock.callCount == 1 }`. When main was rebased in with `openVod` refactored to `@MainActor async`, the test compiled at first (the sync call site still looked OK), but on CI it failed with `expression is 'async' but is not marked with 'await'`. Had the test been written to `await vm.openVod(...)` from day one, the refactor on main would have been transparent.
 
 ### Parameterised tests
 ```swift
