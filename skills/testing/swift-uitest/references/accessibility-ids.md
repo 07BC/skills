@@ -114,9 +114,27 @@ When a new screen requires UI tests, add a section here:
 |------------|--------------|---------------|
 | `scenario.container` | `otherElements` | Root `Form` in `ScenarioView` |
 | `scenario.extraRepayment` | `textFields` | `CurrencyField(identifier:)` for Extra per period |
+| `scenario.frequency` | `otherElements` | `Picker("Frequency", …)` with `.pickerStyle(.segmented)` — group-level identifier for diagnostics only |
 | `scenario.summary.payoffDate` | `staticTexts` | Value `Text` in `ResultsSummaryView` payoff date row (when `idPrefix: "scenario"`) |
 | `scenario.summary.timeSaved` | `staticTexts` | Value `Text` in `ResultsSummaryView` time saved row (when `idPrefix: "scenario"`) |
 | `scenario.summary.interestSaved` | `staticTexts` | Value `Text` in `ResultsSummaryView` interest saved row (when `idPrefix: "scenario"`) |
+| `scenario.lumpSum.toggle` | `switches` | `Toggle("Apply a lump sum", …)` in `LumpSumPicker` |
+| `scenario.lumpSum.amount` | `textFields` | `CurrencyField(identifier:)` inner `TextField` |
+| `scenario.lumpSum.date` | `datePickers` | `DatePicker("Payment date", …)` |
+| `scenario.offsetBalance` | `textFields` | `CurrencyField(identifier:)` for Offset account balance |
+
+> **Error banner query.** `ErrorBannerView` uses
+> `.accessibilityElement(children: .combine)`. The combined element does
+> not surface as `otherElements[id]` on iOS 26 even with an
+> `.accessibilityIdentifier` modifier applied — SwiftUI rebuilds the
+> element identity at combine time and drops the modifier. The visible
+> error text remains queryable as a `staticTexts` element whose `label`
+> contains the error message copy (set in `ErrorBannerView.message(for:)`).
+> The page object queries it as `staticTexts.matching("label CONTAINS
+> <message-prefix>").firstMatch`. Do not add a `scenario.error.banner`
+> identifier to `ErrorBannerView` — it is dead code.
+
+**Segmented Picker segment queries.** SwiftUI `Picker(.segmented)` renders each `Text("…").tag(…)` child as an `XCUIElement` of type `.button`. Applying `.accessibilityIdentifier(_:)` on the inner `Text` children is unreliable — the Picker absorbs child modifiers. Use visible labels instead: `app.buttons["Monthly"]`, `app.buttons["Fortnightly"]`, `app.buttons["Weekly"]`. The `scenario.frequency` group identifier is for diagnostics only and should not be relied on in assertions.
 
 > **Chart accessibility note.** SwiftUI `Chart` inside a `Form` `Section` cell publishes an audio-graph representation and does not expose `.accessibilityIdentifier(_:)` on the chart container, legend entries, or axis labels. `ScenarioChartView` keeps `.accessibilityLabel("Balance over time chart")` for the audio-graph fallback, but no identifier-based queries on the chart are possible from XCUITest. AC 4 (axes), AC 5 (legend), and AC 6 (summary-above-chart) are documented in the manual test plan in each PR description.
 

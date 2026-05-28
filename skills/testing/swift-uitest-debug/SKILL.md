@@ -1,14 +1,16 @@
 ---
 name: swift-uitest-debug
 description: >
-  Diagnoses and fixes failing XCUITest UI tests using a structured two-attempt
-  Sonnet escalation to Opus. Use when a UI test is failing after being written
-  or after a code change, when xcodebuild reports XCUITest failures, when a test
-  passes locally but fails on CI, or when the swift-uitest-pipeline debug phase
-  is invoked. Triggers on: "this test is failing", "fix this UI test", "debug
-  uitest", "uitest is broken", "XCUITest failure", or any failing xcresult output
-  shared in chat. Always use this skill — do not attempt to diagnose UI test
-  failures ad hoc.
+  Diagnoses and fixes failing XCUITest UI tests using a structured Sonnet-to-Opus
+  escalation. Two paths: a Standard Path runs two Sonnet attempts before Opus
+  diagnosis; a Fast Path skips straight to Opus diagnosis when an orchestrator
+  hypothesis is supplied or when N >= 2 failing tests share an assertion line.
+  Use when a UI test is failing after being written or after a code change, when
+  xcodebuild reports XCUITest failures, when a test passes locally but fails on
+  CI, or when the swift-uitest-pipeline debug phase is invoked. Triggers on:
+  "this test is failing", "fix this UI test", "debug uitest", "uitest is broken",
+  "XCUITest failure", or any failing xcresult output shared in chat. Always use
+  this skill — do not attempt to diagnose UI test failures ad hoc.
 ---
 
 # Swift UI Test Debug Skill
@@ -16,6 +18,11 @@ description: >
 You diagnose and fix failing XCUITest tests. You operate under a strict
 escalation budget: two Sonnet attempts before Opus takes over diagnosis.
 Never exceed this budget — escalating costs less than spinning in place.
+
+A **Fast Path** short-circuits the two Sonnet attempts when the caller
+already has signal (an orchestrator hypothesis) or when the failure
+pattern is a same-line cluster across multiple tests. See `Phase 0` and
+`Fast Path` below.
 
 ---
 
@@ -30,6 +37,7 @@ ask for them before producing a prompt.
 | Failing test name(s) | Explicit — e.g. `LoginUITests.test_validLogin_showsHomeScreen` |
 | What changed | "nothing" is a valid answer; so is a diff or commit SHA |
 | Attempt count | How many fix attempts have already been made (0, 1, or 2) |
+| Orchestrator hypothesis (optional) | Free text from a calling pipeline orchestrator that already has signal — e.g. a matched "Unknowns to probe" row from a Phase 1 plan, or a same-line cluster summary. When populated, triggers the **Fast Path** in Phase 0. Absent does NOT automatically mean Standard Path — Phase 0's Same-Line Cluster heuristic can also trigger Fast Path independently. |
 
 ---
 
@@ -51,9 +59,61 @@ State the category at the top of every debug session. If the category is
 **Credential / env** or **Compile error**, fix it directly — these are not
 test logic failures and do not consume an attempt.
 
+### Same-Line Cluster heuristic
+
+Before assigning a category, scan the failure set. If N >= 2 failing tests
+fail at the SAME source line / assertion message (string-equality on the
+`XCTAssert*` message is the simplest matcher; the `file:line` location in
+the xcresult is the canonical one), treat them as ONE root cause for the
+rest of this session.
+
+Record the cluster on the line below the category at the top of the
+debug session, e.g.:
+
+```
+Category: Element not found
+Same-line cluster: 4 tests share assertion `lumpSumAmountField.waitForExistence(timeout: 3) — Lump sum amount field must appear after enabling the toggle` at ScenarioLumpSumUITests.swift:67
+```
+
+A same-line cluster triggers the **Fast Path** below — do not diagnose
+N tests as N independent failures.
+
 ---
 
-## Phase 1 — Attempt 1 (Sonnet, normal mode)
+## Fast Path — skip the two Sonnet attempts
+
+Enter the Fast Path when EITHER of the following is true after Phase 0:
+
+- An **Orchestrator hypothesis** was supplied in the Inputs Required
+  block (a calling pipeline has matched a plan-predicted unknown), OR
+- The **Same-Line Cluster heuristic** fired (N >= 2 tests share an
+  assertion).
+
+Fast Path is the entire ladder under those conditions:
+
+1. Skip Phase 1 (Sonnet attempt 1) and Phase 2 (Sonnet attempt 2)
+   entirely. Do not produce their prompts.
+2. Go directly to **Phase 3 — Opus Diagnosis**. Use the amended prompt
+   structure (see Phase 3 below): the `Attempt 1` / `Attempt 2`
+   sections are replaced by `Orchestrator hypothesis` and/or
+   `Same-line cluster` sections.
+3. After Opus returns the diagnosis memo, run **Phase 4 — Sonnet Fix
+   from Opus Diagnosis** as normal.
+
+Total Fast Path ladder is two prompts (Opus → Sonnet), not four
+(Sonnet → Sonnet → Opus → Sonnet).
+
+If neither Fast Path condition is met, proceed to Phase 1 — Standard
+Path — as today.
+
+When both conditions fire (orchestrator hypothesis AND same-line
+cluster), prefer the hypothesis — it is the more specific signal —
+and include the cluster summary as supporting context in the same
+Phase 3 prompt.
+
+---
+
+## Phase 1 — Attempt 1 (Sonnet, normal mode) — Standard Path only
 
 Produce a Claude Code prompt using this structure:
 
@@ -122,7 +182,7 @@ After producing this prompt, record: **Attempt 1 dispatched.**
 
 ---
 
-## Phase 2 — Attempt 2 (Sonnet, normal mode)
+## Phase 2 — Attempt 2 (Sonnet, normal mode) — Standard Path only
 
 If attempt 1 fails, produce a second Sonnet prompt. This prompt must differ
 from the first in its investigation angle — do not repeat the same approach.
@@ -164,27 +224,50 @@ After producing this prompt, record: **Attempt 2 dispatched. Escalation ceiling 
 
 ---
 
-## Phase 3 — Opus Diagnosis (if attempt 2 fails)
+## Phase 3 — Opus Diagnosis
 
-Do not produce another fix prompt. Produce a diagnosis-only prompt for Opus.
+Entry conditions:
+
+- **Standard Path**: after Phase 1 and Phase 2 both failed. The
+  `Attempt 1` and `Attempt 2` sections of the prompt are populated; the
+  `Orchestrator hypothesis` and `Same-line cluster` sections are
+  omitted.
+- **Fast Path** (from Phase 0): the `Orchestrator hypothesis` and/or
+  `Same-line cluster` sections are populated; the `Attempt 1` and
+  `Attempt 2` sections are omitted.
+
+Do not produce another fix prompt. Produce a diagnosis-only prompt for
+Opus. Include only the sections that apply to the entry path.
 
 ```
 ## Skill
 Read ~/.claude/skills/swift-uitest/SKILL.md before doing anything else.
 
 ## Situation
-Two Sonnet attempts have failed to fix this XCUITest. Your job is DIAGNOSIS
-ONLY. Do not write code. Do not produce a fix. Produce a written root cause
-analysis only.
+[Standard Path:] Two Sonnet attempts have failed to fix this XCUITest.
+[Fast Path:] A calling orchestrator (or the Same-Line Cluster heuristic)
+identified this failure as a known unknown; the Standard Path Sonnet
+attempts were skipped by design.
+
+Your job is DIAGNOSIS ONLY. Do not write code. Do not produce a fix.
+Produce a written root cause analysis only.
 
 ## Original failure
 [failure output from attempt 0]
 
-## Attempt 1
+## Orchestrator hypothesis  (Fast Path only — omit on Standard Path)
+[verbatim text from the calling pipeline — e.g. an "Unknowns to probe"
+row pasted from the Phase 1 plan]
+
+## Same-line cluster  (Fast Path only — omit on Standard Path)
+[N tests share assertion line / message — list of test names + the
+verbatim assertion text + `file:line`]
+
+## Attempt 1  (Standard Path only — omit on Fast Path)
 Approach taken: [summary]
 Result: [failure output after attempt 1]
 
-## Attempt 2
+## Attempt 2  (Standard Path only — omit on Fast Path)
 Approach taken: [summary]
 Result: [failure output after attempt 2]
 
@@ -192,19 +275,25 @@ Result: [failure output after attempt 2]
 Answer each of the following in writing:
 
 1. What is the precise line and condition that is failing?
-2. Why did the Sonnet attempts not fix it? (Identify the gap in their reasoning.)
-3. What is the true root cause? (Name the iOS API behaviour, simulator condition,
-   or architectural issue — not the symptom.)
-4. What is the minimal correct fix? Describe it in plain English. Do not write code.
-5. Are there any preconditions that must be true before the fix can work?
-   (e.g. accessibility identifier must be added to app, scheme must be reconfigured)
-6. Is this test testing something that is genuinely automatable via XCUITest?
-   If not, explain why and recommend removal or replacement.
+2. Standard Path: Why did the Sonnet attempts not fix it? (Identify the
+   gap in their reasoning.)
+   Fast Path: Standard Path skipped — write "Standard Path skipped; the
+   Orchestrator hypothesis / Same-line cluster above is the starting
+   point of the diagnosis." and proceed to question 3.
+3. What is the true root cause? (Name the iOS API behaviour, simulator
+   condition, or architectural issue — not the symptom.)
+4. What is the minimal correct fix? Describe it in plain English. Do
+   not write code.
+5. Are there any preconditions that must be true before the fix can
+   work? (e.g. accessibility identifier must be added to app, scheme
+   must be reconfigured)
+6. Is this test testing something that is genuinely automatable via
+   XCUITest? If not, explain why and recommend removal or replacement.
 
 ## Output format
 Plain prose. No code. No bullet lists. Write it as a diagnosis memo.
 
-**Model & mode:** Opus, plan mode — root cause reasoning after two failed attempts
+**Model & mode:** Opus, plan mode — root cause reasoning
 ```
 
 ---
@@ -241,24 +330,37 @@ identifier must be added to the app first), do that first before touching the te
 
 ## Escalation ceiling — declare unautomatable
 
-The ladder caps at:
+The ladder caps at one of two shapes depending on entry path:
+
+**Standard Path (no Fast Path conditions met):**
 
 - Attempt 1: Sonnet, targeted fix
 - Attempt 2: Sonnet, second angle
 - Opus diagnosis: prose memo, no code
-- Attempt 3: Sonnet, mechanical execution of the diagnosis
+- Final Sonnet fix: mechanical execution of the diagnosis
 
-If **Attempt 3 still fails**, the test is **declared unautomatable**.
-Do not produce a fifth attempt. Do not weaken the assertion to make the
+Four attempts total.
+
+**Fast Path (Orchestrator hypothesis OR Same-Line Cluster heuristic):**
+
+- Opus diagnosis: prose memo, no code (informed by the hypothesis /
+  cluster summary)
+- Final Sonnet fix: mechanical execution of the diagnosis
+
+Two attempts total.
+
+The test is **declared unautomatable** when the **final Sonnet fix
+attempt** fails — irrespective of which path led to it. Do not
+produce a further attempt. Do not weaken the assertion to make the
 test pass. Do not switch to a less precise predicate.
 
 The declaration trigger is one of:
 
 - The diagnosis itself concluded the test is not genuinely automatable
   (Phase 3 answer to question 6 is "no").
-- The diagnosis prescribed a fix and Attempt 3 implemented it correctly
-  but the test still fails — the diagnosis was wrong about the root
-  cause, but the ladder has exhausted.
+- The diagnosis prescribed a fix and the final Sonnet attempt
+  implemented it correctly but the test still fails — the diagnosis
+  was wrong about the root cause, but the ladder has exhausted.
 
 In either case, produce the recommendation memo below and surface it to
 the calling pipeline. The pipeline replaces the test with a manual step
@@ -290,21 +392,37 @@ memo:
 
 ## Attempt Tracking
 
-Maintain an attempt log across the debug session. After each attempt completes,
-update this block before producing the next prompt:
+Maintain an attempt log across the debug session. After each attempt
+completes, update this block before producing the next prompt. The
+Standard Path block has four rows; the Fast Path block has two.
+
+**Standard Path:**
 
 ```
-## Debug session log — [test name]
+## Debug session log — [test name] (Standard Path)
 
-Attempt 0 (baseline): [failure category] — [one-line failure description]
-Attempt 1 (Sonnet):   [approach] — [PASSED / FAILED: one-line new failure]
-Attempt 2 (Sonnet):   [approach] — [PASSED / FAILED: one-line new failure]
-Opus diagnosis:       [dispatched / pending]
-Attempt 3 (Sonnet):   [PASSED / FAILED / NOT YET]
+Attempt 0 (baseline):    [failure category] — [one-line failure description]
+Attempt 1 (Sonnet):      [approach] — [PASSED / FAILED: one-line new failure]
+Attempt 2 (Sonnet):      [approach] — [PASSED / FAILED: one-line new failure]
+Opus diagnosis:          [dispatched / pending]
+Final Sonnet fix:        [PASSED / FAILED / NOT YET]
 ```
 
-Never produce a Phase 3 (Opus diagnosis) prompt without a completed log
-showing two failed Sonnet attempts.
+**Fast Path:**
+
+```
+## Debug session log — [test name] (Fast Path)
+
+Attempt 0 (baseline):    [failure category] — [one-line failure description]
+Fast Path trigger:       [Orchestrator hypothesis | Same-line cluster (N tests)]
+Opus diagnosis:          [dispatched / pending]
+Final Sonnet fix:        [PASSED / FAILED / NOT YET]
+```
+
+Phase 3 may be entered directly via the Fast Path when an Orchestrator
+hypothesis was supplied OR the Same-Line Cluster heuristic fired in
+Phase 0. Otherwise (Standard Path), two failed Sonnet attempts must
+precede Phase 3.
 
 ---
 
