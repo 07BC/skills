@@ -1,26 +1,26 @@
 ---
-name: jordan-mazurke
+name: mr-j
 description: >
-  Frames a PR description, Jira ticket, spec, or any other document to meet Jordan
-  Mazurke's review standard — every claim explains why the work exists, how it
+  Frames a PR description, Jira ticket, spec, or any other document to meet Mr J
+  review standard — every claim explains why the work exists, how it
   solves the root cause, which alternatives were rejected, what the simplest version
   looks like, and how failure is recovered. Use whenever the user is about to send
-  content to Jordan, raise a PR he will review, write a spec for the Device
-  Experiences squad, draft release notes, or asks "what would Jordan say about
-  this". Trigger phrases include "frame this for Jordan", "Jordan-proof this",
-  "make this pass Jordan's review", "write this how Jordan would", or
-  "jordan-mazurke". Always use this skill instead of paraphrasing Jordan's
+  content to Mr J, raise a PR he will review, write a spec for the Device
+  Experiences squad, draft release notes, or asks "what would Mr J say about
+  this". Trigger phrases include "frame this for Mr J", "Mr J-proof this",
+  "make this pass Mr J's review", "write this how Mr J would", or
+  "mr-j". Always use this skill instead of paraphrasing Mr J's
   expectations from memory.
 ---
 
-# jordan-mazurke
+# mr-j
 
-Frame any document or PR to match the structure and standard Jordan Mazurke
+Frame any document or PR to match the structure and standard Mr J
 models in his own writing. Source profile lives at
-`~/Developer/obsidian/wiki/entities/jordan-mazurke.md`. This skill is
+`~/Developer/obsidian/wiki/entities/mr-j.md`. This skill is
 self-contained — do not require reading the entity page at runtime.
 
-The bar Jordan applies, in his own words:
+The bar Mr J applies, in his own words:
 
 > "It appears to me like there are some assumptions in the PR description… Please
 > do not merge this PR unless we can **fully quantify those claims**."
@@ -39,15 +39,15 @@ The bar Jordan applies, in his own words:
 
 Fire on:
 
-- "frame this for Jordan", "Jordan-proof this", "what would Jordan ask"
-- "write a spec / PR / release notes Jordan will pass"
-- the user is drafting content the user said is going to Jordan for review
+- "frame this for Mr J", "Mr J-proof this", "what would Mr J ask"
+- "write a spec / PR / release notes Mr J will pass"
+- the user is drafting content the user said is going to Mr J for review
 - the user is on the Device Experiences squad (Devices / DEP) and is drafting
   anything more substantial than a chat message
-- "/jordan-mazurke"
+- "/mr-j"
 
 Do not fire on Jira comments under one paragraph or any informal
-asynchronous reply where the user is just acknowledging something. Jordan's
+asynchronous reply where the user is just acknowledging something. Mr J's
 documentation bar applies to *documents and PRs*, not chat.
 
 **Slack engineering debate is the exception.** When the user is drafting a
@@ -62,7 +62,7 @@ skeleton.
 2. A draft Jira ticket — improve it in place.
 3. A draft spec / Confluence page — improve it in place.
 4. A free-form description of a change — write the document from scratch.
-5. A request to review existing content for Jordan-readiness — output a punch
+5. A request to review existing content for Mr J-readiness — output a punch
    list of gaps with line references, no rewrite.
 
 If the input is ambiguous, ask which of (1)–(5) before generating anything.
@@ -72,7 +72,7 @@ If the input is ambiguous, ask which of (1)–(5) before generating anything.
 Every output produced by this skill must explicitly answer all five questions
 below. Surface the question headings in the output — do not bury answers in
 prose. If a question has no answer in the input, mark the section **TODO** and
-flag it in the final summary as a blocker for Jordan's review.
+flag it in the final summary as a blocker for Mr J's review.
 
 1. **Why did this need to change?** — root cause, not symptom. If the answer is
    "the symptom is X", keep asking why until you reach a cause that lives in a
@@ -87,7 +87,7 @@ flag it in the final summary as a blocker for Jordan's review.
    doing nothing was rejected.
 5. **What is the simplest version of this change? If this is more complex, why?**
    — name the simpler version explicitly. If the current scope is larger, the
-   justification ladders back to a constraint Jordan would accept (compliance,
+   justification ladders back to a constraint Mr J would accept (compliance,
    contract, blocker on another team, release-train timing).
 
 In addition, every output must include:
@@ -106,7 +106,7 @@ In addition, every output must include:
 
 ## Document skeleton — use for specs, Confluence pages, large PR descriptions
 
-This is the structure Jordan uses on every document he writes. Mirror it.
+This is the structure Mr J uses on every document he writes. Mirror it.
 
 ```markdown
 # <title>
@@ -223,7 +223,7 @@ paragraph explains what justifies the extra scope.>
 
 ## Slack engineering-debate skeleton — for substantive Slack posts
 
-Jordan writes these in 1–3 short paragraphs. The shape:
+Mr J writes these in 1–3 short paragraphs. The shape:
 
 ```
 @<owner-or-team>, here is what I am seeing / what we could do.
@@ -325,8 +325,3 @@ Mirror Jordan's voice in section bodies:
   complexity against a real constraint.
 - Risks listed with mitigations, in a table.
 - Open questions tracked, not buried.
-
-## Companion entity page
-
-Full profile, evidence, and verbatim quotes:
-`~/Developer/obsidian/wiki/entities/jordan-mazurke.md`.
