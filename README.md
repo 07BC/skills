@@ -179,6 +179,7 @@ Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code
 | Command | What it does |
 |---|---|
 | `/workflow` | Full ticket-to-PR pipeline — Jira / spec / prompt → discovery → engineer → test → quality → review → PR. Opus orchestrates; Sonnet handles execution phases. |
+| `/discovery` | Standalone architecture tracking — set up GitHub master issue + sub-issues for a story, check drift, or import an existing arch doc when subtasks already exist. |
 | `/audit-codebase` | Structured codebase audit — per-layer Sonnet subagents apply `swift-code-review`, findings grouped and prioritised into remediation batches ready for `/workflow`. |
 | `/uitest-pipeline` | End-to-end XCUITest pipeline — AC intake → plan → execute → debug → PR artefacts. |
 
