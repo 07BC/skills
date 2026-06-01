@@ -5,7 +5,7 @@ description: >
   multiple tickets in a single invocation. Use when the user says "set fix
   version on these tickets", "transition NAT-XXX to In Review", "bulk jira",
   "update these tickets", or "/j:jira-bulk". For single-ticket creation use
-  plan-to-jira instead.
+  discovery-jira instead.
 compatibility:
   tools:
     - mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources

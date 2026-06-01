@@ -1,4 +1,4 @@
-.PHONY: all help install link unlink commands unlink-commands hook test-python venv test
+.PHONY: all help install uninstall link unlink commands unlink-commands hook unlink-hooks test-python venv test
 
 HOOKS_DEST  := $(HOME)/.claude/hooks
 SKILLS_DEST := $(HOME)/.claude/skills
@@ -11,7 +11,9 @@ help:
 	@echo "  unlink           remove skill symlinks from ~/.claude/skills/ that point into this repo"
 	@echo "  commands         refresh command symlinks in ~/.claude/commands/"
 	@echo "  unlink-commands  remove command symlinks from ~/.claude/commands/ that point into this repo"
+	@echo "  uninstall        remove all skill, command, and hook symlinks from ~/.claude/"
 	@echo "  hook             install hooks from hooks/ to ~/.claude/hooks/"
+	@echo "  unlink-hooks     remove hook symlinks from ~/.claude/hooks/ that point into this repo"
 	@echo "  test             run all tests"
 	@echo "  test-python      run Python script tests"
 	@echo "  venv             create .venv with pytest"
@@ -19,6 +21,8 @@ help:
 test: test-python
 
 install: link commands hook
+
+uninstall: unlink unlink-commands unlink-hooks
 
 link:
 	@bash scripts/link-skills.sh
@@ -41,6 +45,15 @@ unlink-commands:
 	  target="$$(readlink "$$sym")"; \
 	  case "$$target" in \
 	    "$$REPO"/commands/*) rm "$$sym" && echo "removed $$(basename $$sym)";; \
+	  esac; \
+	done
+
+unlink-hooks:
+	@REPO="$$(cd . && pwd)"; \
+	find "$(HOOKS_DEST)" -maxdepth 1 -type l | while read -r sym; do \
+	  target="$$(readlink "$$sym")"; \
+	  case "$$target" in \
+	    "$$REPO"/hooks/*) rm "$$sym" && echo "removed $$(basename $$sym)";; \
 	  esac; \
 	done
 
