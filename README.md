@@ -160,7 +160,6 @@ make install
 | [/obsidian-manage](./skills/obsidian/obsidian-manage/SKILL.md) | Read, create, edit, search, and organise notes in the Obsidian vault. | Sonnet · Direct |
 | [/obsidian-rollover](./skills/obsidian/obsidian-rollover/SKILL.md) | Carries incomplete to-do items from recent past daily notes into today's daily note. | Sonnet · Direct |
 | [/daily-notes](./skills/obsidian/daily-notes/SKILL.md) | Generates first-person daily work notes from git history, file changes, and Jira. Runs entirely under Claude Code — no Claude.ai conversation tools required. | Sonnet · Direct |
-| [/session-saver](./skills/obsidian/session-saver/SKILL.md) | Processes saved Claude Code session transcripts and extracts durable knowledge into the Obsidian knowledge base. | Sonnet · Direct |
 
 ### Productivity
 

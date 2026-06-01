@@ -42,9 +42,3 @@ upsert() {
 
 # git-commit-reminder: fires on every Bash PostToolUse, filters git commit internally
 upsert "PostToolUse" '{"matcher":"Bash","hooks":[{"type":"command","command":"bash $HOME/.claude/hooks/git-commit-reminder.sh","statusMessage":"Checking for git commit handover..."}]}'
-
-# session-saver: periodic snapshots after every tool call
-upsert "PostToolUse" '{"matcher":"","hooks":[{"type":"command","command":"$HOME/.claude/hooks/session-saver"}]}'
-
-# session-saver: final save when session ends
-upsert "Stop" '{"hooks":[{"type":"command","command":"$HOME/.claude/hooks/session-saver"}]}'
