@@ -1,7 +1,7 @@
 ---
 name: swift-quality
 description: >
-  Rewrites Swift code to meet the project's Swift Style Guide standards and project
+  Rewrites Swift code to meet Google Swift Style Guide standards and project
   architecture rules. Use when code feels hard to read, methods are too long,
   responsibilities are mixed, or structure is unclear. Triggers: "rewrite this",
   "clean this up", "this is hard to read", "poor structure", "refactor", or
@@ -16,11 +16,6 @@ according to the Google Swift Style Guide and this project's architecture rules.
 It does not change behaviour. It does not change public API surfaces or protocol
 conformances. It only improves structure, naming, and readability.
 
-**Scope boundary.** This skill *rewrites* — it does not flag issues or output
-severities. If you need diagnosis (BLOCKER / WARNING / SUGGESTION findings
-with file:line citations), use `swift-code-review` instead. If you need an
-exhaustive multi-section report, use `swift-audit`.
-
 ---
 
 ## Authority
@@ -30,7 +25,7 @@ https://google.github.io/swift/
 
 Apple's API Design Guidelines are incorporated by reference.
 
-Project architecture rules in any `docs/` architecture doc and `CLAUDE.md`
+Project architecture rules in `docs/target-architecture.md` and `CLAUDE.md`
 take precedence over style rules where they conflict.
 
 ---
@@ -64,11 +59,6 @@ Apply all fixes. Build. Verify zero errors and zero warnings.
 
 The public API surface (protocol conformances, method signatures, property
 names) must be identical before and after. If tests exist, they must still pass.
-
-**If a style rule would require a public API rename**, halt and surface
-the requirement as a finding — do not perform the rename. Public renames
-ripple through call sites this skill cannot see; they belong to a
-deliberate refactor, not a style pass.
 
 ---
 
@@ -333,6 +323,59 @@ if let url = components.url {
 
 ---
 
+### Optional property assignment — no `if let` for pass-through
+
+When assigning an optional value to an optional property, never use `if let`
+as a gate. Assign directly, or use `.map` if a transformation is required.
+
+`if let` as a gate adds noise without adding safety — the assignment already
+handles `nil` correctly.
+
+#### Direct assignment — types match
+
+When the source and destination are the same optional type, assign directly.
+
+```swift
+// ✅
+videoData.videoTitle = content.videoTitle
+videoData.videoSeries = content.videoSeries
+videoData.videoCdn = content.videoCdn
+playerData.viewerUserId = viewer.viewerUserId
+
+// ❌
+if let title = content.videoTitle { videoData.videoTitle = title }
+if let series = content.videoSeries { videoData.videoSeries = series }
+if let cdn = content.videoCdn { videoData.videoCdn = cdn }
+if let userId = viewer.viewerUserId { playerData.viewerUserId = userId }
+```
+
+#### `.map` — transformation required
+
+When the value must be transformed before assignment, use `.map` on the
+optional. This returns the transformed value or `nil`, matching the
+destination type without branching.
+
+```swift
+// ✅
+playerData.playerVersion = appVersion.map { "\(Constants.playerVersionPrefix)\($0)" }
+videoData.videoDuration = content.videoDuration.map { NSNumber(value: Int($0 * 1000)) }
+
+// ❌
+if let version = appVersion {
+    playerData.playerVersion = "\(Constants.playerVersionPrefix)\(version)"
+}
+if let duration = content.videoDuration {
+    videoData.videoDuration = NSNumber(value: Int(duration * 1000))
+}
+```
+
+#### The audit rule
+
+Flag every `if let x = optional { obj.prop = x }` block. The fix is always
+one of the two forms above. Never leave a pass-through `if let` in place.
+
+---
+
 ### Vertical whitespace — phase separation
 
 Blank lines mark transitions between distinct phases of logic. They are not
@@ -511,12 +554,6 @@ Within a `struct`, properties are ordered:
 3. Nested types and `enum CodingKeys` last
 
 A blank line separates each group.
-
-`Sendable` is a conformance on the type, not a property attribute — it
-lives in the type's declaration line (e.g. `struct Foo: Sendable, Decodable`),
-never adjacent to individual properties. Nested types that cross an
-isolation boundary declare `Sendable` themselves; do not redeclare on
-each property.
 
 ```swift
 // ✅
@@ -838,10 +875,10 @@ frames.append(contentsOf: repeatElement(frame, count: count))
 ### `MARK` comments and file structure
 
 Every type with more than two logical groupings of members uses `// MARK: -`
-comments to divide them. The standard order for structs and classes:
+comments to divide them. The standard order for actors and classes:
 
 ```swift
-struct KickAPIClient: KickAPIClientProtocol {
+actor KickAPIClient: KickAPIClientProtocol {
 
     // MARK: - Constants
     // MARK: - State
@@ -886,29 +923,33 @@ Protocol conformances are the public surface. Everything else is `private`.
 
 ```swift
 // ✅
-struct KickAPIClient: KickAPIClientProtocol {
+actor KickAPIClient: KickAPIClientProtocol {
     private let urlSession: URLSession
 
     func fetchChannel(slug: String) async throws -> Channel { ... }  // internal, satisfies protocol
 
     private func buildRequest(...) throws -> URLRequest { ... }
     private func execute(...) async throws -> Data { ... }
-    private func decode<T: Decodable>(...) throws -> T { ... }
+    private nonisolated func decode<T: Decodable>(...) throws -> T { ... }
 }
 ```
 
 ---
 
-### Comments
+### Documentation comments
 
-Write no comments by default. Only add one when the **why** is non-obvious: a
-hidden constraint, a subtle invariant, a workaround for a specific bug, or
-behaviour that would surprise a reader. If removing the comment wouldn't
-confuse a future reader, don't write it.
+Public and internal protocol-satisfying methods have documentation comments
+using `///` format. Never `/** ... */`.
 
-Do not write doc comments (`///` or `/** */`) — well-named identifiers and
-types already document what a method does. Do not explain what the code does;
-explain only why it does something unexpected.
+```swift
+/// Fetches the full channel detail for the given slug.
+///
+/// - Parameter slug: The channel's URL slug (e.g. "whatever").
+/// - Returns: A fully decoded `Channel` including playback URL and chatroom ID.
+/// - Throws: `KickError.httpError` for non-2xx responses,
+///   `KickError.decodingFailed` if the response cannot be decoded.
+func fetchChannel(slug: String) async throws -> Channel
+```
 
 Private helpers do not require documentation comments but should have a
 single-line `//` comment explaining why they exist if the name alone is
@@ -949,61 +990,146 @@ private nonisolated func decode<T: Decodable>(_ type: T.Type, from data: Data) t
 
 ---
 
-## Canonical API client shape
+## KickAPIClient — canonical rewrite pattern
 
-For any type that performs network requests, follow this shape:
+The `KickAPIClient` actor is the primary example of what clean looks like
+for this codebase. Use this as the reference pattern for any actor that
+makes network requests.
 
-- A `struct` (not an `actor`) when the type holds only immutable `let` state.
-  `async` functions already hop off the main thread; an actor would add
-  serialisation without protecting any mutable state.
-- One small responsibility per private helper: build the request, execute it,
-  decode the response. Each helper stays under ~20 lines.
-- No inline `URLRequest` construction, no inline `JSONDecoder()` — both go
-  through shared, named helpers.
-- Errors propagate as a typed error enum; never `try?`, never silent catches.
-- MARK ordering: `Constants → State → Init → Protocol conformance → Private Helpers`.
+```swift
+actor KickAPIClient: KickAPIClientProtocol {
 
-For a full worked example, see
-[`references/kick-canonical-example.md`](references/kick-canonical-example.md)
-(Kick tvOS project). Apply the **shape**, not the specific type names, when
-working in other projects.
+    // MARK: - Constants
+
+    private enum Host {
+        static let kick = "kick.com"
+        static let appConfig = "kick-app-config.kick.com"
+    }
+
+    private static let userAgent = "KickAppleTV/2000 CFNetwork/3860.500.112 Darwin/25.4.0"
+
+    // MARK: - State
+
+    private let urlSession: URLSession
+
+    // MARK: - Init
+
+    init(urlSession: URLSession = .shared) {
+        self.urlSession = urlSession
+    }
+
+    // MARK: - KickAPIClientProtocol
+
+    /// Fetches the app configuration used for build version gating.
+    func fetchAppConfig() async throws -> AppConfig {
+        try await fetch(host: Host.appConfig, path: "/apple-public.json")
+    }
+
+    /// Fetches global server-driven settings such as event tracking intervals.
+    func fetchGlobalSettings() async throws -> GlobalSettings {
+        try await fetch(host: Host.kick, path: "/api/internal/settings/global")
+    }
+
+    /// Fetches a paginated list of live streams, optionally filtered.
+    ///
+    /// - Parameters:
+    ///   - page: The page number to fetch (1-indexed).
+    ///   - limit: The number of results per page.
+    ///   - sort: The sort order. Defaults to `"featured"`.
+    ///   - category: An optional top-level category filter.
+    ///   - subcategory: An optional subcategory slug filter.
+    func fetchLivestreams(
+        page: Int,
+        limit: Int,
+        sort: String = "featured",
+        category: String? = nil,
+        subcategory: String? = nil
+    ) async throws -> PaginatedResponse<Stream> {
+        var items = baseQueryItems(page: page, limit: limit, sort: sort)
+        if let category { items.append(URLQueryItem(name: "category", value: category)) }
+        if let subcategory { items.append(URLQueryItem(name: "subcategory", value: subcategory)) }
+        return try await fetch(host: Host.kick, path: "/stream/livestreams/en", queryItems: items)
+    }
+
+    // MARK: - Private Helpers
+
+    private func fetch<T: Decodable>(
+        host: String,
+        path: String,
+        queryItems: [URLQueryItem] = []
+    ) async throws -> T {
+        let request = try buildRequest(host: host, path: path, queryItems: queryItems)
+        let data = try await execute(request)
+        return try decode(T.self, from: data)
+    }
+
+    private func buildRequest(
+        host: String,
+        path: String,
+        queryItems: [URLQueryItem]
+    ) throws -> URLRequest {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = host
+        components.path = path
+        if !queryItems.isEmpty { components.queryItems = queryItems }
+        guard let url = components.url else { throw KickError.invalidURL }
+        var request = URLRequest(url: url)
+        request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        return request
+    }
+
+    private func execute(_ request: URLRequest) async throws -> Data {
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await urlSession.data(for: request)
+        } catch let error as URLError {
+            throw KickError.mapURLError(error)
+        }
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw KickError.httpError(statusCode: http.statusCode)
+        }
+        return data
+    }
+
+    private nonisolated func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        do {
+            return try ModelDecoder.make().decode(type, from: data)
+        } catch {
+            throw KickError.decodingFailed(context: error.localizedDescription)
+        }
+    }
+
+    private func baseQueryItems(page: Int, limit: Int, sort: String) -> [URLQueryItem] {
+        [
+            URLQueryItem(name: "page", value: "\(page)"),
+            URLQueryItem(name: "limit", value: "\(limit)"),
+            URLQueryItem(name: "sort", value: sort),
+            URLQueryItem(name: "strict", value: "false"),
+        ]
+    }
+}
+```
 
 ---
 
 ## Verification
 
-After every rewrite, build and run the test suite. Read the workspace,
-scheme, and destination from the project's `CLAUDE.md`.
-
-Prefer MCP Xcode tools when Xcode is open:
-
-```
-ToolSearch("select:mcp__xcode__BuildProject,mcp__xcode__RunSomeTests,mcp__xcode__RunAllTests,mcp__xcode__XcodeListNavigatorIssues")
-```
-
-Use `mcp__xcode__BuildProject` for the build pass, `mcp__xcode__RunSomeTests`
-to re-run the affected test target, and `mcp__xcode__XcodeListNavigatorIssues`
-to confirm no new diagnostics. Quality passes can quietly alter behaviour
-through helper extraction or named-constant substitution; never skip the
-test re-run.
-
-Fall back to Bash when Xcode is not open:
+After every rewrite:
 
 ```bash
+# Build must be clean
 xcodebuild build \
-  -workspace <workspace> \
-  -scheme <scheme> \
-  -destination '<destination>' \
+  -scheme "Kick tvOS" \
+  -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
   2>&1 | grep -E "error:|warning:|BUILD"
 
+# Tests must still pass
 xcodebuild test \
-  -workspace <workspace> \
-  -scheme <scheme> \
-  -destination '<destination>' \
+  -scheme "Kick tvOS" \
+  -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
   2>&1 | grep -E "Test.*passed|Test.*failed|error:|warning:|BUILD"
 ```
-
-Prefer the `swift-test-all` skill — it already resolves the workspace,
-scheme, and destination from `CLAUDE.md` and skips UI test targets safely.
 
 Zero errors. Zero warnings. All tests passing.
