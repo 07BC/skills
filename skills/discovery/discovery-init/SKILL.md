@@ -5,7 +5,8 @@ description: >
   a story, establishing the branch-independent state store that drives
   architecture drift detection throughout the workflow. Run once per story
   (STORY_KEY) — only when no master issue exists. Called by Phase 2.5 of the
-  /workflow command after Phase 2 has created the JIRA subtasks.
+  /workflow command after Phase 2 has created the JIRA subtasks, or by the
+  /discovery command in import mode when subtasks already exist.
 compatibility:
   tools:
     - mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources
@@ -17,20 +18,27 @@ compatibility:
 
 ## When to run
 
-Phase 2.5 of `/workflow`, **after Phase 2 has created the JIRA subtasks**, when
-the master issue lookup returns no result:
+Called when no master issue exists for `STORY_KEY`. Two entry points:
 
-```bash
-gh issue list \
-  --search "[${STORY_KEY}] Architecture in:title" \
-  --label architecture \
-  --json number,title,state \
-  --limit 5
-```
-
-Empty result → this skill. Non-empty result → use `discovery-check` instead.
+- **Phase 2.5 of `/workflow`** — after Phase 2 created JIRA subtasks
+- **`/discovery` command** — standalone, with or without existing subtasks
 
 Do NOT run this skill manually against the skills repo.
+
+---
+
+## Operating modes
+
+This skill operates in one of three modes, determined by the caller:
+
+| Mode | `EXISTING_SUBTASK_KEYS` | `ARCH_DOC_PATH` | What changes |
+|---|---|---|---|
+| **Full init** | absent | absent | Synthesise architecture from JIRA ticket; JIRA subtasks already created by Phase 2 |
+| **Full init with provided doc** | absent | provided | Read arch doc from disk instead of synthesising; JIRA subtasks already created or will be created by caller |
+| **Import** | provided | provided | Read arch doc from disk; create GitHub issues from existing subtasks — no JIRA writes |
+
+The caller (workflow Phase 2.5 or `/discovery` command) sets these variables
+before invoking the skill. Steps below note which modes each applies to.
 
 ---
 
@@ -83,6 +91,9 @@ ToolSearch("select:mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResour
    `STORY_KEY` to retrieve the full ticket including description, ACs, and
    acceptance criteria.
 
+**Import mode:** also use this call to read the `subtasks` array so you have
+each subtask's key, summary, and status — these replace the Phase 2 output.
+
 ---
 
 ## Step 4 — Create the master issue
@@ -110,12 +121,25 @@ Capture the returned issue number as `MASTER_ISSUE_NUMBER`.
 
 ## Step 5 — Post full architecture as first comment
 
-Read the ticket details from Step 3 and synthesise the end-to-end architecture.
-Post it as the **first comment** on the master issue. This comment — not the
-body — is the canonical architecture document. `discovery-check` reads and
-edits this comment for drift.
+**Full init mode:** read the ticket details from Step 3 and synthesise the
+end-to-end architecture. Do not invent content not derivable from the ticket.
+If any section is unknown, note it as
+`Unknown — to be determined during subtask discovery`.
 
-The comment must include all of:
+**Full init with provided doc / Import mode:** read the architecture from disk:
+
+```bash
+cat "${ARCH_DOC_PATH}"
+```
+
+Use the file content verbatim as the architecture. Do not alter or summarise
+it. If the file is empty or unreadable, halt and ask the user to check the path.
+
+Post the architecture as the **first comment** on the master issue. This
+comment — not the body — is the canonical architecture document.
+`discovery-check` reads and edits this comment for drift.
+
+The comment must include all sections below (synthesised or from the doc):
 - **Types**: new and existing types involved, with their roles
 - **Services**: which services are created, modified, or removed
 - **Data flow**: how data moves through the system end-to-end
@@ -146,15 +170,18 @@ gh issue comment ${MASTER_ISSUE_NUMBER} \
 ..."
 ```
 
-Do not invent architecture that is not derivable from the ticket content.
-If the ticket lacks enough information to write any section, note it as
-`Unknown — to be determined during subtask discovery` rather than guessing.
-
 ---
 
 ## Step 6 — Create sub-issues
 
-For each JIRA subtask created in Phase 2 (in order), create one GitHub sub-issue:
+**Import mode:** use `EXISTING_SUBTASK_KEYS` (from the caller) and the subtask
+details read in Step 3. Do NOT call `createJiraIssue` — the subtasks already
+exist. Proceed directly to creating GitHub sub-issues.
+
+**Full init / full init with provided doc:** use the JIRA subtask keys returned
+by Phase 2 (or created by the caller before invoking this skill).
+
+For each subtask (in order), create one GitHub sub-issue:
 
 ```bash
 gh issue create \
