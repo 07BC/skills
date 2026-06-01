@@ -83,6 +83,15 @@ make install
 | [/grill-me](./skills/engineering/grill-me/SKILL.md) | Interviews you relentlessly about a plan until reaching shared understanding — one question at a time. | Opus · Direct |
 | [/grill-with-docs](./skills/engineering/grill-with-docs/SKILL.md) | Same as grill-me, plus updates `CONTEXT.md` and ADRs inline as decisions crystallise. | Opus · Direct |
 
+### Discovery
+
+| Skill | What it does | Model · Flow |
+|---|---|---|
+| [/discovery-init](./skills/discovery/discovery-init/SKILL.md) | Creates the GitHub architecture master issue and per-subtask sub-issues for a story. Runs once per story on the first `/workflow` invocation. | Opus · Orchestrated |
+| [/discovery-check](./skills/discovery/discovery-check/SKILL.md) | Reconciles completed subtask work and checks the current subtask against the master architecture; updates both on drift. Runs on every subsequent `/workflow` invocation. | Opus+Sonnet · Orchestrated |
+| [/discovery-audit](./skills/discovery/discovery-audit/SKILL.md) | Audits the finished story against its master architecture. Runs automatically after the final subtask completes. | Opus · Orchestrated |
+| [/discovery-jira](./skills/discovery/discovery-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Asks for confirmation before creating. | Sonnet · Direct |
+
 ### Building
 
 | Skill | What it does | Model · Flow |
@@ -157,7 +166,6 @@ make install
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/plan-to-jira](./skills/productivity/plan-to-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Asks for confirmation before creating. | Sonnet · Direct |
 | [/jira-bulk](./skills/productivity/jira-bulk/SKILL.md) | Bulk Jira operations — set fix version, transition status — across multiple tickets in one invocation. | Sonnet · Direct |
 | [/yt-research](./skills/productivity/yt-research/SKILL.md) | Downloads transcripts and extracts prompts from a YouTube channel's recent videos, saving each as markdown in the Obsidian vault. | Sonnet · Direct |
 | [/yt-distill](./skills/productivity/yt-distill/SKILL.md) | Distils a folder of YouTube transcript markdown files (output of yt-research) into a structured Obsidian reference library — skills, plugins, prompts, and techniques categories plus a master index. | Sonnet · Direct |
@@ -181,6 +189,7 @@ Makefile                        — install, link, commands, hook targets
 scripts/link-skills.sh          — symlinks skills into ~/.claude/skills/
 scripts/link-commands.sh        — symlinks commands into ~/.claude/commands/
 commands/                       — slash command markdown files
+skills/discovery/               — architecture master-issue tracking (discovery-init, discovery-check, discovery-audit)
 skills/engineering/             — Swift / iOS / Xcode / CI skills
 skills/git/                     — generic git workflow skills
 skills/obsidian/                — Obsidian vault management skills

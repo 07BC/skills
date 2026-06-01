@@ -167,6 +167,45 @@ Do not begin implementation until all subtasks are created and confirmed in Jira
 
 ---
 
+## Phase 2.5 — Architecture Tracking
+
+### Opus, plan mode
+
+Look up the master issue in the **project repo** (not the skills repo):
+
+```bash
+gh issue list \
+  --search "[${STORY_KEY}] Architecture in:title" \
+  --label architecture \
+  --json number,title,state \
+  --limit 5
+```
+
+**No master issue (first run):** apply skill `discovery-init` after Phase 2
+has created the JIRA subtasks. The skill creates the GitHub master issue
+(overview + subtask checklist) and one sub-issue per JIRA subtask. Record
+`MASTER_ISSUE_NUMBER` and `ARCH_LABEL` in the context bundle.
+
+**Master issue exists (subsequent run):** apply skill `discovery-check`.
+Delegate the reconcile sweep (gh issue close/comment, JIRA→Testing, checkbox
+ticks) to a Sonnet subagent; the orchestrator (Opus) makes the drift judgment
+itself. If it returns `DRIFT: changed:<summary>`, the master issue's first
+comment now holds the corrected architecture — pass it into Phase 3 so the
+discovery note reflects the current architecture. Carry the returned
+`FINAL_RUN` flag forward.
+
+**Final subtask (`FINAL_RUN: true`):** the reconcile sweep skips the
+in-progress subtask, so after Phase 8 succeeds the orchestrator must apply
+skill `discovery-audit`. That skill closes the final sub-issue, ticks its
+checkbox, moves its JIRA to Testing, runs the audit, and closes the master
+issue. On `VERDICT: fail`, surface findings to the user; do not close the
+master issue without confirmation.
+
+> Skip this phase entirely when `mode = spec` or `mode = prompt` (no STORY_KEY
+> to look up and no JIRA subtasks were created in Phase 2).
+
+---
+
 ## Phase 3 — Discovery
 
 ### Opus, plan mode
@@ -205,6 +244,9 @@ discovery note from disk.
 
 ```
 SUBTASK: [SUBTASK-KEY] — [Title]
+STORY_KEY: [parent JIRA key passed to /workflow]
+MASTER_ISSUE_NUMBER: [from discovery-init, or the Phase 2.5 lookup; blank in spec/prompt mode]
+ARCH_LABEL: arch:[STORY_KEY]
 DISCOVERY: <full contents of ${PLANS_DIR}/[SUBTASK-KEY]-discovery.md>
 CLAUDE_MD: <full contents of ./CLAUDE.md>
 SCHEME: [SCHEME]
@@ -495,6 +537,7 @@ The orchestrator must halt and report (never silently continue) if:
 - Any `swift-pr-gate` gate fails
 - `gh pr create` fails
 - Any required Jira MCP call fails (Jira mode only)
+- `discovery-audit` returns `VERDICT: fail` and the user does not confirm close → surface findings; do not silently close the master issue
 
 On halt: write a summary to `${PLANS_DIR}/[SUBTASK-KEY]-blocked.md`.
 

@@ -1,9 +1,9 @@
 ---
-name: plan-to-jira
+name: discovery-jira
 description: >
   Converts a plan, spec, or design into a Jira ticket using a structured template.
   Use this skill whenever the user says "create a Jira ticket", "turn this into a ticket",
-  "raise a ticket for this", "log this as a Jira issue", "make a Jira card", "plan-to-jira",
+  "raise a ticket for this", "log this as a Jira issue", "make a Jira card", "discovery-jira",
   or any time a plan or feature description needs to become a trackable Jira issue.
   Also trigger when the user finishes a planning or grilling session and wants to capture
   the outcome. Always use this skill — do not create Jira tickets ad hoc without it.
@@ -16,7 +16,7 @@ compatibility:
     - AskUserQuestion
 ---
 
-# plan-to-jira
+# discovery-jira
 
 Turns a plan into a well-structured Jira ticket. The goal is a ticket that is
 **useful to a developer picking it up cold** — enough context to understand why,
