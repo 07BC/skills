@@ -21,6 +21,24 @@ to **new** Swift and SwiftUI code as it is being generated. For rewriting
 existing messy code in place, use `swift-quality`. For reviewing code
 before commit or PR, use `swift-code-review`.
 
+## File Header
+
+Every new `.swift` file **must** begin with this header exactly:
+
+```swift
+//
+//  {Filename}.swift
+//  Kick TV
+//
+//  Created by Jamie Le Souëf on {MM/DD/YYYY}.
+//
+```
+
+- `{Filename}` — the bare filename without path, e.g. `PlayerView.swift` → `PlayerView`
+- `{MM/DD/YYYY}` — today's date, e.g. `06/01/2026`
+- The project name is always `Kick TV`
+- Never omit or alter this block
+
 ## Swift 6 Essentials
 
 ### Data Race Safety
