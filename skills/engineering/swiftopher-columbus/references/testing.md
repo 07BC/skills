@@ -19,32 +19,32 @@ worth calling out — new tests should use Swift Testing.
 ```swift
 import Testing
 
-@Suite("StreamOrchestrator")
-struct StreamOrchestratorTests {
+@Suite("SyncCoordinator")
+struct SyncCoordinatorTests {
 
     @Test("starts in idle state")
     func initialState() {
-        let sut = StreamOrchestrator()
+        let sut = SyncCoordinator()
         #expect(sut.state == .idle)
     }
 
     @Test("transitions to live on successful publish",
           .tags(.publishing))
     func transitionToLive() async throws {
-        let sut = StreamOrchestrator(publisher: MockPublisher())
-        try await sut.startStream()
+        let sut = SyncCoordinator(client: MockWebSocketClient())
+        try await sut.start()
         #expect(sut.state == .live)
     }
 
     @Test("handles publish failure", arguments: [
-        RTMPError.timeout,
-        RTMPError.unauthorized
+        ConnectionError.timeout,
+        ConnectionError.unauthorized
     ])
-    func publishFailure(error: RTMPError) async throws {
-        let publisher = MockPublisher(failWith: error)
-        let sut = StreamOrchestrator(publisher: publisher)
+    func publishFailure(error: ConnectionError) async throws {
+        let client = MockWebSocketClient(failWith: error)
+        let sut = SyncCoordinator(client: client)
         await #expect(throws: error) {
-            try await sut.startStream()
+            try await sut.start()
         }
     }
 }
@@ -60,7 +60,7 @@ Look for how dependencies are faked:
 | `@testable import` + subclass | Legacy ObjC pattern, fragile |
 | `withDependencies` / custom DI | Point-free style |
 | In-memory `ModelContainer` | SwiftData testing |
-| `MockPublisher(failWith:)` via init | Preferred for actors |
+| `MockWebSocketClient(failWith:)` via init | Preferred for actors |
 
 Document the dominant pattern. Flag if services are not protocol-backed
 (makes them untestable without subclassing).
@@ -68,14 +68,14 @@ Document the dominant pattern. Flag if services are not protocol-backed
 ## In-memory SwiftData in tests
 
 ```swift
-@Suite("StreamHistory persistence")
-struct StreamHistoryTests {
+@Suite("SessionHistory persistence")
+struct SessionHistoryTests {
     var container: ModelContainer!
 
     init() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         container = try ModelContainer(
-            for: StreamHistory.self,
+            for: SessionHistory.self,
             configurations: config
         )
     }
@@ -83,9 +83,9 @@ struct StreamHistoryTests {
     @Test("saves stream session")
     func saveSession() throws {
         let context = container.mainContext
-        context.insert(StreamHistory(duration: 120))
+        context.insert(SessionHistory(duration: 120))
         try context.save()
-        let all = try context.fetch(FetchDescriptor<StreamHistory>())
+        let all = try context.fetch(FetchDescriptor<SessionHistory>())
         #expect(all.count == 1)
     }
 }

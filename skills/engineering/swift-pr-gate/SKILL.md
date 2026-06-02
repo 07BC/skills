@@ -151,11 +151,11 @@ git branch --show-current
 
 **Expected format:** `${BRANCH_PREFIX}[ticket-number]-[short-kebab-title]`
 
-Examples (with `BRANCH_PREFIX=nat-`):
-- `nat-1234-add-channel-fetcher` ✅
-- `nat-1234-AddChannelFetcher` ❌ — wrong case
-- `feature/channel-fetcher` ❌ — missing ticket number / prefix
-- `nat-1234` ❌ — missing description
+Examples (with `BRANCH_PREFIX=proj-`):
+- `proj-123-add-article-fetcher` ✅
+- `proj-123-AddArticleFetcher` ❌ — wrong case
+- `feature/article-fetcher` ❌ — missing ticket number / prefix
+- `proj-123` ❌ — missing description
 
 Match against the regex `^${BRANCH_PREFIX}[0-9]+-[a-z0-9-]+$`.
 

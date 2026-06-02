@@ -291,7 +291,7 @@ sub-section. New audits follow.
 
 #### `swift-cidi`
 
-- **[IMPROVEMENT] Hardcodes scheme names (`Chagi`, `kick-apple-public`)
+- **[IMPROVEMENT] Hardcodes scheme names (`MyApp`, `myapp-apple`)
   in examples.** Readers may copy-paste.
   - **Fix:** Use `$SCHEME` placeholder throughout examples; define
     once at the top.

@@ -487,7 +487,7 @@ When a test traps at runtime, never weaken the assertion to make the suite go gr
 // BAD — synthesised Hashable; verifies the compiler, not your code
 @Test("Route cases are distinct")
 func routeCasesAreDistinct() async throws {
-    #expect(Route.loanInput != Route.comparison)
+    #expect(Route.home != Route.search)
 }
 
 // BAD — if it didn't conform, the file wouldn't compile
@@ -516,10 +516,10 @@ func persistsToRepository() async throws {
     let storage = MockStorageService()   // actor
     let sut = await PreferencesViewModel(storage: storage)
 
-    await sut.setServerURL("rtmp://test.com")
+    await sut.setServerURL("https://test.example.com")
 
     let stored = await storage.string(forKey: "server_url")
-    #expect(stored == "rtmp://test.com")
+    #expect(stored == "https://test.example.com")
 }
 ```
 

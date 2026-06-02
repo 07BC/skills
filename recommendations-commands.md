@@ -132,7 +132,7 @@ Each entry: **Where → Problem → Fix → Why it matters.**
 ### [BLOCKER] Handoff points at a command that no longer exists
 
 - **Where:** `audit-codebase.md` lines 9-10 ("companion to `ticket-to-pr`")
-  and 315-321 ("Run `ticket-to-pr` for [NAT-XXXX]").
+  and 315-321 ("Run `ticket-to-pr` for [PROJ-XXXX]").
 - **Problem:** `ticket-to-pr` was renamed / replaced by `workflow`
   (commands/Mr Will/workflow.md). The audit doc still hands tickets to
   the old name.
@@ -232,8 +232,8 @@ Each entry: **Where → Problem → Fix → Why it matters.**
 ### [POLISH] Mode flag syntax is inconsistent with `workflow.md` arg style
 
 - **Where:** `audit-codebase.md` line 19-32 (uses `--scope=ticket
-  NAT-1234`) vs `workflow.md` (positional arg).
-- **Fix:** Either align both to flag-style (`/workflow --ticket NAT-1234`)
+  PROJ-123`) vs `workflow.md` (positional arg).
+- **Fix:** Either align both to flag-style (`/workflow --ticket PROJ-123`)
   or both to positional. Right now they diverge.
 
 ---

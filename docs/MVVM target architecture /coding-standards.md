@@ -140,11 +140,11 @@ Task { [weak self] in
 
 **Sibling closure calls: separated by a blank line.**
 ```swift
-stream.onEvent { [weak self] event in
+connection.onEvent { [weak self] event in
     self?.handle(event)
 }
 
-stream.onError { [weak self] error in
+connection.onError { [weak self] error in
     self?.handle(error)
 }
 ```

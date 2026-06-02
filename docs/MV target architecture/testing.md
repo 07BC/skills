@@ -253,14 +253,14 @@ struct PreferencesServiceTests {
 
     init() async throws {
         store = MockUserDefaults()
-        await store.set("rtmp://default", forKey: "server_url")
+        await store.set("https://api.example.com", forKey: "server_url")
     }
 
     @Test("Reads pre-populated value from store")
     func readsFromStore() async throws {
         let sut = PreferencesService(store: store)
         let url = await sut.serverURL
-        #expect(url == "rtmp://default")
+        #expect(url == "https://api.example.com")
     }
 }
 ```
@@ -480,7 +480,7 @@ When a test traps at runtime, never weaken the assertion to make the suite go gr
 // BAD — synthesised Hashable; verifies the compiler, not your code
 @Test("Route cases are distinct")
 func routeCasesAreDistinct() async throws {
-    #expect(Route.loanInput != Route.comparison)
+    #expect(Route.home != Route.search)
 }
 
 // BAD — if it didn't conform, the file wouldn't compile
@@ -509,10 +509,10 @@ func persistsToStore() async throws {
     let store = MockUserDefaults()   // actor
     let sut = PreferencesService(store: store)
 
-    await sut.setServerURL("rtmp://test.com")
+    await sut.setServerURL("https://test.example.com")
 
     let stored = await store.string(forKey: "server_url")
-    #expect(stored == "rtmp://test.com")
+    #expect(stored == "https://test.example.com")
 }
 ```
 

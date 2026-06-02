@@ -47,14 +47,14 @@ This is the breaking change that makes `@Test @MainActor` insufficient. The test
 // ❌ Calling a `nonisolated` factory whose body is MainActor.assumeIsolated
 // from inside a @Test function, regardless of @MainActor on the function.
 
-nonisolated static var preview: ScenarioService {
+nonisolated static var preview: ArticleService {
     MainActor.assumeIsolated {
-        ScenarioService(...)
+        ArticleService(...)
     }
 }
 
 @Test @MainActor func test() async throws {
-    let service = ScenarioService.preview   // TRAPS HERE under Swift 6
+    let service = ArticleService.preview   // TRAPS HERE under Swift 6
 }
 ```
 
@@ -66,13 +66,13 @@ The trap fires because the call site's task does not carry main-actor isolation,
 
 ```swift
 extension EnvironmentValues {
-    @Entry var scenarioService: ScenarioService = .preview
+    @Entry var articleService: ArticleService = .preview
 }
 
-extension ScenarioService {
-    nonisolated static var preview: ScenarioService {
+extension ArticleService {
+    nonisolated static var preview: ArticleService {
         MainActor.assumeIsolated {
-            ScenarioService(...)
+            ArticleService(...)
         }
     }
 }
@@ -88,11 +88,11 @@ This works in production because SwiftUI evaluates the default inside a `View` b
    @Test("Service seeds expected rows")
    func seedsRows() async throws {
        let container = try ModelStack.makePreviewContainer()
-       let sut = await ScenarioService(modelContainer: container)
+       let sut = await ArticleService(modelContainer: container)
        await sut.seedDefaults()
 
-       let loans = try await sut.fetchLoanDetails()
-       #expect(loans.count == 1)
+       let lists = try await sut.fetchArticleLists()
+       #expect(lists.count == 1)
    }
    ```
 
@@ -104,7 +104,7 @@ This works in production because SwiftUI evaluates the default inside a `View` b
    @Test("Preview factory produces a usable service")
    func previewFactory() async throws {
        try await MainActor.run {
-           let service = ScenarioService.preview  // safe: rendered context
+           let service = ArticleService.preview  // safe: rendered context
            #expect(service.modelContext != nil)
        }
    }
@@ -112,17 +112,17 @@ This works in production because SwiftUI evaluates the default inside a `View` b
 
    `MainActor.run` does establish the isolation `assumeIsolated` needs. This is the one case where wrapping a whole test body in `MainActor.run` is justified.
 
-3. **Refactor the production code.** If `@Entry` is forcing a `nonisolated` default that papers over a real isolation mismatch, the design is the bug. Hoist the service construction into the composition root (`AppDependencies`) where `@MainActor` is honest, and pass the service through `.environment(\.scenarioService, ...)` instead of relying on the `@Entry` default.
+3. **Refactor the production code.** If `@Entry` is forcing a `nonisolated` default that papers over a real isolation mismatch, the design is the bug. Hoist the service construction into the composition root (`AppDependencies`) where `@MainActor` is honest, and pass the service through `.environment(\.articleService, ...)` instead of relying on the `@Entry` default.
 
 ## Case study: the Story 01b debug spiral
 
 The setup:
-- `ScenarioService.preview` was `nonisolated static var preview` with `MainActor.assumeIsolated { ... }` inside.
+- `ArticleService.preview` was `nonisolated static var preview` with `MainActor.assumeIsolated { ... }` inside.
 - The test was `@Test @MainActor func test() async throws { ... }`.
-- The test called `ScenarioService.preview` and `ModelStack.makePreviewContainer()` (also `@MainActor`) in the same body.
+- The test called `ArticleService.preview` and `ModelStack.makePreviewContainer()` (also `@MainActor`) in the same body.
 - The test trapped at `MainActor.assumeIsolated`.
 
-The engineer assumed `@MainActor` on the test was sufficient — it isn't. The task driving the test did not carry main-actor isolation. Two hours of debugging eventually produced a "fix": rewrite the test to call `.preview` twice and assert `first !== second`, which is a property most factories satisfy trivially. **The original acceptance criterion (factory seeds 1 LoanDetails + 2 Scenarios) was no longer tested.**
+The engineer assumed `@MainActor` on the test was sufficient — it isn't. The task driving the test did not carry main-actor isolation. Two hours of debugging eventually produced a "fix": rewrite the test to call `.preview` twice and assert `first !== second`, which is a property most factories satisfy trivially. **The original acceptance criterion (factory seeds 1 ArticleList + 2 Articles) was no longer tested.**
 
 The correct fix was Mitigation 1 above — construct the service explicitly in the test, do not go through `.preview` at all, and assert on the seeded rows directly. This would have taken ten minutes and produced a test that actually verified the spec.
 

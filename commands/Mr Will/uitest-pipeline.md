@@ -7,7 +7,7 @@ produce the PR outputs — all without stopping for external input.
 Usage:
 
 ```
-/uitest-pipeline NAT-1460
+/uitest-pipeline PROJ-123
 /uitest-pipeline <story-file-path>
 /uitest-pipeline <pasted-AC>
 ```
@@ -19,9 +19,9 @@ Usage:
 | Variable | Source | Example |
 | --- | --- | --- |
 | `SUBAGENT_MODEL` | constant | `claude-sonnet-4-6` |
-| `PROJECT_NAME` | `basename $(git rev-parse --show-toplevel)` | `kick-tvos` |
+| `PROJECT_NAME` | `basename $(git rev-parse --show-toplevel)` | `myapp` |
 | `PLANS_DIR` | `${HOME}/Developer/obsidian/${PROJECT_NAME}/plans` | per global plan-storage rule |
-| `SLUG` | derived from the story key or title | `nat-1460-go-live-button` |
+| `SLUG` | derived from the story key or title | `proj-123-compose-button` |
 | `ATLASSIAN_CLOUD_ID` | declared in `CLAUDE.md` (`pipeline` config block), or resolved at runtime via `mcp__claude_ai_Atlassian__getAccessibleAtlassianResources` | per project |
 | `SCHEME`, `DESTINATION`, `UI_TEST_TARGET` | derived in Phase 0 from `CLAUDE.md` | — |
 
@@ -76,7 +76,7 @@ the user chooses Proceed anyway.
 
 ### Get the story
 
-- If the argument is a Jira key (e.g. `NAT-1460`): fetch it via Atlassian
+- If the argument is a Jira key (e.g. `PROJ-123`): fetch it via Atlassian
   MCP. Use `ATLASSIAN_CLOUD_ID` from `CLAUDE.md`. Extract summary,
   description, AC items, story type, linked tickets.
 - If the argument is a file path: read the file.
@@ -133,7 +133,7 @@ Think through the full test suite before writing any Swift. For each
    in? On a specific screen? A launch argument set?
 4. Steps — the ordered sequence of UI interactions, named at the
    accessibility-identifier level. Write the identifier, not the label
-   (e.g. `tap buttons[goLive.startButton]`, not `tap Go Live`).
+   (e.g. `tap buttons[compose.publish]`, not `tap Publish`).
 5. Assertions — the exact `XCTAssert*` calls that confirm the outcome.
 6. Missing accessibility identifiers — identifiers this test requires
    that are absent from `accessibility-ids.md`. List them explicitly;

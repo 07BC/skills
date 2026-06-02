@@ -77,11 +77,11 @@ noun phrases for properties.
 
 ```swift
 // ✅
-static let appConfigBaseURL = "https://kick-app-config.kick.com"
+static let configBaseURL = "https://config.example.com"
 
 // ❌
-static let kAppConfigBaseURL = "https://kick-app-config.kick.com"
-static let APP_CONFIG_BASE_URL = "https://kick-app-config.kick.com"
+static let kConfigBaseURL = "https://config.example.com"
+static let CONFIG_BASE_URL = "https://config.example.com"
 ```
 
 **Parameters:** Named clearly. The call site should read like prose.
@@ -147,7 +147,7 @@ func fetchToken() async throws -> String {
 }
 
 // ✅ — type in its own file
-// KickTV/Domain/Models/TokenResponse.swift
+// MyApp/Domain/Models/TokenResponse.swift
 struct TokenResponse: Sendable, Decodable {
     let data: TokenData
     struct TokenData: Sendable, Decodable { let token: String }
@@ -162,10 +162,10 @@ struct TokenResponse: Sendable, Decodable {
 
 ```swift
 // ❌
-let result = try JSONDecoder().decode(Stream.self, from: data)
+let result = try JSONDecoder().decode(Article.self, from: data)
 
 // ✅
-let result = try decode(Stream.self, from: data)
+let result = try decode(Article.self, from: data)
 ```
 
 ---
@@ -179,12 +179,12 @@ shared `buildRequest(host:path:queryItems:)` builder.
 // ❌ — URL construction scattered through method body
 var components = URLComponents(string: baseURL + path)
 if !queryItems.isEmpty { components?.queryItems = queryItems }
-guard let url = components?.url else { throw KickError.invalidURL(path) }
+guard let url = components?.url else { throw APIError.invalidURL(path) }
 var urlRequest = URLRequest(url: url)
 urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
 // ✅ — single named builder
-let request = try buildRequest(host: "kick.com", path: path, queryItems: items)
+let request = try buildRequest(host: "api.example.com", path: path, queryItems: items)
 ```
 
 ---
@@ -216,10 +216,10 @@ or use `do-catch` to transform.
 
 ```swift
 // ❌
-let data = try? decode(Stream.self, from: raw)
+let data = try? decode(Article.self, from: raw)
 
 // ✅
-let data = try decode(Stream.self, from: raw)
+let data = try decode(Article.self, from: raw)
 ```
 
 ### Errors must not be swallowed in services
@@ -237,8 +237,8 @@ equivalent to `try?`. Forbidden.
 private func fetchFeatured(page: Int, appending: Bool) {
     Task {
         do {
-            let response = try await client.fetchFeaturedLivestreams(page: page, limit: 32)
-            featuredStreams = response.data
+            let response = try await client.fetchFeaturedArticles(page: page, limit: 32)
+            featuredArticles = response.data
         } catch {
             return  // FORBIDDEN
         }
@@ -252,11 +252,11 @@ private func fetchFeatured(page: Int, appending: Bool) {
     Task {
         defer { isLoading = false }
         do {
-            let response = try await client.fetchFeaturedLivestreams(page: page, limit: 32)
-            featuredStreams = response.data
+            let response = try await client.fetchFeaturedArticles(page: page, limit: 32)
+            featuredArticles = response.data
             hasMoreFeatured = response.hasNextPage
-        } catch let kickError as KickError {
-            error = kickError
+        } catch let apiError as APIError {
+            error = apiError
         } catch {
             self.error = .unknown(error.localizedDescription)
         }
@@ -269,9 +269,9 @@ Required elements in every load method `do-catch`:
 2. `defer { isLoading = false }` — always clears, even on failure
 3. `catch` must store to `self.error` — never return silently
 
-#### Context 2 — Event stream handlers (ChatService)
+#### Context 2 — Event stream handlers (MessageService)
 
-A single malformed event packet should not kill the stream or set
+A single malformed event packet should not kill the message pipeline or set
 `self.error`. Skipping is acceptable, but must be explicit and documented.
 
 ```swift
@@ -282,10 +282,10 @@ A single malformed event packet should not kill the stream or set
 
 // ✅ Correct — intentional skip with documented reason
 } catch {
-    // A single malformed event does not affect stream health.
+    // A single malformed event does not affect message pipeline health.
     // Do not surface to the view — log in debug builds only.
     #if DEBUG
-    print("[ChatService] Failed to decode event payload: \(error)")
+    print("[MessageService] Failed to decode event payload: \(error)")
     #endif
 }
 ```
@@ -694,7 +694,7 @@ to know what they are holding.
 
 ```swift
 // ✅
-let response: PaginatedResponse<Stream> = try await fetcher.fetch(page: nextPage)
+let response: PaginatedResponse<Article> = try await fetcher.fetch(page: nextPage)
 
 // ❌
 let response = try await fetcher.fetch(page: nextPage)
@@ -740,6 +740,177 @@ uniqueKeysWithValues: rows.enumerated().map { ($0.element.categoryName, $0.offse
 ```
 
 Each assignment that follows a chain is separated from the next by a blank line.
+
+## Determinism - Swift code quality is deterministic. It produces the same output every time for the same input. It does not rely on any external state, random seeds, or non-deterministic processes. The same code will always yield the same result.
+
+### Stored `Task` handles must be cancelled before replacement
+
+Any `var loadTask: Task<Void, Never>?` must be cancelled before being
+reassigned. Replacing without cancelling causes two concurrent tasks
+mutating the same state.
+
+```swift
+// ✅
+func load() {
+    loadTask?.cancel()
+    loadTask = Task { ... }
+}
+
+// ❌
+func load() {
+    loadTask = Task { ... }  // previous task still running
+}
+```
+
+---
+
+### Fire-and-forget `Task { }` requires a comment
+
+A `Task { }` whose handle is not stored is fire-and-forget — it cannot be
+cancelled and has no defined lifetime. This is sometimes correct (e.g. a
+one-shot side effect), but must always be documented.
+
+```swift
+// ✅
+// One-shot: fires on appear, no cancellation needed — view owns its lifetime.
+Task { await analytics.trackImpression(id: channelId) }
+
+// ❌
+Task { await analytics.trackImpression(id: channelId) }
+```
+
+If you find yourself writing more than one fire-and-forget `Task { }` in a
+type, reconsider whether the task lifetime should be managed explicitly.
+
+---
+
+### No `Task.detached` without justification
+
+`Task.detached` inherits no actor context and no task-local values. It is
+rarely correct. If you write `Task.detached`, you must add a comment
+explaining why neither `Task { }` nor `async let` satisfies the requirement.
+
+```swift
+// ❌ — almost always wrong
+Task.detached {
+    await self.loadData()
+}
+
+// ✅ — only when you explicitly need to escape actor context, with comment
+// Detached: this work must not inherit the @MainActor context of the caller
+// because it performs blocking I/O on a background thread pool.
+Task.detached(priority: .background) {
+    await self.performBlockingExport()
+}
+```
+
+---
+
+### No `DispatchQueue` in new code
+
+`DispatchQueue` is forbidden in new Swift code. Use structured concurrency.
+
+```swift
+// ❌
+DispatchQueue.main.async { self.isLoading = false }
+DispatchQueue.global().async { self.processData() }
+
+// ✅
+await MainActor.run { isLoading = false }
+Task { await processData() }
+```
+
+---
+
+### `AsyncStream` continuations must be stored and terminated
+
+A continuation that is never finished leaks the stream and hangs any
+`for await` consumer. Always store the continuation and call `finish()` in
+a terminal path.
+
+```swift
+// ✅
+private var continuation: AsyncStream.Continuation?
+
+func stream() -> AsyncStream {
+    AsyncStream { continuation in
+        self.continuation = continuation
+        continuation.onTermination = { [weak self] _ in
+            self?.continuation = nil
+        }
+    }
+}
+
+func tearDown() {
+    continuation?.finish()
+    continuation = nil
+}
+
+// ❌ — continuation stored nowhere, stream never finishes
+func stream() -> AsyncStream {
+    AsyncStream { continuation in
+        self.continuation = continuation  // where is finish() called?
+    }
+}
+```
+
+---
+
+### `withTaskGroup` — never assume result order
+
+`withTaskGroup` delivers child task results in completion order, not
+submission order. If order matters, tag results with an index and sort
+after collection.
+
+```swift
+// ✅
+let results: [Result] = await withTaskGroup(of: (Int, Result).self) { group in
+    for (index, id) in ids.enumerated() {
+        group.addTask { (index, await fetch(id)) }
+    }
+    var ordered = [(Int, Result)]()
+    for await pair in group { ordered.append(pair) }
+    return ordered
+        .sorted { $0.0 < $1.0 }
+        .map(\.1)
+}
+
+// ❌ — assumes results arrive in submission order
+var results: [Result] = []
+await withTaskGroup(of: Result.self) { group in
+    for id in ids { group.addTask { await fetch(id) } }
+    for await result in group { results.append(result) }
+}
+```
+
+---
+
+### `@Observable` state mutated only from `@MainActor`
+
+An `@MainActor @Observable` service must only have its stored properties
+mutated from `@MainActor` context. Mutating from an unstructured `Task`
+that re-enters the actor through a non-isolated path introduces races.
+
+```swift
+// ✅ — mutation is always on the actor
+@MainActor @Observable
+final class FeedService {
+    private(set) var items: [Item] = []
+
+    func load() {
+        Task {
+            let fetched = try await fetcher.fetchItems()
+            items = fetched  // we are still on @MainActor here
+        }
+    }
+}
+
+// ❌ — mutation from an escaped context
+Task.detached {
+    let fetched = try? await self.fetcher.fetchItems()
+    self.items = fetched ?? []  // race: which thread is this on?
+}
+```
 
 ---
 
@@ -839,16 +1010,16 @@ Use the dependency's property directly at the call site.
 
 ```swift
 // ❌ — pointless indirection, bloats the view
-private var featuredService: HomeFeaturedStreamsService { home.featuredService }
-private var valorantService: HomeSubcategoryRowService { home.valorantService }
+private var featuredService: FeaturedArticlesService { home.featuredService }
+private var categoryService: CategoryRowService { home.categoryService }
 
 // Use in view body:
-HomeFeaturedView(service: featuredService)
-HomeSubcategoryRowView(service: valorantService)
+FeaturedArticlesView(service: featuredService)
+CategoryRowView(service: categoryService)
 
 // ✅ — use the dependency directly
-HomeFeaturedView(service: home.featuredService)
-HomeSubcategoryRowView(service: home.valorantService)
+FeaturedArticlesView(service: home.featuredService)
+CategoryRowView(service: home.categoryService)
 ```
 
 This applies regardless of how many forwarding properties exist. Ten forwarding
@@ -878,12 +1049,12 @@ Every type with more than two logical groupings of members uses `// MARK: -`
 comments to divide them. The standard order for actors and classes:
 
 ```swift
-actor KickAPIClient: KickAPIClientProtocol {
+struct APIClient: APIClientProtocol {
 
     // MARK: - Constants
     // MARK: - State
     // MARK: - Init
-    // MARK: - KickAPIClientProtocol  (public API)
+    // MARK: - APIClientProtocol  (public API)
     // MARK: - Private Helpers
 }
 ```
@@ -923,10 +1094,10 @@ Protocol conformances are the public surface. Everything else is `private`.
 
 ```swift
 // ✅
-actor KickAPIClient: KickAPIClientProtocol {
+struct APIClient: APIClientProtocol {
     private let urlSession: URLSession
 
-    func fetchChannel(slug: String) async throws -> Channel { ... }  // internal, satisfies protocol
+    func fetchArticle(id: String) async throws -> Article { ... }  // internal, satisfies protocol
 
     private func buildRequest(...) throws -> URLRequest { ... }
     private func execute(...) async throws -> Data { ... }
@@ -964,13 +1135,12 @@ parameter on its own line, indented +2:
 
 ```swift
 // ✅
-func fetchLivestreams(
+func fetchArticles(
     page: Int,
     limit: Int,
     sort: String = "featured",
-    category: String? = nil,
-    subcategory: String? = nil
-) async throws -> PaginatedResponse<Stream>
+    category: String? = nil
+) async throws -> PaginatedResponse<Article>
 ```
 
 ---
@@ -990,23 +1160,26 @@ private nonisolated func decode<T: Decodable>(_ type: T.Type, from data: Data) t
 
 ---
 
-## KickAPIClient — canonical rewrite pattern
+## APIClient — canonical rewrite pattern
 
-The `KickAPIClient` actor is the primary example of what clean looks like
-for this codebase. Use this as the reference pattern for any actor that
-makes network requests.
+The `APIClient` struct is the primary example of what clean looks like for
+this codebase. Use this as the reference pattern for any type that makes
+network requests. It is a `struct` — not an `actor` — because it holds only
+`let` constants and has no shared mutable state to protect.
+
+See also: `references/api-client-canonical-example.md` for the full annotated version.
 
 ```swift
-actor KickAPIClient: KickAPIClientProtocol {
+struct APIClient: APIClientProtocol {
 
     // MARK: - Constants
 
     private enum Host {
-        static let kick = "kick.com"
-        static let appConfig = "kick-app-config.kick.com"
+        static let api = "api.example.com"
+        static let config = "config.example.com"
     }
 
-    private static let userAgent = "KickAppleTV/2000 CFNetwork/3860.500.112 Darwin/25.4.0"
+    private static let userAgent = "MyApp/1 CFNetwork/3860 Darwin/25.0.0"
 
     // MARK: - State
 
@@ -1018,37 +1191,34 @@ actor KickAPIClient: KickAPIClientProtocol {
         self.urlSession = urlSession
     }
 
-    // MARK: - KickAPIClientProtocol
+    // MARK: - APIClientProtocol
 
     /// Fetches the app configuration used for build version gating.
     func fetchAppConfig() async throws -> AppConfig {
-        try await fetch(host: Host.appConfig, path: "/apple-public.json")
+        try await fetch(host: Host.config, path: "/config.json")
     }
 
-    /// Fetches global server-driven settings such as event tracking intervals.
+    /// Fetches global server-driven settings such as feature flags.
     func fetchGlobalSettings() async throws -> GlobalSettings {
-        try await fetch(host: Host.kick, path: "/api/internal/settings/global")
+        try await fetch(host: Host.api, path: "/api/settings/global")
     }
 
-    /// Fetches a paginated list of live streams, optionally filtered.
+    /// Fetches a paginated list of articles, optionally filtered.
     ///
     /// - Parameters:
     ///   - page: The page number to fetch (1-indexed).
     ///   - limit: The number of results per page.
     ///   - sort: The sort order. Defaults to `"featured"`.
     ///   - category: An optional top-level category filter.
-    ///   - subcategory: An optional subcategory slug filter.
-    func fetchLivestreams(
+    func fetchArticles(
         page: Int,
         limit: Int,
         sort: String = "featured",
-        category: String? = nil,
-        subcategory: String? = nil
-    ) async throws -> PaginatedResponse<Stream> {
+        category: String? = nil
+    ) async throws -> PaginatedResponse<Article> {
         var items = baseQueryItems(page: page, limit: limit, sort: sort)
         if let category { items.append(URLQueryItem(name: "category", value: category)) }
-        if let subcategory { items.append(URLQueryItem(name: "subcategory", value: subcategory)) }
-        return try await fetch(host: Host.kick, path: "/stream/livestreams/en", queryItems: items)
+        return try await fetch(host: Host.api, path: "/articles", queryItems: items)
     }
 
     // MARK: - Private Helpers
@@ -1073,7 +1243,7 @@ actor KickAPIClient: KickAPIClientProtocol {
         components.host = host
         components.path = path
         if !queryItems.isEmpty { components.queryItems = queryItems }
-        guard let url = components.url else { throw KickError.invalidURL }
+        guard let url = components.url else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -1085,10 +1255,10 @@ actor KickAPIClient: KickAPIClientProtocol {
         do {
             (data, response) = try await urlSession.data(for: request)
         } catch let error as URLError {
-            throw KickError.mapURLError(error)
+            throw APIError.mapURLError(error)
         }
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-            throw KickError.httpError(statusCode: http.statusCode)
+            throw APIError.httpError(statusCode: http.statusCode)
         }
         return data
     }
@@ -1097,7 +1267,7 @@ actor KickAPIClient: KickAPIClientProtocol {
         do {
             return try ModelDecoder.make().decode(type, from: data)
         } catch {
-            throw KickError.decodingFailed(context: error.localizedDescription)
+            throw APIError.decodingFailed(context: error.localizedDescription)
         }
     }
 
@@ -1106,7 +1276,6 @@ actor KickAPIClient: KickAPIClientProtocol {
             URLQueryItem(name: "page", value: "\(page)"),
             URLQueryItem(name: "limit", value: "\(limit)"),
             URLQueryItem(name: "sort", value: sort),
-            URLQueryItem(name: "strict", value: "false"),
         ]
     }
 }
@@ -1119,16 +1288,16 @@ actor KickAPIClient: KickAPIClientProtocol {
 After every rewrite:
 
 ```bash
-# Build must be clean
+# Build must be clean — substitute your scheme and destination
 xcodebuild build \
-  -scheme "Kick tvOS" \
-  -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
+  -scheme "$SCHEME" \
+  -destination "$DESTINATION" \
   2>&1 | grep -E "error:|warning:|BUILD"
 
 # Tests must still pass
 xcodebuild test \
-  -scheme "Kick tvOS" \
-  -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
+  -scheme "$SCHEME" \
+  -destination "$DESTINATION" \
   2>&1 | grep -E "Test.*passed|Test.*failed|error:|warning:|BUILD"
 ```
 

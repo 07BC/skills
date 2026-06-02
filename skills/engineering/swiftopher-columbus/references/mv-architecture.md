@@ -8,20 +8,20 @@ directly. There is no separate ViewModel layer.
 ```swift
 // MV — model owns state and business logic
 @Observable
-final class StreamOrchestrator {
-    var isLive: Bool = false
-    var quality: StreamQuality = .hd720
+final class SyncCoordinator {
+    var isSyncing: Bool = false
+    var quality: SyncMode = .full
 
-    func startStream() async throws { ... }
+    func start() async throws { ... }
 }
 
 // View reads model directly — no intermediary
-struct LiveView: View {
-    var orchestrator: StreamOrchestrator   // injected via environment
+struct SyncView: View {
+    var coordinator: SyncCoordinator   // injected via environment
 
     var body: some View {
-        Button(isLive ? "Stop" : "Go Live") {
-            Task { try await orchestrator.startStream() }
+        Button(isSyncing ? "Stop" : "Start") {
+            Task { try await coordinator.start() }
         }
     }
 }
@@ -36,23 +36,23 @@ the project uses MVVM, not MV — document which pattern is actually used.
 ### `@Entry` (iOS 18+, preferred)
 ```swift
 extension EnvironmentValues {
-    @Entry var orchestrator: StreamOrchestrator = .init()
+    @Entry var coordinator: SyncCoordinator = .init()
 }
 
 // Root
 ContentView()
-    .environment(\.orchestrator, orchestrator)
+    .environment(\.coordinator, coordinator)
 
 // Consumer
-@Environment(\.orchestrator) private var orchestrator
+@Environment(\.coordinator) private var coordinator
 ```
 
 ### Direct `.environment(_:)` with `@Observable`
 ```swift
 ContentView()
-    .environment(orchestrator)   // no key path needed
+    .environment(coordinator)   // no key path needed
 
-@Environment(StreamOrchestrator.self) private var orchestrator
+@Environment(SyncCoordinator.self) private var coordinator
 ```
 
 Document which pattern is dominant and whether both appear (mixed codebases
@@ -63,9 +63,9 @@ are a gotcha for new engineers).
 ### `NavigationStack` + enum-driven paths (preferred)
 ```swift
 enum AppRoute: Hashable {
-    case goLive
+    case articleDetail(String)
     case settings
-    case preview(CameraPreview)
+    case compose
 }
 
 @State private var path: [AppRoute] = []

@@ -210,7 +210,7 @@ test stub (Swift Testing — `@Test`, `#expect`, `@Suite`).
 
 ### 6. Test quality
 
-- Are mocks / fakes / recording spies in `ChagiTests/SwiftTesting/Mocks/`
+- Are mocks / fakes / recording spies in `MyAppTests/SwiftTesting/Mocks/`
   (or the project's equivalent location), or are they defined inline in
   a test file (not reusable)?
 - Do tests use Swift Testing (`@Test`, `#expect`, `@Suite`) or legacy
@@ -262,7 +262,7 @@ Write the findings to:
 ${HOME}/Developer/obsidian/$(basename $(git rev-parse --show-toplevel))/plans/<slug>-pr-review-findings.md
 ```
 
-Where `<slug>` is the ticket id (e.g. `nat-1705`) if extractable from the
+Where `<slug>` is the ticket id (e.g. `proj-123`) if extractable from the
 branch name, otherwise the branch name itself.
 
 Use this structure:

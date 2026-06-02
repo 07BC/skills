@@ -58,7 +58,7 @@ Use the Test Navigator filter or scheme settings.
 ### By feature/domain
 ```swift
 @Tag static var auth: Self
-@Tag static var broadcast: Self
+@Tag static var networking: Self
 @Tag static var chat: Self
 @Tag static var settings: Self
 ```

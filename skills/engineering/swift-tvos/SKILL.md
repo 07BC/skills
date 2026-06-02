@@ -7,7 +7,7 @@ description: >
   work", "the back button doesn't go back", "navigation is broken on tvOS",
   "focus engine", "this screen on Apple TV", or any variant
   involving Apple TV navigation. Also triggers on project-specific phrasing
-  like "KickTV bug" — substitute your own app name. Also trigger when the user asks Claude
+  like "MyApp bug" — substitute your own app name. Also trigger when the user asks Claude
   Code to "look into", "investigate", "figure out why", or "debug" anything
   on tvOS, regardless of how the symptom is phrased. Always use this skill —
   do not attempt tvOS navigation diagnosis ad hoc. tvOS focus engine bugs
