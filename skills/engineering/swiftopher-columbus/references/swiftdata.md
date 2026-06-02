@@ -23,10 +23,10 @@ grep -r "VersionedSchema\|SchemaMigrationPlan" . --include="*.swift" -l
 ```swift
 // App entry — document the actual schema and config used
 @main
-struct KickApp: App {
+struct MyApp: App {
     let container: ModelContainer = {
-        let schema = Schema([UserSession.self, StreamHistory.self])
-        let config = ModelConfiguration("kick", schema: schema)
+        let schema = Schema([UserSession.self, SessionHistory.self])
+        let config = ModelConfiguration("myapp", schema: schema)
         return try! ModelContainer(for: schema, configurations: config)
     }()
 

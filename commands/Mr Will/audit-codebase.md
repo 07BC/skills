@@ -23,11 +23,11 @@ Define these once. Every later phase references them.
 | Variable | Source | Example |
 | --- | --- | --- |
 | `SUBAGENT_MODEL` | constant | `claude-sonnet-4-6` |
-| `PROJECT_NAME` | `basename $(git rev-parse --show-toplevel)` | `kick-tvos` |
+| `PROJECT_NAME` | `basename $(git rev-parse --show-toplevel)` | `myapp` |
 | `PLANS_DIR` | `${HOME}/Developer/obsidian/${PROJECT_NAME}/plans` | per global plan-storage rule |
 | `AUDIT_DIR` | scope-dependent (see below) | — |
 | `SCOPE` | flag — `ticket` or `all` | — |
-| `SCOPE_KEY` | ticket key (`NAT-1234`) or `full-YYYY-MM-DD` | — |
+| `SCOPE_KEY` | ticket key (`PROJ-123`) or `full-YYYY-MM-DD` | — |
 
 `AUDIT_DIR = ${PLANS_DIR}/audit/${SCOPE_KEY}` — every artefact this command
 produces lives under that directory in the obsidian vault.
@@ -39,7 +39,7 @@ produces lives under that directory in the obsidian vault.
 This command supports two scope modes. You must specify one:
 
 ```
-/audit-codebase --scope=ticket NAT-1234
+/audit-codebase --scope=ticket PROJ-123
 ```
 
 Audits files relevant to the ticket's acceptance criteria. Findings are
@@ -82,7 +82,7 @@ Read the following before doing anything:
 
 Resolve the scope key:
 
-- `SCOPE=ticket`: `SCOPE_KEY = ${TICKET-KEY}` (e.g. `NAT-1234`).
+- `SCOPE=ticket`: `SCOPE_KEY = ${TICKET-KEY}` (e.g. `PROJ-123`).
 - `SCOPE=all`: `SCOPE_KEY = full-$(date +%Y-%m-%d)`.
 
 Produce a one-paragraph audit baseline:
@@ -216,8 +216,8 @@ After all subtasks are created, add a comment to the parent ticket:
 ```
 | Subtask | Severity | Files | Status |
 |---|---|---|---|
-| NAT-XXXX | BLOCKER | FooService.swift | To Do |
-| NAT-XXXX | WARNING | BarView.swift | To Do |
+| PROJ-XXXX | BLOCKER | FooService.swift | To Do |
+| PROJ-XXXX | WARNING | BarView.swift | To Do |
 ```
 
 ---

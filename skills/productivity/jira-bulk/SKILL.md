@@ -3,7 +3,7 @@ name: jira-bulk
 description: >
   Bulk operations on Jira issues — set fix version, transition status — across
   multiple tickets in a single invocation. Use when the user says "set fix
-  version on these tickets", "transition NAT-XXX to In Review", "bulk jira",
+  version on these tickets", "transition PROJ-XXX to In Review", "bulk jira",
   "update these tickets", or "/j:jira-bulk". For single-ticket creation use
   discovery-jira instead.
 compatibility:
@@ -29,7 +29,7 @@ From the user message, extract:
 
 - **Operation**: `fix-version` or `transition`
 - **Value**: the version name (e.g. `"26.5"`) or target status (e.g. `"In Review"`)
-- **Ticket list**: one or more Jira keys (e.g. `NAT-123 NAT-124 NAT-125`)
+- **Ticket list**: one or more Jira keys (e.g. `PROJ-123 PROJ-124 PROJ-125`)
 
 If any of these is unclear, ask via `AskUserQuestion` before proceeding.
 
@@ -53,7 +53,7 @@ Call `editJiraIssue` with:
 
 ```json
 {
-  "issueKey": "NAT-XXX",
+  "issueKey": "PROJ-XXX",
   "fields": {
     "fixVersions": [{ "name": "<value>" }]
   }
@@ -80,14 +80,14 @@ Emit a summary banner:
 
 ```
 === jira-bulk: fix-version "26.5" ===
-NAT-123 OK
-NAT-124 OK
-NAT-125 FAIL — version "26.5" not found in project
+PROJ-123 OK
+PROJ-124 OK
+PROJ-125 FAIL — version "26.5" not found in project
 === 2/3 succeeded ===
 ```
 
 For transition failures, include the available transitions:
 
 ```
-NAT-126 FAIL — no transition named "In Review" — available: To Do, In Progress, Done
+PROJ-126 FAIL — no transition named "In Review" — available: To Do, In Progress, Done
 ```

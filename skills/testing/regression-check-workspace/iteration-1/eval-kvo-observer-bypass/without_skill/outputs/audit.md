@@ -1,4 +1,4 @@
-# Audit: `handleBackground()` / `handleForeground()` fix in `VODPlayerViewModel.swift`
+# Audit: `handleBackground()` / `handleForeground()` fix in `VideoPlayerViewModel.swift`
 
 ## Summary verdict
 
@@ -10,7 +10,7 @@ The remainder of this report walks through each concrete regression / side effec
 
 ## 1. BLOCKER — KVO observer on `currentItem?.status` bypasses the new guard
 
-File: `VODPlayerViewModel.swift`, lines 155–167.
+File: `VideoPlayerViewModel.swift`, lines 155–167.
 
 ```swift
 player.observe(keyPath: \.currentItem?.status) { oldValue, newValue in
@@ -187,7 +187,7 @@ The fix is exactly the kind of change that should land with a regression test. S
 4. Multiple foregrounds for a single background → assert `play()` only fires once and only if intended.
 5. Background during initial resolutions load → assert no `play()` during background.
 
-A `MockKickClient` and a stubbed `AVPlayer` (or a thin protocol seam) would make these tests cheap.
+A `MockAPIClient` and a stubbed `AVPlayer` (or a thin protocol seam) would make these tests cheap.
 
 ---
 

@@ -703,7 +703,7 @@ not theoretical micro-optimisations.
 - Sorting inside `body` or inside a loop (should be derived once)
 - Missing `reserveCapacity` on collections built with known sizes
 
-**Streaming / media specific** (flag if the project uses AVFoundation, HaishinKit, IVS, etc.)
+**Real-time media** (apply only if the app performs sustained media work — camera capture, live video, continuous audio — via AVFoundation, HaishinKit, IVS, etc.)
 - Video frame processing on the main thread causing frame drops
 - `CVPixelBuffer` not recycled via a pool (allocation pressure in video pipelines)
 - Audio buffers allocated per-callback instead of pre-allocated
@@ -804,11 +804,12 @@ Quote the offending code verbatim.
 
 ### Section 12 — Thermal & Battery
 
-Streaming apps run the CPU, GPU, camera ISP, and radio simultaneously.
-Thermal throttling during a live stream is a quality-of-service failure —
-it drops frames, degrades video quality, and may terminate the stream.
 Read every file for sustained load patterns that accumulate heat or drain
-battery without providing user value.
+battery without providing user value. If the app performs sustained real-time
+media work (camera capture, live video, continuous audio), the CPU, GPU,
+camera ISP, and radio may all be active simultaneously — thermal throttling
+in that context is a quality-of-service failure that drops frames, degrades
+output quality, and may terminate the session.
 
 **What to look for:**
 
@@ -831,7 +832,7 @@ battery without providing user value.
 **`ProcessInfo.thermalState` unobserved**
 - No subscription to `ProcessInfo.thermalStateDidChangeNotification`
 - No quality reduction triggered by `.serious` or `.critical` thermal state
-  (for a streaming app this means: reduce bitrate, drop to 30fps, disable PiP)
+  (if the app performs sustained real-time media work: reduce bitrate, drop to 30fps, disable PiP)
 - No logging of thermal events for post-session analysis
 
 **Sustained GPU load**
@@ -1070,7 +1071,7 @@ Obsidian vault using the CLI. This runs **after** Section 14 (Self-Review) is wr
 
 **Target path:** `AI/audit/{project}/{date}/`
 
-- `{project}` — the name of the folder containing the audited source (e.g. `kick-apple-tv`)
+- `{project}` — the name of the folder containing the audited source (e.g. `myapp-apple`)
 - `{date}` — today's date in `YYYY-MM-DD` format
 
 **Steps:**

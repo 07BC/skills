@@ -13,7 +13,7 @@ The first two lines of output are deprecation warnings. Pipe through `tail -n +3
 ## File Resolution
 
 - `file=<name>` resolves by name (like wikilinks) — matches any file with that name anywhere in vault
-- `path=<path>` is exact relative path from vault root (e.g., `path="20-projects/streaming-ios/notes.md"`)
+- `path=<path>` is exact relative path from vault root (e.g., `path="20-projects/project-a/notes.md"`)
 - Most commands default to the active file when file/path is omitted
 - Quote values with spaces: `name="My Note"`
 - Use `\n` for newline, `\t` for tab in content values

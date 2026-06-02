@@ -19,7 +19,7 @@ description: Stages specific files and commits with a short imperative message. 
    status, diff, and ticket extraction in one call. The script emits
    three labelled blocks (`=== status ===`, `=== diff ===`,
    `=== ticket ===`); the ticket block is either a `WORD-NUMBER` match
-   from the branch name (e.g. `NAT-1234`) or empty.
+   from the branch name (e.g. `PROJ-123`) or empty.
 
    If the script is missing from the skill directory (rare — it ships
    alongside SKILL.md), fall back to running these three commands by
@@ -30,7 +30,7 @@ description: Stages specific files and commits with a short imperative message. 
    `PROJ-123: short description`. Otherwise use a plain message:
    `short description`.
 
-3. If the user has not provided a commit message, ask for one. Keep it short and imperative (e.g. `fix logout bug`, `add stream health indicator`).
+3. If the user has not provided a commit message, ask for one. Keep it short and imperative (e.g. `fix logout bug`, `add article cache`).
 
 4. Show the user which files will be staged and confirm before staging.
 
@@ -71,7 +71,7 @@ short lowercase description
 
 ```
 fix logout on background transition
-add error state to stream health view
+add error state to article list view
 remove deprecated MediaPicker import
 update snapshot tests after layout change
 ```

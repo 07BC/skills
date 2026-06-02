@@ -127,7 +127,7 @@ branch name (the `git-commit` skill ships `preflight.sh` for this; absolute
 path provided by the caller's invocation prompt, or inline the equivalent):
 
 ```bash
-# Branch name → ticket prefix (e.g. NAT-1234) or empty
+# Branch name → ticket prefix (e.g. PROJ-123) or empty
 ticket="$(git rev-parse --abbrev-ref HEAD | grep -oE '[A-Z]+-[0-9]+' | head -1 || true)"
 
 # Compose the message: "<ticket>: <task description>" or just "<task description>"

@@ -52,18 +52,19 @@ When a new screen requires UI tests, add a section here:
 | Identifier | Element type | SwiftUI usage |
 |------------|--------------|---------------|
 | `home.container` | `otherElements` | Root `VStack` / container |
-| `home.goLive` | `buttons` | Go Live CTA button |
+| `home.compose` | `buttons` | Compose CTA button |
+| `home.search` | `buttons` | Search CTA button |
 
-### Go Live / Preview
+### Compose / Publish
 
 | Identifier | Element type | SwiftUI usage |
 |------------|--------------|---------------|
-| `goLive.preview` | `otherElements` | Camera preview container |
-| `goLive.startStream` | `buttons` | Start streaming button |
-| `goLive.stopStream` | `buttons` | Stop streaming button |
-| `goLive.camera.toggle` | `buttons` | Switch camera button |
-| `goLive.mic.toggle` | `buttons` | Mute/unmute mic button |
-| `goLive.status` | `staticTexts` | Stream status label (e.g. "Live") |
+| `compose.preview` | `otherElements` | Content preview container |
+| `compose.publish` | `buttons` | Publish button |
+| `compose.unpublish` | `buttons` | Unpublish button |
+| `compose.camera.toggle` | `buttons` | Switch camera button |
+| `compose.mic.toggle` | `buttons` | Mute/unmute mic button |
+| `compose.status` | `staticTexts` | Status label (e.g. "Published") |
 
 ### Settings
 
@@ -76,52 +77,47 @@ When a new screen requires UI tests, add a section here:
 
 ---
 
-## Escape (payback)
+## MyApp (catalogue)
 
-### LoanInputView
-
-| Identifier | Element type | SwiftUI usage |
-|------------|--------------|---------------|
-| `loanInput.container` | `otherElements` | `Form` root in `LoanInputView` |
-| `loanInput.balance` | `textFields` | `CurrencyField` inner `TextField` |
-| `loanInput.balance.error` | `staticTexts` | Inline error `Text` below balance |
-| `loanInput.termYears` | `buttons` | `TermPicker` years `Picker` (.menu) |
-| `loanInput.termMonths` | `buttons` | `TermPicker` months `Picker` (.menu) |
-| `loanInput.term.error` | `staticTexts` | Inline term error (unreachable from UI, registered for symmetry) |
-| `loanInput.rate` | `textFields` | `PercentageField` inner `TextField` |
-| `loanInput.rate.error` | `staticTexts` | Inline rate error |
-| `loanInput.rate.fixedNote` | `staticTexts` | Footer copy: "fixed, used for modelling" |
-| `loanInput.repayment` | `textFields` | Repayment `CurrencyField` inner `TextField` |
-| `loanInput.repayment.error` | `staticTexts` | Inline repayment error |
-| `loanInput.save` | `buttons` | Save toolbar action |
-
-### HomeView (escape)
+### SearchView
 
 | Identifier | Element type | SwiftUI usage |
 |------------|--------------|---------------|
-| `home.container` | `otherElements` | `Form` root in `HomeView` |
-| `home.enterLoan` | `buttons` | "Enter your loan" `NavigationLink` (empty state) |
-| `home.editLoan` | `buttons` | "Edit loan" `NavigationLink` (pre-populated state) |
-| `home.scenario.a` | `buttons` | "Scenario A — extra repayment" `NavigationLink` (pre-populated state) |
-| `home.summary.balance` | `staticTexts` | `LabeledContent` value for Balance |
-| `home.summary.rate` | `staticTexts` | `LabeledContent` value for Rate |
-| `home.summary.term` | `staticTexts` | `LabeledContent` value for Term |
-| `home.summary.repayment` | `staticTexts` | `LabeledContent` value for Repayment |
+| `search.container` | `otherElements` | Root in `SearchView` |
+| `search.queryField` | `textFields` | Query input `TextField` |
+| `search.queryField.error` | `staticTexts` | Inline error `Text` below query field |
+| `search.category` | `buttons` | Category `Picker` (.menu) |
+| `search.sortOrder` | `buttons` | Sort order `Picker` (.menu) |
+| `search.sortOrder.error` | `staticTexts` | Inline sort error |
+| `search.results` | `otherElements` | Results list container |
+| `search.noResults` | `staticTexts` | "No results" empty-state label |
+| `search.submit` | `buttons` | Submit / search toolbar action |
 
-### ScenarioView (escape)
+### HomeView (article list)
 
 | Identifier | Element type | SwiftUI usage |
 |------------|--------------|---------------|
-| `scenario.container` | `otherElements` | Root `Form` in `ScenarioView` |
-| `scenario.extraRepayment` | `textFields` | `CurrencyField(identifier:)` for Extra per period |
-| `scenario.frequency` | `otherElements` | `Picker("Frequency", …)` with `.pickerStyle(.segmented)` — group-level identifier for diagnostics only |
-| `scenario.summary.payoffDate` | `staticTexts` | Value `Text` in `ResultsSummaryView` payoff date row (when `idPrefix: "scenario"`) |
-| `scenario.summary.timeSaved` | `staticTexts` | Value `Text` in `ResultsSummaryView` time saved row (when `idPrefix: "scenario"`) |
-| `scenario.summary.interestSaved` | `staticTexts` | Value `Text` in `ResultsSummaryView` interest saved row (when `idPrefix: "scenario"`) |
-| `scenario.lumpSum.toggle` | `switches` | `Toggle("Apply a lump sum", …)` in `LumpSumPicker` |
-| `scenario.lumpSum.amount` | `textFields` | `CurrencyField(identifier:)` inner `TextField` |
-| `scenario.lumpSum.date` | `datePickers` | `DatePicker("Payment date", …)` |
-| `scenario.offsetBalance` | `textFields` | `CurrencyField(identifier:)` for Offset account balance |
+| `home.container` | `otherElements` | Root `VStack` in `HomeView` |
+| `home.compose` | `buttons` | "New article" `NavigationLink` (empty state) |
+| `home.search` | `buttons` | "Search articles" `NavigationLink` |
+| `home.article.featured` | `buttons` | Featured article `NavigationLink` (pre-populated state) |
+| `home.summary.title` | `staticTexts` | `LabeledContent` value for article title |
+| `home.summary.category` | `staticTexts` | `LabeledContent` value for Category |
+| `home.summary.publishDate` | `staticTexts` | `LabeledContent` value for Publish Date |
+| `home.summary.wordCount` | `staticTexts` | `LabeledContent` value for Word Count |
+
+### ArticleDetailView
+
+| Identifier | Element type | SwiftUI usage |
+|------------|--------------|---------------|
+| `articleDetail.container` | `otherElements` | Root `Form` in `ArticleDetailView` |
+| `articleDetail.title` | `staticTexts` | Article title `Text` |
+| `articleDetail.body` | `staticTexts` | Article body content `Text` |
+| `articleDetail.publishDate` | `staticTexts` | Publication date value `Text` |
+| `articleDetail.category` | `otherElements` | `Picker("Category", …)` with `.pickerStyle(.segmented)` — group-level identifier for diagnostics only |
+| `articleDetail.sortOrder` | `buttons` | Sort order `Picker` (.menu) |
+| `articleDetail.bookmark.toggle` | `switches` | `Toggle("Bookmark", …)` |
+| `articleDetail.related` | `otherElements` | Related articles section container |
 
 > **Error banner query.** `ErrorBannerView` uses
 > `.accessibilityElement(children: .combine)`. The combined element does
@@ -131,12 +127,12 @@ When a new screen requires UI tests, add a section here:
 > error text remains queryable as a `staticTexts` element whose `label`
 > contains the error message copy (set in `ErrorBannerView.message(for:)`).
 > The page object queries it as `staticTexts.matching("label CONTAINS
-> <message-prefix>").firstMatch`. Do not add a `scenario.error.banner`
+> <message-prefix>").firstMatch`. Do not add an `articleDetail.error.banner`
 > identifier to `ErrorBannerView` — it is dead code.
 
-**Segmented Picker segment queries.** SwiftUI `Picker(.segmented)` renders each `Text("…").tag(…)` child as an `XCUIElement` of type `.button`. Applying `.accessibilityIdentifier(_:)` on the inner `Text` children is unreliable — the Picker absorbs child modifiers. Use visible labels instead: `app.buttons["Monthly"]`, `app.buttons["Fortnightly"]`, `app.buttons["Weekly"]`. The `scenario.frequency` group identifier is for diagnostics only and should not be relied on in assertions.
+**Segmented Picker segment queries.** SwiftUI `Picker(.segmented)` renders each `Text("…").tag(…)` child as an `XCUIElement` of type `.button`. Applying `.accessibilityIdentifier(_:)` on the inner `Text` children is unreliable — the Picker absorbs child modifiers. Use visible labels instead: `app.buttons["All"]`, `app.buttons["Technology"]`, `app.buttons["Science"]`. The `articleDetail.category` group identifier is for diagnostics only and should not be relied on in assertions.
 
-> **Chart accessibility note.** SwiftUI `Chart` inside a `Form` `Section` cell publishes an audio-graph representation and does not expose `.accessibilityIdentifier(_:)` on the chart container, legend entries, or axis labels. `ScenarioChartView` keeps `.accessibilityLabel("Balance over time chart")` for the audio-graph fallback, but no identifier-based queries on the chart are possible from XCUITest. AC 4 (axes), AC 5 (legend), and AC 6 (summary-above-chart) are documented in the manual test plan in each PR description.
+> **Chart accessibility note.** SwiftUI `Chart` inside a `Form` `Section` cell publishes an audio-graph representation and does not expose `.accessibilityIdentifier(_:)` on the chart container, legend entries, or axis labels. `ArticleChartView` keeps `.accessibilityLabel("Article activity chart")` for the audio-graph fallback, but no identifier-based queries on the chart are possible from XCUITest. Visual chart ACs are documented in the manual test plan in each PR description.
 
 ---
 
@@ -144,8 +140,8 @@ When a new screen requires UI tests, add a section here:
 
 ```swift
 // Button
-Button("Go Live") { ... }
-    .accessibilityIdentifier("goLive.startStream")
+Button("Publish") { ... }
+    .accessibilityIdentifier("compose.publish")
 
 // TextField
 TextField("Username", text: $username)

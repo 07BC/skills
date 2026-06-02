@@ -21,7 +21,7 @@ When in doubt, **keep**. Pruning is conservative.
 ## Suggesting tags from existing taxonomy
 
 Read the note's title, headings, and body. Match against the existing tag set:
-- **Project tags** (e.g., `kick`, `chagi`, `nat-550`) — add if the note discusses that project.
+- **Project tags** (e.g., `project-a`, `project-b`, `proj-123`) — add if the note discusses that project.
 - **Platform tags** (e.g., `ios`, `tvos`, `swiftui`) — add if the note discusses that platform.
 - **Type tags** (e.g., `spec`, `prd`, `roadmap`, `research`, `plan`) — add if the note's structure matches that type. Pair with the `type` property (see property-schema.md).
 - **Folder-implied tags** — daily notes get `daily`, project notes get `project`, reference notes get `reference`.
@@ -35,7 +35,7 @@ Exception: tags that map to a property value get dropped from `tags`. Tags that 
 A new tag may be proposed if:
 - A clear topic appears in the note that no existing tag covers.
 - The proposed tag follows kebab-case, lowercase rules.
-- The proposed tag is not synonym-adjacent to an existing tag (don't propose `streaming` if `kick-streaming` already exists; don't propose `live` if `go-live` exists).
+- The proposed tag is not synonym-adjacent to an existing tag (don't propose `feature-work` if `project-a-feature` already exists; don't propose `new-feature` if `feature-release` exists).
 
 Each proposed tag is added to the run's `new_tag_candidates` map. The 2+ threshold runs after Pass 1.
 
@@ -43,14 +43,14 @@ Each proposed tag is added to the run's `new_tag_candidates` map. The 2+ thresho
 
 | Note content excerpt | Existing tags | Proposed change |
 |---|---|---|
-| "Plan for the broadcast configuration refactor on iOS" | `[ios, kick]` | Add `streaming`, `plan`. Keep both existing. |
+| "Plan for the feature configuration refactor on iOS" | `[ios, project-a]` | Add `feature-work`, `plan`. Keep both existing. |
 | Daily note from 2026-03-04 | `[]` | Add `daily`. Set `type: daily`. |
-| Note titled "ReplayKit screen sharing investigation" | `[replaykit, ios]` | Keep both. Propose `screen-streaming` (already exists). |
+| Note titled "ReplayKit screen sharing investigation" | `[replaykit, ios]` | Keep both. Propose `screen-capture` (already exists). |
 | Single-occurrence tag `xyz-123` on a note about login flow | `[xyz-123, login, ios]` | Drop `xyz-123` (irrelevant + low frequency). Keep others. |
-| Inline title mentions "Quarterly review" but tags include `kick`, `chagi`, `streaming` | `[kick, chagi, streaming]` | Keep all (high-frequency tags). Flag in changelog: "consider `quarterly-review` if 2+ similar notes exist". |
+| Inline title mentions "Quarterly review" but tags include `project-a`, `project-b`, `feature-work` | `[project-a, project-b, feature-work]` | Keep all (high-frequency tags). Flag in changelog: "consider `quarterly-review` if 2+ similar notes exist". |
 
 ## What NOT to do
 
 - Do not strip tags below the per-file pruning rules just to "tidy up".
 - Do not add tags speculatively. Each tag must be defensible from the note's content.
-- Do not normalise tag spelling automatically (e.g., `chagi-tv` → `chagi`). Flag rename candidates in the changelog instead — a rename is a vault-wide operation that needs explicit user approval.
+- Do not normalise tag spelling automatically (e.g., `project-b-tv` → `project-b`). Flag rename candidates in the changelog instead — a rename is a vault-wide operation that needs explicit user approval.

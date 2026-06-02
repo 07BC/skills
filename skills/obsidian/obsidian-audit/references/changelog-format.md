@@ -10,7 +10,7 @@ Each audit run writes one markdown file at `~/obsidian/.audit/YYYY-MM-DD-HHMM-au
 - **Files audited:** 24
 - **Files changed:** 18
 - **Files unchanged:** 6
-- **New tags accepted:** 2 (`screen-streaming`, `analytics-events`)
+- **New tags accepted:** 2 (`screen-capture`, `analytics-events`)
 - **New tags rejected (single-occurrence):** 7
 - **Tags pruned:** 11
 - **Properties added:** 47
@@ -19,17 +19,17 @@ Each audit run writes one markdown file at `~/obsidian/.audit/YYYY-MM-DD-HHMM-au
 
 ## Per-file changes
 
-### `projects/Kick Orientation/broadcast-configuration-separation-plan.md`
+### `projects/Onboarding/feature-separation-plan.md`
 
 - **type:** _none_ → `plan`
 - **status:** _none_ → `active` (lifted from inline `**Status:** In Progress`)
 - **created:** _none_ → `2026-03-15`
 - **updated:** _none_ → `2026-04-29`
-- **jira:** _none_ → `NAT-1234` (lifted from inline `**Jira:** NAT-1234`)
-- **tags added:** `plan`, `streaming`
-- **tags kept:** `ios`, `kick`, `implementation-plan`
+- **jira:** _none_ → `PROJ-123` (lifted from inline `**Jira:** PROJ-123`)
+- **tags added:** `plan`, `feature-work`
+- **tags kept:** `ios`, `project-a`, `implementation-plan`
 - **tags dropped:** _none_
-- **bullets removed:** `- **Status:** In Progress`, `- **Jira:** NAT-1234`
+- **bullets removed:** `- **Status:** In Progress`, `- **Jira:** PROJ-123`
 
 ### `inbox/random-thought.md`
 
@@ -54,7 +54,7 @@ If you want any of these committed manually, run `/obsidian:manage` and add them
 
 These weren't auto-changed but the audit suggests the user look:
 
-- `daily/2026/03-Mar/26-03-15.md` — has tag `kick` (382 vault occurrences) but no body content mentioning kick or streaming. Consider removing.
+- `daily/2026/03-Mar/26-03-15.md` — has tag `project-a` (382 vault occurrences) but no body content mentioning the project. Consider removing.
 - `reference/swift-concurrency-cheatsheet.md` — `mtime` is 187 days old. Consider `status: archived` or move to `reference/archive/`.
 
 ## Errors

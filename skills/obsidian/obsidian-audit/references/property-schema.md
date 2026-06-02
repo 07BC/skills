@@ -10,7 +10,7 @@ Every audited note should have these properties in YAML frontmatter when relevan
 | `created` | ISO 8601 date | yes | File birth time (`stat -f %SB -t '%Y-%m-%d' <file>` on macOS). Set on first audit only — never overwrite. |
 | `updated` | ISO 8601 date | yes | File mtime (`stat -f %Sm -t '%Y-%m-%d' <file>`). Always overwrite. |
 | `status` | string | when applicable | One of `draft`, `active`, `done`, `archived`. See [Status inference](#status-inference). Skip for `daily` and `reference` types. |
-| `jira` | string | when matched | A Jira key like `NAT-1234`. From inline lift OR filename pattern OR body match. |
+| `jira` | string | when matched | A Jira key like `PROJ-123`. From inline lift OR filename pattern OR body match. |
 | `platform` | string | when matched | One of `ios`, `tvos`, `macos`, `web`. From inline lift OR matching tag. |
 
 Properties are scalar where possible. Lists (`tags`) stay as YAML arrays.
@@ -23,7 +23,7 @@ Match in this order — first match wins:
 2. File path under `templates/` → skip (excluded from audit).
 3. File path under `inbox/` AND has no other clear type signal → `type: inbox`.
 4. File path under `reference/` → `type: reference`.
-5. Filename matches `NAT-\d+` OR body has `## Acceptance criteria` heading → `type: spec`.
+5. Filename matches `PROJ-\d+` OR body has `## Acceptance criteria` heading → `type: spec`.
 6. File path under `projects/` AND body contains "implementation plan", "## Plan", or "## Steps" → `type: plan`.
 7. File path under `projects/` AND body contains "## Problem" + "## Users" + "## Solution" headings → `type: prd`.
 8. File path under `projects/` (default) → `type: project`.
@@ -55,7 +55,7 @@ Many notes have human-written field bullets near the top:
 
 ```markdown
 - **Status:** Draft
-- **Jira:** NAT-1234
+- **Jira:** PROJ-123
 - **Last updated:** 2026-04-12
 - **Platform:** iOS
 - **Version:** 0.1
@@ -67,7 +67,7 @@ When detected, lift them into frontmatter and **delete** the bullet line. Mappin
 | Bullet pattern | Frontmatter property |
 |---|---|
 | `- **Status:** <value>` | `status: <normalised>` (use status table above) |
-| `- **Jira:** <value>` | `jira: <value>` (strip whitespace, uppercase the project prefix) |
+| `- **Jira:** <value>` | `jira: <value>` (strip whitespace, uppercase the project prefix, e.g. `PROJ-123`) |
 | `- **Last updated:** <date>` | `updated: <date>` (overrides mtime — explicit beats inferred) |
 | `- **Platform:** <value>` | `platform: <lowercased>` |
 | `- **Version:** <value>` | `version: <value>` |
@@ -91,13 +91,13 @@ Input note:
 ---
 tags:
 - ios
-- streaming
+- feature-work
 ---
 
-# Broadcast configuration plan
+# Feature separation plan
 
 - **Status:** In Progress
-- **Jira:** NAT-1234
+- **Jira:** PROJ-123
 
 ## Summary
 …
@@ -109,15 +109,15 @@ After audit:
 ---
 tags:
 - ios
-- streaming
+- feature-work
 type: plan
 status: active
 created: 2026-03-15
 updated: 2026-04-29
-jira: NAT-1234
+jira: PROJ-123
 ---
 
-# Broadcast configuration plan
+# Feature separation plan
 
 ## Summary
 …

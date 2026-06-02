@@ -180,10 +180,10 @@ Calibrate findings honestly. Inflating severity erodes trust in future audits.
 
 ## Worked example
 
-The output below was produced for an actual change in `Chagi/Shared/Player/VODPlayerViewModel.swift` where `handleBackground()` and `handleForeground()` were modified to track `wasPlayingBeforeBackground`. The skill's job was to spot that the fix was *incomplete* — the real culprit was an unrelated KVO observer.
+The output below was produced for an actual change in `MyApp/Shared/Player/VideoPlayerViewModel.swift` where `handleBackground()` and `handleForeground()` were modified to track `wasPlayingBeforeBackground`. The skill's job was to spot that the fix was *incomplete* — the real culprit was an unrelated KVO observer.
 
 ```markdown
-## Audit: Chagi/Shared/Player/VODPlayerViewModel.swift
+## Audit: MyApp/Shared/Player/VideoPlayerViewModel.swift
 
 **Surface:** `handleBackground()` and `handleForeground()` modified to gate resume on `wasPlayingBeforeBackground`.
 

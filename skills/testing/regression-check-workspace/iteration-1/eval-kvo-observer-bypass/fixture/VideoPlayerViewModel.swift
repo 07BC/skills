@@ -1,22 +1,18 @@
 //
-//  VODPlayerViewModel.swift
-//  mobile
-//
-//  Created by Panayot Panayotov on 18/11/2023.
+//  VideoPlayerViewModel.swift
+//  MyApp
 //
 
-import APIClient
 import AVKit
 import Combine
 import Foundation
-import Utilities
 
-final class VODPlayerViewModel: NSObject, ObservableObject {
+final class VideoPlayerViewModel: NSObject, ObservableObject {
     @Published private(set) var player: AVPlayer?
     @Published private(set) var isPaused = false
 
     @Published var videoResolutions: [VideoMetadata] = []
-    @Published var previousStreams: [V1ChannelDetailsResponse.PreviousLivestream]?
+    @Published var previousItems: [MediaItem]?
     @Published var metadata: AVPlayerView.Metadata?
     @Published var hidePauseImage: Bool = false
 
@@ -27,43 +23,43 @@ final class VODPlayerViewModel: NSObject, ObservableObject {
     @Published var viewersCount: Int?
     @Published var username: String?
 
-    private let kickClient: KickClientProtocol
+    private let apiClient: APIClientProtocol
     private let loginViewModel: any LoginViewModelProtocol
     private var dismiss: (() -> Void)?
-    private var channelSlug: String?
+    private var contentSlug: String?
     private var playbackUrl: URL?
     private var subscriptions: Set<AnyCancellable> = []
     private var observations: Set<AnyCancellable> = []
 
     init(
         player: AVPlayer? = nil,
-        kickClient: KickClientProtocol = ServerViewModel(),
+        apiClient: APIClientProtocol = APIClient(),
         loginViewModel: any LoginViewModelProtocol = LoginViewModel(),
         dismiss: (() -> Void)? = nil
     ) {
         self.player = player
-        self.kickClient = kickClient
+        self.apiClient = apiClient
         self.loginViewModel = loginViewModel
         self.dismiss = dismiss
     }
 
-    func load(channelSlug: String, channelId: Int, playbackUrl: String) {
+    func load(contentSlug: String, contentId: Int, playbackUrl: String) {
         Task {
-            self.channelSlug = channelSlug
+            self.contentSlug = contentSlug
             do {
-                let (_, requestedLivestream) = try await kickClient.getChannel(slug: channelSlug)
-                guard let requestedLivestream else {
+                let (_, requestedContent) = try await apiClient.fetchContent(slug: contentSlug)
+                guard let requestedContent else {
                     dismiss?()
                     return
                 }
-                username = requestedLivestream.streamer?.user?.username
-                let result = try await kickClient.getChannelFollowedSubscribed(id: channelId)
+                username = requestedContent.author?.user?.username
+                let result = try await apiClient.fetchUserStatus(id: contentId)
                 await MainActor.run {
                     isFollowing = result.isFollowing
                     isSubscribed = result.isSubscribed
                 }
             } catch {
-                DataDogLogger.shared.error(error)
+                Logger.shared.error(error)
                 dismiss?()
             }
         }
@@ -116,35 +112,35 @@ final class VODPlayerViewModel: NSObject, ObservableObject {
         player = nil
     }
 
-    func openVod(_ vod: V1ChannelDetailsResponse.PreviousLivestream, channelId _: Int) {
-        if let source = vod.source, !source.isEmpty {
-            loadVodFromSource(vod, url: source)
+    func openItem(_ item: MediaItem, contentId _: Int) {
+        if let source = item.source, !source.isEmpty {
+            loadItemFromSource(item, url: source)
             return
         }
         PlaybackAPI.requestPlayback(
-            vod.id,
+            item.id,
             deviceId: UIDevice.current.identifierForVendor?.uuidString ?? "",
             token: User.shared.token
         )
         .sink { completion in
             if case let .failure(error) = completion {
                 Console.error(error)
-                DataDogLogger.shared.error(error)
+                Logger.shared.error(error)
             }
         } receiveValue: { [weak self] result in
-            self?.loadVodFromSource(vod, url: result.playbackURL)
+            self?.loadItemFromSource(item, url: result.playbackURL)
         }
         .store(in: &subscriptions)
     }
 
-    private func loadVodFromSource(_ vod: V1ChannelDetailsResponse.PreviousLivestream, url: String) {
+    private func loadItemFromSource(_ item: MediaItem, url: String) {
         metadata = AVPlayerView.Metadata(
-            title: vod.title,
-            subtitle: vod.channel.slug,
-            image: vod.thumbnail?.src,
-            description: vod.channel.username,
-            rating: vod.isMature ? "18+" : nil,
-            genre: vod.category?.name
+            title: item.title,
+            subtitle: item.contentSlug,
+            image: item.thumbnail?.src,
+            description: item.contentUsername,
+            rating: item.isMature ? "18+" : nil,
+            genre: item.category?.name
         )
         loadPlaybackUrl(url)
     }

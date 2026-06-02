@@ -193,7 +193,7 @@ ${TECHNICAL_APPROACH}
 ---
 Part of #${MASTER_ISSUE_NUMBER}
 
-**JIRA:** [${SUBTASK_KEY}](https://easygo.atlassian.net/browse/${SUBTASK_KEY})" \
+**JIRA:** [${SUBTASK_KEY}](https://yourcompany.atlassian.net/browse/${SUBTASK_KEY})" \
   --label "arch:${STORY_KEY}"
 ```
 

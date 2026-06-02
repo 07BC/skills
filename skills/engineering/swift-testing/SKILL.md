@@ -232,7 +232,7 @@ The only behaviours worth testing on enums and value types are the ones the comp
 func registersDefault() async throws {
     UserDefaults.standard.removeObject(forKey: "server_url")
     sut.registerDefaults()
-    #expect(UserDefaults.standard.string(forKey: "server_url") == "rtmp://default")
+    #expect(UserDefaults.standard.string(forKey: "server_url") == "https://api.example.com")
 }
 
 // GOOD — mock store passed in, no global state
@@ -242,7 +242,7 @@ func registersDefault() async throws {
     let sut = PreferencesService(store: store)
     await sut.registerDefaults()
     let stored = await store.string(forKey: "server_url")
-    #expect(stored == "rtmp://default")
+    #expect(stored == "https://api.example.com")
 }
 ```
 
@@ -295,11 +295,11 @@ func persistsToStore() async throws {
     let store = MockUserDefaults()
     let sut = PreferencesService(store: store)
 
-    await sut.setServerURL("rtmp://test.com")
+    await sut.setServerURL("https://test.example.com")
 
     // Verify the store directly - not via the wrapper
     let stored = await store.string(forKey: "server_url")
-    #expect(stored == "rtmp://test.com")
+    #expect(stored == "https://test.example.com")
 }
 ```
 
@@ -309,12 +309,12 @@ func persistsToStore() async throws {
 @Test("Reads value from pre-populated store")
 func readsFromStore() async throws {
     let store = MockUserDefaults()
-    await store.set("rtmp://existing.com", forKey: "server_url")  // Arrange first
+    await store.set("https://existing.example.com", forKey: "server_url")  // Arrange first
 
     let sut = PreferencesService(store: store)
 
     let server = await sut.serverURL
-    #expect(server == "rtmp://existing.com")
+    #expect(server == "https://existing.example.com")
 }
 ```
 
@@ -410,20 +410,20 @@ If you're tempted to poll a mock's call count after invoking a SUT method, the S
 
 ```swift
 // Production:
-@MainActor @Observable final class PlayerViewModel {
-    func openVod(_ vod: VOD) {                       // sync
-        Task { @MainActor in                          // fire-and-forget
-            let source = try? await repo.fetch(vod)
-            self.selectedVod = source.map(SelectedVod.init)
+@MainActor @Observable final class ArticleViewModel {
+    func openArticle(_ article: Article) {                       // sync
+        Task { @MainActor in                                      // fire-and-forget
+            let source = try? await repo.fetch(article)
+            self.selectedArticle = source.map(SelectedArticle.init)
         }
     }
 }
 
 // Test (forced to poll because there's no awaitable handle):
-@Test func opensVod() async throws {
+@Test func opensArticle() async throws {
     let mock = MockRepo()
-    let sut = await PlayerViewModel(repo: mock)
-    sut.openVod(vod)
+    let sut = await ArticleViewModel(repo: mock)
+    sut.openArticle(article)
     await waitUntil { await mock.fetchCallCount == 1 }   // flaky
     let count = await mock.fetchCallCount
     #expect(count == 1)
@@ -434,28 +434,28 @@ If you're tempted to poll a mock's call count after invoking a SUT method, the S
 
 ```swift
 // Production:
-@MainActor @Observable final class PlayerViewModel {
-    func openVod(_ vod: VOD) async {                  // async
-        let source = try? await repo.fetch(vod)
-        self.selectedVod = source.map(SelectedVod.init)
+@MainActor @Observable final class ArticleViewModel {
+    func openArticle(_ article: Article) async {                  // async
+        let source = try? await repo.fetch(article)
+        self.selectedArticle = source.map(SelectedArticle.init)
     }
 }
 
 // Test (deterministic, no polling):
-@Test func opensVod() async throws {
+@Test func opensArticle() async throws {
     let mock = MockRepo()
-    let sut = await PlayerViewModel(repo: mock)
-    await sut.openVod(vod)
+    let sut = await ArticleViewModel(repo: mock)
+    await sut.openArticle(article)
     let count = await mock.fetchCallCount
     #expect(count == 1)
 }
 ```
 
-The polling version compiles fine but is flaky AND silently breaks the day someone refactors `openVod` to `async` — the test then has a "missing `await`" compile error that's easy to miss in a rebase. Always prefer making the SUT method `async`.
+The polling version compiles fine but is flaky AND silently breaks the day someone refactors `openArticle` to `async` — the test then has a "missing `await`" compile error that's easy to miss in a rebase. Always prefer making the SUT method `async`.
 
 **When polling IS acceptable**: only for genuinely uncontrolled async — Timer-driven loops inside the SUT (e.g. a `liveTime` ticker), KVO `publisher(for:).values` consumers, WebSocket message streams, NotificationCenter handlers. In those cases the SUT cannot expose an awaitable handle because the source itself is push-driven. Even then, prefer `for await event in stream.values { ... }` inside the test where possible — only fall back to `waitUntil`-style polling as a last resort.
 
-**Case study — NAT-1868 rebase (May 2026):** A characterisation test wrote `vm.openVod(vod, channelId: 42)` against a sync `openVod` API and then `await waitUntil { mock.callCount == 1 }`. When main was rebased in with `openVod` refactored to `@MainActor async`, the test compiled at first (the sync call site still looked OK), but on CI it failed with `expression is 'async' but is not marked with 'await'`. Had the test been written to `await vm.openVod(...)` from day one, the refactor on main would have been transparent.
+**Case study — PROJ-1868 rebase (May 2026):** A characterisation test wrote `vm.openArticle(article, categoryId: 42)` against a sync `openArticle` API and then `await waitUntil { mock.callCount == 1 }`. When main was rebased in with `openArticle` refactored to `@MainActor async`, the test compiled at first (the sync call site still looked OK), but on CI it failed with `expression is 'async' but is not marked with 'await'`. Had the test been written to `await vm.openArticle(...)` from day one, the refactor on main would have been transparent.
 
 ### Parameterised tests
 ```swift

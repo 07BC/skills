@@ -43,19 +43,19 @@ When auditing, group findings as:
 
 ```swift
 // Dedicated actor for hardware-bound work
-actor RTMPPublisher {
-    private var connection: RTMPConnection?
+actor WebSocketClient {
+    private var connection: Connection?
 
-    func publish(stream: RTMPStream) async throws { ... }
+    func send(message: Message) async throws { ... }
 }
 
 // @MainActor for UI-bound services
 @MainActor
-final class StreamStateModel: ObservableObject { ... }
+final class ConnectionStateModel: ObservableObject { ... }
 
 // Nonisolated where safe
-extension RTMPPublisher {
-    nonisolated var description: String { "RTMPPublisher" }
+extension WebSocketClient {
+    nonisolated var description: String { "WebSocketClient" }
 }
 ```
 
@@ -68,14 +68,14 @@ into it (`await`, `Task`, `async let`).
 // Producer side — continuation held by service
 let (stream, continuation) = AsyncStream.makeStream(of: ConnectionEvent.self)
 
-// Consumer side — view or orchestrator
-for await event in eventStream {
+// Consumer side — view or coordinator
+for await event in eventChannel {
     handle(event)
 }
 ```
 
 Note any `AsyncThrowingStream` usage (implies error propagation from
-the stream source, e.g. RTMP disconnect with error).
+the source, e.g. a connection error).
 
 ## @unchecked Sendable — flag these
 
@@ -102,7 +102,7 @@ grep -rn "Task {" . --include="*.swift" | grep -v "Test\|test\|spec" | head -30
 
 Document the dominant task management strategy and flag any obvious leaks.
 
-## Common gotchas in streaming apps
+## Common gotchas in apps with real-time connections
 
 - `AVCaptureSession` must run on a dedicated serial queue, not an actor —
   actors can suspend, queues cannot. Note how the project handles this.

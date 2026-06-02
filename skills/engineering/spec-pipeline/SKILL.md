@@ -7,7 +7,7 @@ description: >
   concurrency-auditor → task-reviewer inner loop; whole-diff review; then
   open a PR via /git-pr. Each pipeline runs in its own git worktree.
   Inputs are passed as flags. Use when the user says "ship this ticket",
-  "run the pipeline", "spec-pipeline NAT-1234", "build this spec", or
+  "run the pipeline", "spec-pipeline PROJ-123", "build this spec", or
   "/spec-pipeline …". Project must declare its config in a fenced
   spec_pipeline YAML block in CLAUDE.md — see SCHEMA.md.
 ---

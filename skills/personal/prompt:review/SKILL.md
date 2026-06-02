@@ -43,7 +43,7 @@ Establish before writing:
 
 1. What is the PR doing? Feature, bug fix, refactor, test addition?
 2. Which files are changing? Use the diff or file list if provided.
-3. Is there a Jira ticket? Include the key (e.g. `NAT-1234`) if so.
+3. Is there a Jira ticket? Include the key (e.g. `PROJ-123`) if so.
 4. Known constraints or risks? e.g. "must not break ReplayKit".
 
 Extract from context rather than asking when a diff or description is
@@ -63,7 +63,7 @@ on top — only the docs that match the PR's changed files.
 | Domain models / API types | `docs/audit-report/04-domain-layering.md` |
 | Services / actors | `docs/audit-report/03-concurrency.md` |
 | Tests | `docs/audit-report/07-testability.md` |
-| RTMP / streaming | `docs/engineering/streaming-architecture.md` |
+| Networking / real-time | `docs/engineering/networking-architecture.md` |
 | ReplayKit | `docs/engineering/replaykit-notes.md` |
 
 Drop rows that don't match. Add rows from the project's own `CLAUDE.md`
@@ -140,7 +140,7 @@ matching, not architecture planning.
 Save the generated prompt to `${PLANS_DIR}/pr-review-${SLUG}.md`.
 Examples:
 
-- `${PLANS_DIR}/pr-review-NAT-1339.md`
+- `${PLANS_DIR}/pr-review-PROJ-123.md`
 - `${PLANS_DIR}/pr-review-story-02-loan-input-screen.md`
 
 Report the path to the user. Do not paste the prompt inline — the

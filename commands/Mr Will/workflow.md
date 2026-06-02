@@ -13,7 +13,7 @@ subtask. The orchestrator (Opus) owns all branching decisions. Subagents
 **Input required before launching:**
 
 - One of:
-  - A Jira ticket key (e.g. `NAT-1234`) — auto-detected via `^[A-Z]+-[0-9]+$`
+  - A Jira ticket key (e.g. `PROJ-123`) — auto-detected via `^[A-Z]+-[0-9]+$`
   - A spec file path (e.g. `docs/stories/01-project-setup.md`) — auto-detected by file existence
   - A free-form description — fallback when neither of the above matches
 - The specific subtask to work on (by title or subtask key, if applicable)
@@ -30,12 +30,12 @@ the paths or values.
 | Variable | Source | Example |
 | --- | --- | --- |
 | `SUBAGENT_MODEL` | constant | `claude-sonnet-4-6` |
-| `PROJECT_NAME` | `basename $(git rev-parse --show-toplevel)` | `kick-tvos` |
+| `PROJECT_NAME` | `basename $(git rev-parse --show-toplevel)` | `myapp` |
 | `PLANS_DIR` | `${HOME}/Developer/obsidian/${PROJECT_NAME}/plans` | per global plan-storage rule |
 | `SCHEME`, `DESTINATION`, `TEST_TARGET` | derived in Phase 1 from `CLAUDE.md` | — |
 | `PROJECT_KIND` | detected in Phase 1 (`xcode` or `spm`) | — |
 | `BASE_BRANCH` | declared in `CLAUDE.md`, fall back to `main` | — |
-| `BRANCH_PREFIX` | declared in `CLAUDE.md`, fall back to project Jira key | `nat-` |
+| `BRANCH_PREFIX` | declared in `CLAUDE.md`, fall back to project Jira key | `proj-` |
 
 When a phase says "spawn a Sonnet subagent" it always means
 `model: SUBAGENT_MODEL, mode: normal`.

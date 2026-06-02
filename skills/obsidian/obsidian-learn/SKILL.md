@@ -95,10 +95,10 @@ Good entries name the cause, the symptom, and the remedy in one line:
 
 - "`LazyVGrid` inside `LazyVStack` inside `ScrollView` breaks width on tvOS — give grid explicit `frame(maxWidth: .infinity)`"
 - "IVS SDK teardown on main thread causes `0x8BADF00D` watchdog — always tear down off-main"
-- "HaishinKit `onFCPublish` not forwarded by default — patch `RTMPStream` to forward or publish never completes"
+- "WKWebView `decidePolicyFor` must call the completion handler on every path — including error paths — or the web view hangs"
 
 Bad entries (skip these):
-- "Fixed a crash in StreamViewController" — no cause, not generalisable
+- "Fixed a crash in ContentViewController" — no cause, not generalisable
 - "Ran `pod install` to fix the build" — session-specific, not a bug
 - "Changed the timeout value" — no transferable lesson
 
@@ -126,14 +126,14 @@ Claude Code command/agent patterns, `.system/` skill lessons, MCP config.
 Snippets, idioms, or small structures worth repeating. Not style, not
 architecture — things you'd copy-paste as a starting point.
 - "Bridge async-only state into a sync-only surface by owning the state in an `actor` and forcing the outer protocol to be `async`; do not reach for `Task { ... }.value` inside a lock"
-- "Use `UIDevice.orientationDidChangeNotification` not `viewWillTransition` for physical rotation detection in streaming"
+- "Use `UIDevice.orientationDidChangeNotification` not `viewWillTransition` for physical rotation detection in full-screen views"
 - "Inject test credentials via `XCUIApplication().launchEnvironment` — never hardcode in test files"
 
 ---
 
 **research** — Things looked up that are worth retaining
 API behaviour, third-party SDK quirks, App Store Connect workflows, spec details.
-- "RTMP `FCPublish` must be sent before `publish` — not all servers enforce it but Kick does"
+- "Some URLSession delegate methods are only called on custom URLSessionConfiguration instances — the shared session silently ignores them"
 - "App Store Connect allows a hotfix submission alongside an in-progress version using a separate build train"
 - "GitHub SSH keys cannot be shared across accounts — each account needs its own key pair"
 
@@ -257,7 +257,7 @@ After all writes are complete, print a summary:
 Nothing new for: architecture.md, bugs.md, patterns.md, research.md, git.md
 
 Uncertain — not written:
-- "Changed timeout to 30s in StreamManager" — session-specific, skipped
+- "Changed timeout to 30s in NetworkManager" — session-specific, skipped
 ```
 
 The "Uncertain — not written" section is optional. Only include it when

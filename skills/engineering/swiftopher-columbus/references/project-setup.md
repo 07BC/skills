@@ -18,7 +18,7 @@ it is a runtime or dev-only dependency.
 
 ## Local Packages (`LocalPackages/`)
 
-Common pattern at Kick and other teams: hardware-dependent or reusable
+Common pattern in modular apps: hardware-dependent or reusable
 services are extracted into local Swift packages so they can be tested
 independently without the main app target.
 

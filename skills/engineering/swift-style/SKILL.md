@@ -28,7 +28,7 @@ Every new `.swift` file **must** begin with this header exactly:
 ```swift
 //
 //  {Filename}.swift
-//  Kick TV
+//  MyApp
 //
 //  Created by Jamie Le Souëf on {MM/DD/YYYY}.
 //
@@ -36,7 +36,7 @@ Every new `.swift` file **must** begin with this header exactly:
 
 - `{Filename}` — the bare filename without path, e.g. `PlayerView.swift` → `PlayerView`
 - `{MM/DD/YYYY}` — today's date, e.g. `06/01/2026`
-- The project name is always `Kick TV`
+- Replace `MyApp` with your project name
 - Never omit or alter this block
 
 ## Swift 6 Essentials
@@ -270,12 +270,12 @@ authoring or review pass.
 100 characters per line. Wrap long signatures with each parameter on its own line, indented +2:
 
 ```swift
-func fetchLivestreams(
+func fetchArticles(
   page: Int,
   limit: Int,
   sort: String = "featured",
   category: String? = nil
-) async throws -> PaginatedResponse<Stream>
+) async throws -> PaginatedResponse<Article>
 ```
 
 ---

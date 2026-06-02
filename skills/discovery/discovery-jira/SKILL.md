@@ -43,7 +43,7 @@ Before asking the user anything, try to infer as much as possible from the envir
 
 - Read `CLAUDE.md` in the current working directory — look for Jira project keys, component names, team names, or any mention of labels.
 - Read the git remote URL: `git remote get-url origin` — the repo name often reveals the project or team.
-- Scan the plan itself for Jira project keys (e.g. `NAT-`, `PROJ-`), component names, or any other signals.
+- Scan the plan itself for Jira project keys (e.g. `PROJ-`), component names, or any other signals.
 
 Collect what you can infer vs. what you still need to ask.
 
@@ -150,8 +150,8 @@ Map the plan content to the ticket template below. Keep sections **high-level**:
 
 Each criterion should describe observable behaviour, not implementation:
 
-- **Good:** Given the user has muted their mic, when they go live, then the mic indicator shows muted state.
-- **Bad:** Given `MicrophoneService.isMuted == true`, when `BroadcastViewModel.startStream()` is called, then `UIState.micIcon` is `.muted`.
+- **Good:** Given the user has lost their connection, when the status updates, then the status indicator shows disconnected state.
+- **Bad:** Given `NetworkService.isConnected == false`, when `SettingsViewModel.save()` is called, then `UIState.statusIcon` is `.disconnected`.
 
 Write as many criteria as needed to fully describe "done". Cover the happy path first, then error states and edge cases.
 
@@ -179,7 +179,7 @@ Once the user confirms, call `createJiraIssue` with:
 - `components` — from Step 4 (may be empty)
 - `assignee` — the account ID from `lookupJiraAccountId` if assigning to a user
 
-After creation, output the ticket URL and key (e.g. `NAT-1234`).
+After creation, output the ticket URL and key (e.g. `PROJ-123`).
 
 ---
 

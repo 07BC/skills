@@ -174,7 +174,7 @@ if ProcessInfo.processInfo.isRunningUITests,
 **xcodebuild (for CI):**
 ```bash
 xcodebuild test \
-  -scheme "KickLiveUITests" \
+  -scheme "MyAppUITests" \
   -destination "platform=iOS Simulator,name=iPhone 16" \
   -testenv "UI_TEST_USERNAME=$(UI_TEST_USERNAME)" \
   -testenv "UI_TEST_PASSWORD=$(UI_TEST_PASSWORD)"
@@ -229,8 +229,8 @@ login.username
 login.password
 login.signIn
 login.errorMessage
-goLive.previewButton
-goLive.camera.toggle
+compose.previewButton
+compose.camera.toggle
 settings.quality.picker
 settings.quality.option.hd720
 ```
@@ -359,8 +359,8 @@ final class LoginUITests: XCTestCase {
 func test_<precondition>_<action>_<expectedOutcome>()
 
 test_loggedOut_tapSignIn_showsHomeScreen()
-test_loggedIn_tapGoLive_opensPreview()
-test_streaming_tapMute_muteIconAppears()
+test_loggedIn_tapCompose_opensPreview()
+test_compose_tapMute_muteIconAppears()
 test_previewActive_rotateToLandscape_updatesLayout()
 ```
 
@@ -414,7 +414,7 @@ struct HomeScreen {
     let app: XCUIApplication
 
     var container: XCUIElement { app.otherElements["home.container"] }
-    var goLiveButton: XCUIElement { app.buttons["home.goLive"] }
+    var composeButton: XCUIElement { app.buttons["home.compose"] }
 
     @discardableResult
     func waitForScreen(timeout: TimeInterval = 20) -> Bool {
@@ -449,13 +449,13 @@ func test_validLogin_showsHomeScreen() throws {
 
 ```swift
 // ✅ waitForExistence — the standard wait
-let element = app.buttons["go.live"]
+let element = app.buttons["compose.publish"]
 XCTAssertTrue(element.waitForExistence(timeout: 10))
 
 // ✅ Predicate wait — for element state changes (not just existence)
-let publishedState = NSPredicate(format: "label == 'Live'")
+let publishedState = NSPredicate(format: "label == 'Published'")
 let expectation = XCTNSPredicateExpectation(predicate: publishedState,
-                                             object: app.staticTexts["stream.status"])
+                                             object: app.staticTexts["compose.status"])
 wait(for: [expectation], timeout: 15)
 
 // ✅ Wait for element to disappear
@@ -606,7 +606,7 @@ addUIInterruptionMonitor(withDescription: "Permission dialog") { alert in
 // In a test — manual screenshot
 let screenshot = app.screenshot()
 let attachment = XCTAttachment(screenshot: screenshot)
-attachment.name = "After tapping Go Live"
+attachment.name = "After tapping Compose"
 attachment.lifetime = .keepAlways
 add(attachment)
 ```
@@ -621,20 +621,20 @@ Read the `xcodebuildmcp-cli` skill. Use the `test-sim` tool:
 
 ```bash
 xcodebuildmcp simulator test-sim \
-  --scheme KickLiveUITests \
-  --project-path ./KickLive.xcodeproj \
+  --scheme MyAppUITests \
+  --project-path ./MyApp.xcodeproj \
   --simulator-name "iPhone 16"
 ```
 
 Set credentials in the environment before this call:
 
 ```bash
-export UI_TEST_USERNAME="$(op read 'op://Personal/Kick Test Account/username')"
-export UI_TEST_PASSWORD="$(op read 'op://Personal/Kick Test Account/password')"
+export UI_TEST_USERNAME="$(op read 'op://Personal/MyApp Test Account/username')"
+export UI_TEST_PASSWORD="$(op read 'op://Personal/MyApp Test Account/password')"
 
 xcodebuildmcp simulator test-sim \
-  --scheme KickLiveUITests \
-  --project-path ./KickLive.xcodeproj \
+  --scheme MyAppUITests \
+  --project-path ./MyApp.xcodeproj \
   --simulator-name "iPhone 16"
 ```
 
@@ -678,7 +678,7 @@ xcodebuild clean test \
 
 ```bash
 xcodebuild test \
-  -scheme KickLiveUITests \
+  -scheme MyAppUITests \
   -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.0' \
   -testenv "UI_TEST_USERNAME=${UI_TEST_USERNAME}" \
   -testenv "UI_TEST_PASSWORD=${UI_TEST_PASSWORD}" \
@@ -691,7 +691,7 @@ xcodebuild test \
 Before running, verify two things that produce misleading errors if skipped:
 
 **1 — Confirm the scheme name with `xcodebuild -list`.**  
-Xcode scheme names are not guessable. `-scheme Chagi` fails if the workspace only defines `Chagi-Debug` / `Chagi-Release`. Always check:
+Xcode scheme names are not guessable. `-scheme MyApp` fails if the workspace only defines `MyApp-Debug` / `MyApp-Release`. Always check:
 
 ```bash
 xcodebuild -workspace MyApp.xcworkspace -list
@@ -719,7 +719,7 @@ format matters critically:
 
 ```xml
 <!-- ❌ Fragile — only resolves when the parent directory is named exactly right -->
-<TestPlanReference location = "container:../kick-apple-public/MyApp.xctestplan">
+<TestPlanReference location = "container:../myapp-apple/MyApp.xctestplan">
 
 <!-- ✅ Robust — relative to the workspace, not its parent -->
 <TestPlanReference location = "container:MyApp.xctestplan">
@@ -773,7 +773,7 @@ nothing. Verify that artifact upload works on a deliberately-failing run first.
 ## Step 8 — What Makes a Good UI Test
 
 **DO test:**
-- Complete user flows (login → go live → stop stream)
+- Complete user flows (login → compose → publish)
 - Error states that require real UI feedback (wrong password, no network)
 - Navigation paths (deep links, back navigation, tab switching)
 - Permission handling (camera, microphone prompts)
@@ -947,7 +947,7 @@ the problem is upstream in the navigation path.
 Run the failing test in isolation immediately after seeing the failure:
 
 ```bash
-xcodebuild test -workspace … -only-testing:ChagiUITests/SearchUITests/test_search_inputAvailable
+xcodebuild test -workspace … -only-testing:MyAppUITests/SearchUITests/test_search_inputAvailable
 ```
 
 - **Passes in isolation** → the failure is order- or state-dependent (previous
@@ -1080,4 +1080,4 @@ After writing UI tests, verify:
 - **`references/page-objects.md`** — Catalogue of existing Page Object types. Read before creating new ones to avoid duplication.
 - **`xcodebuildmcp-cli` skill** — Use for running tests and inspecting simulator UI.
 - **`swift-test-all` skill** — For running the full unit test suite alongside UI tests before committing.
-- **`kick-commit` skill** — For committing new UI test files under the correct NAT ticket.
+- **`git-commit` skill** — For committing new UI test files under the correct PROJ ticket.

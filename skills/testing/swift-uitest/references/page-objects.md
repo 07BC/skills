@@ -99,52 +99,60 @@ struct LoginScreen {
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `waitForScreen(timeout:)` | `Bool` | Waits for home container |
-| `tapGoLive()` | `GoLiveScreen` | Opens Go Live preview |
+| `tapCompose()` | `ComposeScreen` | Opens Compose/publish screen |
+| `tapSearch()` | `SearchScreen` | Opens Search screen |
+| `tapArticle(at:)` | `ArticleDetailScreen` | Taps an article cell by identifier, returns detail screen |
 
 ```swift
 struct HomeScreen {
     let app: XCUIApplication
 
     var container: XCUIElement { app.otherElements["home.container"] }
-    var goLiveButton: XCUIElement { app.buttons["home.goLive"] }
+    var composeButton: XCUIElement { app.buttons["home.compose"] }
+    var searchButton: XCUIElement { app.buttons["home.search"] }
 
     @discardableResult
     func waitForScreen(timeout: TimeInterval = 10) -> Bool {
         container.waitForExistence(timeout: timeout)
     }
 
-    func tapGoLive() -> GoLiveScreen {
-        goLiveButton.tap()
-        return GoLiveScreen(app: app)
+    func tapCompose() -> ComposeScreen {
+        composeButton.tap()
+        return ComposeScreen(app: app)
+    }
+
+    func tapSearch() -> SearchScreen {
+        searchButton.tap()
+        return SearchScreen(app: app)
     }
 }
 ```
 
 ---
 
-### `GoLiveScreen`
+### `ComposeScreen`
 
-**File:** `GoLiveScreen.swift`
+**File:** `ComposeScreen.swift`
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `waitForScreen(timeout:)` | `Bool` | Waits for preview container |
-| `tapStartStream()` | `GoLiveScreen` | Starts the stream |
-| `tapStopStream()` | `GoLiveScreen` | Stops the stream |
-| `tapToggleCamera()` | `GoLiveScreen` | Switches camera |
-| `tapToggleMic()` | `GoLiveScreen` | Mutes/unmutes mic |
-| `streamStatus` | `XCUIElement` | Status label element |
+| `waitForScreen(timeout:)` | `Bool` | Waits for compose container |
+| `tapPublish()` | `ComposeScreen` | Publishes the item |
+| `tapUnpublish()` | `ComposeScreen` | Unpublishes the item |
+| `tapToggleCamera()` | `ComposeScreen` | Switches camera |
+| `tapToggleMic()` | `ComposeScreen` | Mutes/unmutes mic |
+| `publishStatus` | `XCUIElement` | Status label element |
 
 ```swift
-struct GoLiveScreen {
+struct ComposeScreen {
     let app: XCUIApplication
 
-    var preview: XCUIElement { app.otherElements["goLive.preview"] }
-    var startButton: XCUIElement { app.buttons["goLive.startStream"] }
-    var stopButton: XCUIElement { app.buttons["goLive.stopStream"] }
-    var cameraToggle: XCUIElement { app.buttons["goLive.camera.toggle"] }
-    var micToggle: XCUIElement { app.buttons["goLive.mic.toggle"] }
-    var streamStatus: XCUIElement { app.staticTexts["goLive.status"] }
+    var preview: XCUIElement { app.otherElements["compose.preview"] }
+    var publishButton: XCUIElement { app.buttons["compose.publish"] }
+    var unpublishButton: XCUIElement { app.buttons["compose.unpublish"] }
+    var cameraToggle: XCUIElement { app.buttons["compose.camera.toggle"] }
+    var micToggle: XCUIElement { app.buttons["compose.mic.toggle"] }
+    var publishStatus: XCUIElement { app.staticTexts["compose.status"] }
 
     @discardableResult
     func waitForScreen(timeout: TimeInterval = 5) -> Bool {
@@ -152,25 +160,25 @@ struct GoLiveScreen {
     }
 
     @discardableResult
-    func tapStartStream() -> GoLiveScreen {
-        startButton.tap()
+    func tapPublish() -> ComposeScreen {
+        publishButton.tap()
         return self
     }
 
     @discardableResult
-    func tapStopStream() -> GoLiveScreen {
-        stopButton.tap()
+    func tapUnpublish() -> ComposeScreen {
+        unpublishButton.tap()
         return self
     }
 
     @discardableResult
-    func tapToggleCamera() -> GoLiveScreen {
+    func tapToggleCamera() -> ComposeScreen {
         cameraToggle.tap()
         return self
     }
 
     @discardableResult
-    func tapToggleMic() -> GoLiveScreen {
+    func tapToggleMic() -> ComposeScreen {
         micToggle.tap()
         return self
     }
@@ -179,70 +187,53 @@ struct GoLiveScreen {
 
 ---
 
-### `LoanInputScreen` (escape)
+### `SearchScreen`
 
-**File:** `escapeUITests/LoanInputScreen.swift`
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `waitForScreen(timeout:)` | `Bool` | Waits for `loanInput.container` |
-| `enterBalance(_:)` | `LoanInputScreen` | Clears + types balance, commits by tapping rate field |
-| `enterRate(_:)` | `LoanInputScreen` | Clears + types rate, commits by tapping repayment field |
-| `enterRepayment(_:)` | `LoanInputScreen` | Clears + types repayment, commits by tapping a neutral field |
-| `selectTermYears(_:)` | `LoanInputScreen` | Opens menu picker, taps row by label ("30 yr") |
-| `selectTermMonths(_:)` | `LoanInputScreen` | Opens menu picker, taps row by label ("0 mo") |
-| `tapSave()` | `HomeScreen` | Taps Save toolbar action |
-
-### `HomeScreen` (escape)
-
-**File:** `escapeUITests/HomeScreen.swift`
+**File:** `MyAppUITests/SearchScreen.swift`
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `waitForScreen(timeout:)` | `Bool` | Waits for `home.container` |
-| `tapEnterLoan()` | `LoanInputScreen` | Empty-state CTA |
-| `tapEditLoan()` | `LoanInputScreen` | Pre-populated state CTA |
-| `tapScenarioA()` | `ScenarioScreen` | Waits for `home.scenario.a`, taps it, returns `ScenarioScreen` |
+| `waitForScreen(timeout:)` | `Bool` | Waits for `search.container` |
+| `enterQuery(_:)` | `SearchScreen` | Clears + types query text, commits by tapping search button |
+| `tapResult(at:)` | `ArticleDetailScreen` | Taps a result cell by index, returns `ArticleDetailScreen` |
+| `tapClear()` | `SearchScreen` | Clears the search field |
 
-### `ScenarioScreen` (escape)
+### `ArticleDetailScreen`
 
-**File:** `escapeUITests/ScenarioScreen.swift`
+**File:** `MyAppUITests/ArticleDetailScreen.swift`
 
 | Property | Element | Notes |
 |----------|---------|-------|
-| `container` | `descendants(matching: .any)["scenario.container"]` | Anchor for `waitForScreen()` |
-| `extraRepaymentField` | `textFields["scenario.extraRepayment"]` | Cents-accumulator semantics |
-| `payoffDateValue` | `staticTexts["scenario.summary.payoffDate"]` | |
-| `timeSavedValue` | `staticTexts["scenario.summary.timeSaved"]` | Default label "No time saved yet" when scenario == baseline |
-| `interestSavedValue` | `staticTexts["scenario.summary.interestSaved"]` | Default label "—" when no savings |
-| `frequencyMonthly` | `buttons["Monthly"]` | Monthly segment in the Repayment frequency Picker |
-| `frequencyFortnightly` | `buttons["Fortnightly"]` | Fortnightly segment |
-| `frequencyWeekly` | `buttons["Weekly"]` | Weekly segment |
-| `lumpSumToggle` | `switches["scenario.lumpSum.toggle"]` | Toggle that reveals the lump sum section |
-| `lumpSumAmountField` | `textFields["scenario.lumpSum.amount"]` | Cents-accumulator; visible only when toggle is on |
-| `lumpSumDatePicker` | `datePickers["scenario.lumpSum.date"]` | Compact-style date picker; visible only when toggle is on |
-| `errorBanner` | `staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Lump sum is larger")).firstMatch` | Error banner overlay text; `otherElements[id]` does not resolve on iOS 26 — queried by label (Unknown 2 fallback, plan story 06) |
-| `offsetBalanceField` | `textFields["scenario.offsetBalance"]` | Cents-accumulator semantics |
-| `offsetErrorBanner` | `staticTexts.matching("label CONTAINS[c] 'Offset balance'").firstMatch` | Banner queried by label-prefix (same pattern as lumpSum error) |
+| `container` | `descendants(matching: .any)["articleDetail.container"]` | Anchor for `waitForScreen()` |
+| `titleLabel` | `staticTexts["articleDetail.title"]` | Article title text |
+| `bodyText` | `staticTexts["articleDetail.body"]` | Article body content |
+| `publishDateLabel` | `staticTexts["articleDetail.publishDate"]` | Publication date label |
+| `categoryPicker` | `otherElements["articleDetail.category"]` | `Picker("Category", …)` with `.pickerStyle(.segmented)` — group-level identifier for diagnostics only |
+| `categoryAll` | `buttons["All"]` | All categories segment in the Category Picker |
+| `categoryTechnology` | `buttons["Technology"]` | Technology segment |
+| `categoryScience` | `buttons["Science"]` | Science segment |
+| `bookmarkToggle` | `switches["articleDetail.bookmark.toggle"]` | Toggle that bookmarks the article |
+| `relatedArticlesList` | `otherElements["articleDetail.related"]` | Related articles section |
+| `errorBanner` | `staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Unable to load")).firstMatch` | Error banner overlay text; `otherElements[id]` does not resolve on iOS 26 — queried by label |
+| `sortOrderField` | `buttons["articleDetail.sortOrder"]` | Sort order picker (.menu) |
 
-> Chart-related properties intentionally absent: `Chart` inside a `Form Section` does not expose identifiers, legend entries, or axis labels to XCUITest queries. ACs covering chart visuals (axes, legend, summary-above-chart) are documented in the PR's manual test plan rather than automated.
+> Chart-related properties intentionally absent: `Chart` inside a `Form Section` does not expose identifiers, legend entries, or axis labels to XCUITest queries. ACs covering visual chart elements are documented in the PR's manual test plan rather than automated.
 
-> Frequency segment queries use visible labels, not identifiers — segmented Pickers absorb per-child `.accessibilityIdentifier` modifiers. See `accessibility-ids.md` under `ScenarioView (escape)` for the full explanation.
+> Category filter queries use visible labels, not identifiers — segmented Pickers absorb per-child `.accessibilityIdentifier` modifiers. See `accessibility-ids.md` under `ArticleDetailView` for the full explanation.
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `waitForScreen(timeout:)` | `Bool` | Waits for `scenario.container` |
-| `waitForResults(timeout:)` | `Bool` | Waits for `payoffDateValue` to exist; results are gated on async baseline compute |
-| `waitForScenarioComputed(timeout:)` | `Bool` | Waits until `timeSavedValue.label != "No time saved yet"` |
-| `waitForPayoffDate(notEqualTo:timeout:)` | `Bool` | Waits until `payoffDateValue.label` differs from a captured previous value; use after a frequency switch or lump sum change to gate on the 300 ms debounced recompute |
-| `waitForLumpSumFields(timeout:)` | `Bool` | Waits for `lumpSumAmountField` to appear after the toggle is enabled |
+| `waitForScreen(timeout:)` | `Bool` | Waits for `articleDetail.container` |
+| `waitForContent(timeout:)` | `Bool` | Waits for `titleLabel` to exist; content is gated on async fetch |
+| `waitForCategoryComputed(timeout:)` | `Bool` | Waits until `categoryAll.label` is not the loading placeholder |
+| `waitForPublishDate(notEqualTo:timeout:)` | `Bool` | Waits until `publishDateLabel.label` differs from a captured previous value; use after a category or sort change to gate on the 300 ms debounced reload |
+| `waitForRelatedArticles(timeout:)` | `Bool` | Waits for `relatedArticlesList` to appear after content loads |
 | `waitForErrorBanner(timeout:)` | `Bool` | Waits for the error banner to appear |
-| `selectMonthly()` | `ScenarioScreen` | Waits for segment, taps Monthly, returns self |
-| `selectFortnightly()` | `ScenarioScreen` | Waits for segment, taps Fortnightly, returns self |
-| `selectWeekly()` | `ScenarioScreen` | Waits for segment, taps Weekly, returns self |
-| `enterExtraRepayment(_:)` | `ScenarioScreen` | Taps field, types digits, dismisses keyboard via nav bar |
-| `enableLumpSum()` | `ScenarioScreen` | Scrolls until toggle is hittable (loop, max 5 swipes), taps, waits for binding to flip to "1"; if not flipped after 2 s, falls back to coordinate-tap on the switch handle (O1 fix, story 06 diagnosis) |
-| `enterLumpSumAmount(_:)` | `ScenarioScreen` | Waits for field, taps, types digits, dismisses keyboard via nav bar |
-| `enterOffsetBalance(_:)` | `ScenarioScreen` | Scrolls into view, taps, types digits, dismisses keyboard via nav bar |
-| `waitForOffsetErrorBanner(timeout:)` | `Bool` | Waits for the offset error banner |
+| `selectCategoryAll()` | `ArticleDetailScreen` | Waits for segment, taps All, returns self |
+| `selectCategoryTechnology()` | `ArticleDetailScreen` | Waits for segment, taps Technology, returns self |
+| `selectCategoryScience()` | `ArticleDetailScreen` | Waits for segment, taps Science, returns self |
+| `enterQuery(_:)` | `ArticleDetailScreen` | Taps field, types text, dismisses keyboard via nav bar |
+| `toggleBookmark()` | `ArticleDetailScreen` | Scrolls until toggle is hittable (loop, max 5 swipes), taps, waits for binding to flip to "1"; falls back to coordinate-tap on the switch handle if needed |
+| `selectSortOrder(_:)` | `ArticleDetailScreen` | Opens sort order menu, taps row by label |
+| `waitForSortErrorBanner(timeout:)` | `Bool` | Waits for the sort error banner |
 | `ensureHittable(_:)` | `Bool` | Returns true if hittable; scrolls up once if not |

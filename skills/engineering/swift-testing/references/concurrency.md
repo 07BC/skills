@@ -213,7 +213,7 @@ struct PreferencesServiceTests {
 
     init() async throws {
         store = MockUserDefaults()
-        await store.set("rtmp://default", forKey: "server_url")
+        await store.set("https://api.example.com", forKey: "server_url")
         sut = PreferencesService(store: store)
     }
 }

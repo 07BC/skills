@@ -12,10 +12,10 @@ In the target project's `CLAUDE.md`:
 ```yaml
 spec_pipeline:
   ticket_prefix: NAT
-  workspace: KickAppleTV.xcworkspace
-  scheme: "Kick tvOS"
+  workspace: MyApp.xcworkspace
+  scheme: "MyApp"
   destination: "platform=tvOS Simulator,name=Apple TV"
-  tests_target: KickTV_Tests
+  tests_target: MyAppTests
   target_architecture_doc: docs/engineering/target-architecture.md
   context_docs: [CONTEXT.md, CONTEXT-MAP.md]
   spec_dir: docs/specs
@@ -72,10 +72,10 @@ Matches the override pattern from `vault_preconditions.sh` (audit 2026-05-16).
 - Emits one shell variable per key on stdout, suitable for `eval` consumption:
 
 ```
-SPEC_PIPELINE_WORKSPACE='KickAppleTV.xcworkspace'
-SPEC_PIPELINE_SCHEME='Kick tvOS'
+SPEC_PIPELINE_WORKSPACE='MyApp.xcworkspace'
+SPEC_PIPELINE_SCHEME='MyApp'
 SPEC_PIPELINE_DESTINATION='platform=tvOS Simulator,name=Apple TV'
-SPEC_PIPELINE_TESTS_TARGET='KickTV_Tests'
+SPEC_PIPELINE_TESTS_TARGET='MyAppTests'
 SPEC_PIPELINE_TICKET_PREFIX='NAT'
 SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC='docs/engineering/target-architecture.md'
 SPEC_PIPELINE_CONTEXT_DOCS='CONTEXT.md CONTEXT-MAP.md'

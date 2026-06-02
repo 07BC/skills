@@ -23,14 +23,14 @@ Examples below use placeholders. Substitute your own values from
 
 | Placeholder | Meaning | Example |
 | --- | --- | --- |
-| `$REPO` | GitHub repo (org/name) | `kick-apple-public` |
-| `$SCHEME` | Xcode scheme | `Chagi`, `Chagi-Debug` |
-| `$WORKSPACE` | Xcode workspace file | `Chagi.xcworkspace` |
-| `$UNIT_TEST_TARGET` | Unit test target | `ChagiTests` |
-| `$UI_TEST_TARGET` | UI test target | `ChagiUITests` |
+| `$REPO` | GitHub repo (org/name) | `myapp-apple` |
+| `$SCHEME` | Xcode scheme | `MyApp`, `MyApp-Debug` |
+| `$WORKSPACE` | Xcode workspace file | `MyApp.xcworkspace` |
+| `$UNIT_TEST_TARGET` | Unit test target | `MyAppTests` |
+| `$UI_TEST_TARGET` | UI test target | `MyAppUITests` |
 
-Concrete names that appear in examples below (`kick-apple-public`,
-`Chagi`, `ChagiTests`) are illustrative — replace with your own
+Concrete names that appear in examples below (`myapp-apple`,
+`MyApp`, `MyAppTests`) are illustrative — replace with your own
 values.
 
 ---
@@ -112,7 +112,7 @@ workspace-relative location:
 - name: Run tests
   uses: sersoft-gmbh/xcodebuild-action@v3
   with:
-    scheme: [YOUR-SCHEME]   # e.g. Chagi-Debug
+    scheme: [YOUR-SCHEME]   # e.g. MyApp-Debug
     destination: platform=tvOS Simulator,name=Apple TV 4K (3rd generation),OS=latest
     action: test
     result-bundle-path: TestResults.xcresult   # ← add this
@@ -200,7 +200,7 @@ created, broken on CI runners and other local clones.
 
 ```xml
 <!-- ❌ Fragile — breaks when parent directory name differs -->
-<!-- Example from kick-apple-public — substitute your own project name -->
+<!-- Example from myapp-apple — substitute your own project name -->
 <TestPlanReference location = "container:../your-project/YourScheme.xctestplan">
 
 <!-- ✅ Robust — relative to the workspace -->
@@ -232,7 +232,7 @@ timing-sensitive tests flake.
 ### Clean up the workspace reference too
 
 When removing a test plan from the scheme, also check
-`Chagi.xcworkspace/contents.xcworkspacedata` — Xcode adds a matching
+`MyApp.xcworkspace/contents.xcworkspacedata` — Xcode adds a matching
 `<FileRef>` there when the plan was first checked in. Removing the scheme
 reference and the plan file does not remove the workspace reference.
 
@@ -281,17 +281,17 @@ Fix: Switch to xcbeautify before retrying.
 
 ## Step 6 — Flaky Unit Tests on CI Simulators
 
-The examples below are from the Kick codebase. The patterns apply generally —
+The examples below are from the project codebase. The patterns apply generally —
 substitute your own test names and file paths.
 
 ### Example: Timeout-bound async test
-**Pattern seen in:** `LoginViewModelTests.testLogin()` (`ChagiTests/LoginViewTests/LoginViewModelTests.swift:75`)
+**Pattern seen in:** `LoginViewModelTests.testLogin()` (`MyAppTests/LoginViewTests/LoginViewModelTests.swift:75`)
 **Symptom:** `wait(for: [expect], timeout: N)` expires on slow CI simulator
 **Current band-aid:** timeout bumped from 5s → 15s in `7b53badc`
 **Real fix needed:** Rewrite as `async throws` test — drive `startLoginProcess()` with `await` so completion is structural, not time-bounded. Inject a deterministic scheduler rather than relying on wallclock.
 
 ### Example: AVPlayer state assertion
-**Pattern seen in:** `StreamplayerViewModelTests.testSuccesfullChannelPlay()` (`ChagiTests/StreamplayerViewModelTests/StreamplayerViewModelTests.swift:58`)
+**Pattern seen in:** `ArticleViewModelTests.testSuccesfullChannelPlay()` (`MyAppTests/ArticleViewModelTests/ArticleViewModelTests.swift:58`)
 **Symptom:** `wait(for: [expectPlay], timeout: 1)` — 1 second for AVPlayer to reach `.playing` status is too tight on a loaded CI simulator
 **Current band-aid:** none yet; increase to at least 5s
 **Real fix needed:** Assert on observable ViewModel state rather than a real AVPlayer's runtime status.
@@ -317,4 +317,4 @@ Bumping the timeout is a band-aid that defers the problem to the next slow run.
 ## References
 
 - **`swift-uitest` skill** — xctestplan rules, xcbeautify, and diagnostic patterns also appear there in the context of authoring UI tests.
-- **`kick-commit` skill** — for committing CI/workflow changes under the correct project ticket.
+- **`git-commit` skill** — for committing CI/workflow changes under the correct project ticket.

@@ -359,9 +359,9 @@ scratchpad immediately at the moment of self-correction:
 ```markdown
 ## Corrections
 
-### Used stream.channelId instead of channel.chatroom.id for subscription
-- **What I did**: Passed `stream.channelId` as the chatroom ID to `joinChatroom()`
-- **Why it was wrong**: channelId and chatroomId are different values; Stream does not carry chatroomId
-- **What I did instead**: Read `channel.chatroom.id` from the full Channel model
-- **Rule to remember**: Always read the Channel model before assuming Stream carries channel metadata
+### Used article.authorId instead of author.profile.id for profile lookup
+- **What I did**: Passed `article.authorId` as the profile ID to `loadProfile()`
+- **Why it was wrong**: authorId and profile.id are different values; Article does not carry the full profile identifier
+- **What I did instead**: Read `author.profile.id` from the full Author model
+- **Rule to remember**: Always read the Author model before assuming Article carries author profile metadata
 ```
