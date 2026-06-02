@@ -32,6 +32,7 @@ This repo is installed locally via `make install`.
 
 - `git/` — generic git workflow: commit, push, PR creation.
 - `engineering/` — Swift, SwiftUI, Xcode, CI, testing, concurrency, architecture, code review.
+- `documentation/` — document-authoring skills: specs, discovery notes, DocC comments, architecture docs, and skill-library ADRs.
 - `obsidian/` — Obsidian vault management, auditing, and knowledge extraction.
 - `personal/` — skills tied to my own setup; **not** in `README.md`, but symlinked locally by `link-skills.sh`.
 - `in-progress/` — drafts not ready to ship; not auto-discovered.
