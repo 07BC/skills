@@ -1,5 +1,6 @@
 ---
 name: pipeline-preflight
+disable-model-invocation: true
 description: >
   Pre-flight checks for spec-driven pipelines (`/workflow`, `/spec-pipeline`).
   Run before a discovery note is written or any subagent is spawned. Surfaces

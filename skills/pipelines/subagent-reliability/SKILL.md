@@ -1,5 +1,6 @@
 ---
 name: subagent-reliability
+disable-model-invocation: true
 description: >
   Recovery procedure for spawned subagents that drop or return no usable
   report mid-run. Distinct from the "subagent reported failure" path that

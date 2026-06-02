@@ -42,6 +42,25 @@ Skills are auto-discovered from the `skills/` directory — no manual enumeratio
 
 Every shipped skill must be referenced in `README.md` using the `/<name>` prefix.
 
+## Skill species
+
+Skills fall into three species, distinguished by frontmatter (see
+[ADR 0004](docs/adr/0004-skill-species-invocation-frontmatter.md)). The two
+fields are not interchangeable: `disable-model-invocation: true` stops Claude
+auto-firing the skill but still allows explicit invocation (the Skill tool, a
+`/command`); `user-invocable: false` only hides it from the user's `/` menu and
+does **not** stop auto-fire.
+
+| Species | Meaning | Frontmatter |
+| --- | --- | --- |
+| **Executor** | Does work; auto-fires on its description; the default. | none |
+| **Policy** | Cited by orchestrators via the Skill tool; must not auto-fire on user messages (e.g. `pipeline-preflight`, `subagent-reliability`). | `disable-model-invocation: true` |
+| **Dependency** | Loaded by another skill, not a user action (e.g. `swift-style`). | `user-invocable: false` + `disable-model-invocation: true` |
+
+Reference skills that should still surface on relevant questions but aren't a
+user action (e.g. `swift-concurrency`) take `user-invocable: false` alone.
+`tests/python/test_skill_taxonomy.py` enforces the policy/dependency markers.
+
 ## Adding a new skill
 
 1. Create `skills/<bucket>/<name>/SKILL.md` (frontmatter: `name`, `description`).
