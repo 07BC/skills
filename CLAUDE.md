@@ -53,6 +53,15 @@ Every shipped skill must be referenced in `README.md` using the `/<name>` prefix
 1. Create `commands/<bucket>/<name>.md` with command definition.
 2. Run `make commands` to expose it locally.
 
+## Adding a new orchestrator
+
+An orchestrator is a command or skill that drives multi-step work by spawning
+subagents and gating phases (`workflow`, `uitest-pipeline`, `audit-codebase`,
+`spec-pipeline`). Follow [`docs/orchestrator-contract.md`](docs/orchestrator-contract.md)
+— copy its skeleton, then add the new file's path to the `ORCHESTRATORS` list in
+`tests/python/test_orchestrator_conformance.py`. `make test` enforces the
+contract.
+
 ## Removing or deprecating
 
 - Move the dir to `skills/deprecated/<name>/` and remove from `README.md`.

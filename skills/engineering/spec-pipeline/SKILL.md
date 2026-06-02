@@ -1260,3 +1260,18 @@ A project must do two things to use this skill:
   Step 3.5 either approves OK or halts on SPLIT before Step 4 runs
 - **Never invent acceptance criteria** — if the input has none, stop and ask
 - **Never auto-remove worktrees** — the user removes them post-merge
+
+---
+
+## Model & mode
+
+The SKILL runs in the **top-level session** and owns every branching decision. It
+drives Phases 1–5 inline rather than nesting an orchestrator subagent, because
+the Agent tool is gated to top-level sessions in this Claude Code build —
+subagents cannot dispatch further subagents.
+
+Each leaf agent (`spec-distiller`, `planner`, `engineer`, `test-writer`,
+`concurrency-auditor`, `task-reviewer`, `swift-spec-review`) is dispatched via the
+Agent tool using its own agent-definition file under `$agents_dir`, which sets
+that agent's model. There is no single `SUBAGENT_MODEL` constant — model choice
+is per-agent by design.
