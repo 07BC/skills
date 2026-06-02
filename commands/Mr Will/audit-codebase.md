@@ -139,18 +139,36 @@ layer-specific file list inlined.
 > Review every file in the layer. Apply the full BLOCKER / WARNING /
 > SUGGESTION checklist per the severity mapping in `swift-code-review`.
 >
-> Report findings as a structured list. Each finding must include:
+> Report findings as a **JSON array and nothing after it** — one object per
+> finding — so the orchestrator can parse and merge the layers
+> deterministically. Each object:
 >
-> - file path and line (where applicable)
-> - severity: `BLOCKER` / `WARNING` / `SUGGESTION`
-> - category: Correctness / Concurrency / Code Quality / Naming /
->   Structure / SwiftUI / Comments / Testing / Platform / Scope
-> - one-line description of the violation
-> - one-line description of what correct looks like
+> ```json
+> {
+>   "file": "Relative/Path/From/RepoRoot.swift",
+>   "line": 42,
+>   "severity": "BLOCKER",
+>   "category": "Concurrency",
+>   "violation": "one-line description of the problem",
+>   "correct": "one-line description of what correct looks like"
+> }
+> ```
+>
+> - `line` is `null` when the finding is not line-specific.
+> - `severity` must be exactly one of `BLOCKER`, `WARNING`, `SUGGESTION`.
+> - `category` must be exactly one of: `Correctness`, `Concurrency`,
+>   `Code Quality`, `Naming`, `Structure`, `SwiftUI`, `Comments`, `Testing`,
+>   `Platform`, `Scope` (these match `swift-code-review`).
+> - Emit `[]` if the layer is clean.
 
 Run the four layer subagents in parallel where possible. The orchestrator
-consolidates the four structured reports into a single findings file at
-`${AUDIT_DIR}/findings.md`, grouped first by severity then by file.
+parses each layer's JSON array, concatenates them, and writes a single
+findings file at `${AUDIT_DIR}/findings.md`, grouped first by severity then
+by file. If a layer's output is not valid JSON, re-spawn that one layer with
+the instruction to emit the array only; do not hand-repair partial JSON.
+
+> Why this stays prose rather than a `Workflow` script: see
+> `docs/adr/0005-keep-audit-codebase-prose-not-workflow.md`.
 
 **Crash recovery.** If any subagent returns no usable result, apply skill
 `subagent-reliability` before consuming a retry slot.
