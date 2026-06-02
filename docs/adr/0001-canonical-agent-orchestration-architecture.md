@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Canonical agent-orchestration architecture for spec-to-PR pipelines
@@ -51,12 +51,13 @@ independent designs to maintain. The recurring elements that define the pattern:
 
 - The shared orchestrator scaffold (variables → model confirmation → preflight →
   phase gates → retry table → halt conditions → context bundle → output summary)
-  should be extracted into **one canonical orchestrator contract** that the
-  individual orchestrators reference, the way `pipeline-preflight` and
-  `subagent-reliability` are already cited rather than inlined.
-- **`workflow` and `spec-pipeline` need reconciling** — either merge, or document
-  an explicit split of responsibility (worktree-isolated multi-task spec build vs
-  single-subtask in-place flow). Until then, a fix to one silently rots the other.
+  should be extracted so the copies stop drifting. **Decided in
+  [[0002-orchestrator-scaffold-as-template-plus-conformance-check]]**: a `docs/`
+  template plus a conformance check, not a runtime-cited skill.
+- **`workflow` and `spec-pipeline` need reconciling. Decided in
+  [[0003-workflow-and-spec-pipeline-are-distinct-aligned-tools]]**: keep both as
+  distinct tools (single-subtask in-place vs whole-spec worktree), document when
+  to use which, and align their surface conventions so they read as siblings.
 - **`audit-codebase` Phase 3** (per-layer parallel fan-out with consolidated,
   schema-shaped findings) is the clearest candidate to run as an actual
   `Workflow` script; the phase-gated prose pipelines with human confirmation
