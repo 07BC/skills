@@ -76,6 +76,29 @@ Settled in [ADR 0003](./adr/0003-workflow-and-spec-pipeline-are-distinct-aligned
 
 ---
 
+## State placement
+
+Where an orchestrator keeps cross-agent state depends on how long it must live
+and who must see it. Settled in
+[ADR 0006](./adr/0006-durable-state-placement-convention.md).
+
+| State kind | Store | Why |
+|---|---|---|
+| Story / architecture state that must survive across branches and sessions | GitHub issue (master + per-subtask sub-issues) | branch-independent, team-visible, queryable via `gh` |
+| Ticket lifecycle — status, links, comments | JIRA | external system of record |
+| Durable run record / audit trail | Obsidian audit log (vault, append-only) | survives the worktree; human-readable post-mortem |
+| Plans, discovery notes, blocked reports | `PLANS_DIR` in the Obsidian vault | the global plan-storage rule already mandates this |
+| Cross-subagent state that must survive the whole run | a durable shared file in `PLANS_DIR` (e.g. an attempt-log) | the only state that crosses subagent boundaries; must be durable and inspectable |
+| Transient same-cycle handoff between two subagents | a tmp file passed by path (`$TMPDIR/…`) | consumed within the cycle; no need to persist — the OS reaps it |
+
+**The rule for the last two** (the one place orchestrators drifted): if the
+state is a post-mortem record or is read across more than one phase, put it in
+`PLANS_DIR`; if it is a one-shot handoff consumed in the same cycle, use a tmp
+file by path. Either way, pass large state to subagents **by path** — never
+inline it in every prompt.
+
+---
+
 ## Skeleton
 
 Copy this when authoring a new orchestrator, then delete the guidance comments.
