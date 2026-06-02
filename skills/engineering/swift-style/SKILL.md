@@ -1,5 +1,7 @@
 ---
 name: swift-style
+user-invocable: false
+disable-model-invocation: true
 description: >
   Code style, quality rules, and Swift 6 language essentials for writing
   clean Swift and SwiftUI from the first line. Loaded automatically by
