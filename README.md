@@ -149,8 +149,14 @@ make install
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
+| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | Whole-spec orchestrator — ships an entire Jira ticket / spec / prompt to a PR autonomously inside a disposable git worktree, driving engineer → test-writer → concurrency-auditor → task-reviewer per task. | Opus+Sonnet · Orchestrated |
 | [/pipeline-preflight](./skills/pipelines/pipeline-preflight/SKILL.md) | Pre-flight checks before any pipeline starts — progress-doc drift, out-of-scope stories, dirty working tree. Cited by orchestrator commands; not invoked directly. | Sonnet · Direct |
 | [/subagent-reliability](./skills/pipelines/subagent-reliability/SKILL.md) | Recovery procedure for dropped or crashed subagents — recover-in-place, resume, or re-spawn. Cited by orchestrators; not invoked directly. | Sonnet · Direct |
+
+**Choosing between `/workflow` and `/spec-pipeline`** — both take a Jira ticket, spec, or prompt to a PR, but they are distinct tools (see [ADR 0003](./docs/adr/0003-workflow-and-spec-pipeline-are-distinct-aligned-tools.md)):
+
+- **`/workflow`** — drives **one subtask** in-place on a branch, wired into GitHub architecture-drift tracking (`/discovery-init` · `/discovery-check` · `/discovery-audit`) and the JIRA subtask lifecycle. Reach for it when implementing a single scoped subtask and you want architecture tracking across the story.
+- **`/spec-pipeline`** — ships a **whole spec** of many tasks autonomously in a disposable worktree (a 60–90 min unattended run), splitting oversized tickets first. Reach for it when you want an entire ticket built end-to-end hands-off.
 
 ### Obsidian
 

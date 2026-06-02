@@ -41,7 +41,7 @@ The parser extracts the first ```` ```yaml ```` block that contains a top-level 
 | `spec_dir` | optional | string | `docs/specs` | Where `spec-distiller` writes specs. |
 | `plan_dir` | optional | string | `docs/plans` | Where `spec-distiller` writes plans. |
 | `audit_dir` | optional | string | `AI/plans` | Sub-path inside `$OBSIDIAN_VAULT` for audit logs. |
-| `cycle_budget` | optional | integer | `3` | Max Stage 4 review cycles before escalating. |
+| `cycle_budget` | optional | integer | `3` | Max Phase 4 review cycles before escalating. |
 
 ## Required vs optional
 
@@ -50,7 +50,7 @@ Hard requirements (pipeline refuses to start without these): `workspace`, `schem
 Recommended (pipeline warns and asks once):
 
 - `ticket_prefix` — for branch naming and commit prefixes.
-- `target_architecture_doc` — if the field is set but the file is missing, the pipeline prompts the user before Stage 1: generate it with `/swiftopher-columbus`, proceed without it (agents fall back to the `swift-engineer` skill body for architecture authority), or abort. Omitting the field entirely is treated as "no architecture doc available" and the pipeline runs without warning.
+- `target_architecture_doc` — if the field is set but the file is missing, the pipeline prompts the user before Phase 1: generate it with `/swiftopher-columbus`, proceed without it (agents fall back to the `swift-engineer` skill body for architecture authority), or abort. Omitting the field entirely is treated as "no architecture doc available" and the pipeline runs without warning.
 
 Everything else has a sensible default.
 

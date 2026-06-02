@@ -15,11 +15,17 @@ description: >
 # Spec Pipeline
 
 `/spec-pipeline` is the top-level entry point. It validates inputs, sets
-up a worktree, then drives Stages 1–5 inline by dispatching one leaf
+up a worktree, then drives Phases 1–5 inline by dispatching one leaf
 specialist agent at a time.
 
 This skill creates git worktrees and branches. **Never auto-invoke.** Always
 explicit user trigger.
+
+> **Related:** to drive a *single subtask* in-place on a branch with GitHub
+> architecture-drift tracking and the JIRA subtask lifecycle, use `/workflow`
+> instead. `/spec-pipeline` is the whole-spec, worktree-isolated, hands-off
+> tool; `/workflow` is the single-subtask, architecture-tracked one. See
+> `docs/adr/0003-workflow-and-spec-pipeline-are-distinct-aligned-tools.md`.
 
 ---
 
@@ -67,19 +73,19 @@ One-time project setup:
 Durable artefacts after a run:
   - The PR (on GitHub)
   - Audit log at $OBSIDIAN_VAULT/AI/plans/<spec-id>.md
-    (full spec + full plan + stage log)
+    (full spec + full plan + phase log)
   - The worktree at ../<repo>-<branch-id>/ until you remove it with
     `git worktree remove`
 
 You're asked at minimum twice during a run, and more when the input or spec
 has unresolved questions:
-  - Before Stage 1: lightweight summary confirmation
-  - Before Stage 1 (Jira only): scope-split confirmation if the ticket is too
+  - Before Phase 1: lightweight summary confirmation
+  - Before Phase 1 (Jira only): scope-split confirmation if the ticket is too
     big — may be zero questions
-  - During Stage 1: one question per conflict or open UI decision (may be zero)
-  - During Stage 3: one question per spec ambiguity the engineer cannot infer
+  - During Phase 1: one question per conflict or open UI decision (may be zero)
+  - During Phase 3: one question per spec ambiguity the engineer cannot infer
     from the codebase (may be zero)
-  - Before Stage 5: PR body confirmation
+  - Before Phase 5: PR body confirmation
 Otherwise the pipeline interrupts only on hard failure (spec ambiguity,
 plan invalid after one amendment, cycle budget exceeded, /git-pr blocker).
 
@@ -225,7 +231,7 @@ lower-stakes and agents handle them with a per-file read that fails softly.
    - Issue type (Bug / Story / Task / Chore)
    - Labels / Components
    - `parent_key` — the `parent.key` field if present, else empty (used
-     by Step 3.5 to skip Stage 0 on tickets that are already sub-tasks)
+     by Step 3.5 to skip Phase 0 on tickets that are already sub-tasks)
    - `existing_subtask_keys` — array of keys from the `subtasks` field;
      defensive read (treat missing or empty as `[]`). Used by Step 3.5 to
      halt re-invocations on already-split parents.
@@ -326,7 +332,7 @@ worktree_path="$(dirname "$repo_root")/${repo_name}-${branch_id}"
 ### Skip conditions — in order
 
 1. **Resume in progress.** If `[[ -d "$worktree_path" ]]`, the user is
-   resuming an in-flight pipeline. Skip Stage 0 and print one line:
+   resuming an in-flight pipeline. Skip Phase 0 and print one line:
 
    ```
    ⏭️  Scope check skipped — worktree exists, resuming
@@ -335,7 +341,7 @@ worktree_path="$(dirname "$repo_root")/${repo_name}-${branch_id}"
    Continue to Step 4.
 
 2. **Ticket already has a parent.** If `parent_key` (from Step 2) is
-   non-empty, this ticket is already a sub-task. Skip Stage 0 and print:
+   non-empty, this ticket is already a sub-task. Skip Phase 0 and print:
 
    ```
    ⏭️  Scope check skipped — ticket already has a parent
@@ -666,12 +672,12 @@ continue:
 
 The Agent tool is gated to top-level sessions only in this Claude Code
 build — subagents cannot dispatch further subagents. So the SKILL drives
-Stages 1–5 inline (Steps 6–10 below), dispatching one leaf specialist at
+Phases 1–5 inline (Steps 6–10 below), dispatching one leaf specialist at
 a time. The full design rationale and historical orchestrator prose are
 preserved under `playbooks/spec-pipeline-orchestrator.md` and
 `playbooks/swift-spec-implement.md` next to this file.
 
-### Stage variables (bash shell state)
+### Phase variables (bash shell state)
 
 Set these once near the top of the implementation flow. They persist
 across every subsequent Bash tool call in this session.
@@ -683,8 +689,8 @@ audit_path="${SPEC_PIPELINE_VAULT}/${SPEC_PIPELINE_AUDIT_DIR}/${spec_id}.md"
 cycle=0
 cycle_budget="${SPEC_PIPELINE_CYCLE_BUDGET:-3}"
 amendment_attempted=0
-blockers_path=""        # set in Stage 4 BLOCKED loop
-blocked_cycle=""        # "1" while re-entering Stage 3 after Stage 4 BLOCKED
+blockers_path=""        # set in Phase 4 BLOCKED loop
+blocked_cycle=""        # "1" while re-entering Phase 3 after Phase 4 BLOCKED
 agents_dir="$HOME/.claude/agents"
 
 mkdir -p "$(dirname "$audit_path")"
@@ -711,7 +717,7 @@ if [[ ! -f "$audit_path" ]]; then
 
 ---
 
-## Stage Log
+## Phase Log
 EOF
 fi
 ```
@@ -730,9 +736,9 @@ For every leaf agent invocation in Steps 6–10 below:
    then the agent-specific state/config block, then any raw blob.
 2. Dispatch via the `Agent` tool with `subagent_type:
    <leaf-agent-name>` and the composed prompt.
-3. Parse the agent's stdout per the rules in each Stage below.
-4. Append a stage-transition section to `$audit_path` before and after
-   the dispatch (see per-Stage append patterns).
+3. Parse the agent's stdout per the rules in each Phase below.
+4. Append a phase-transition section to `$audit_path` before and after
+   the dispatch (see per-Phase append patterns).
 
 The full `SPEC_PIPELINE_*` config block is included in every dispatch
 prompt so the agent can read its config without re-parsing CLAUDE.md.
@@ -751,7 +757,7 @@ Apply `[SKILL: ~/.claude/skills/pipeline-preflight/SKILL.md]`.
 The skill produces signals only — the orchestrator owns the user-facing
 decision. When a signal fires, ask the user how to proceed via
 `AskUserQuestion` before dispatching the distiller. When the skill emits
-`Pre-flight clean.`, proceed to Stage 1 without further prompting.
+`Pre-flight clean.`, proceed to Phase 1 without further prompting.
 
 The existing parent-repo cleanliness check inside Step 4 (worktree create
 path) is narrower than this pre-flight — both run; they are not redundant.
@@ -760,14 +766,14 @@ pre-flight guards the pipeline's downstream assumptions about doc accuracy.
 
 ---
 
-## Step 6 — Stage 1: Spec Distiller
+## Step 6 — Phase 1: Spec Distiller
 
-Append stage-start entry:
+Append phase-start entry:
 
 ```bash
 cat <<EOF >> "$audit_path"
 
-## Stage 1 — Spec Distiller — $(date '+%Y-%m-%d %H:%M:%S')
+## Phase 1 — Spec Distiller — $(date '+%Y-%m-%d %H:%M:%S')
 
 Dispatching spec-distiller for ${spec_id}.
 EOF
@@ -781,7 +787,7 @@ Dispatch the `spec-distiller` agent via the `Agent` tool
 - The full `SPEC_PIPELINE_*` block
 - The `raw_text` (Jira blob, spec contents, or prompt text — verbatim,
   inside a `<<<RAW … RAW` fence)
-- (On Stage 2 amendment re-entry only) an appended `## Amendment notes`
+- (On Phase 2 amendment re-entry only) an appended `## Amendment notes`
   block carrying the planner's verbatim reasoning
 
 Wait for completion. The distiller writes `docs/specs/<spec-id>.md`,
@@ -798,7 +804,7 @@ Questions`:
    ```bash
    cat <<EOF >> "$audit_path"
 
-   ### Stage 1 BLOCKED — $(date '+%Y-%m-%d %H:%M:%S')
+   ### Phase 1 BLOCKED — $(date '+%Y-%m-%d %H:%M:%S')
 
    <Open Questions block verbatim>
 
@@ -816,7 +822,7 @@ Otherwise — distiller succeeded. Copy the spec into the audit log under
 ```bash
 cat <<EOF >> "$audit_path"
 
-### Stage 1 complete — $(date '+%Y-%m-%d %H:%M:%S')
+### Phase 1 complete — $(date '+%Y-%m-%d %H:%M:%S')
 
 ## Full Spec
 EOF
@@ -827,14 +833,14 @@ Continue to Step 7.
 
 ---
 
-## Step 7 — Stage 2: Planner
+## Step 7 — Phase 2: Planner
 
-Append stage-start entry:
+Append phase-start entry:
 
 ```bash
 cat <<EOF >> "$audit_path"
 
-## Stage 2 — Planner — $(date '+%Y-%m-%d %H:%M:%S')
+## Phase 2 — Planner — $(date '+%Y-%m-%d %H:%M:%S')
 
 Dispatching planner to validate plan fits codebase.
 EOF
@@ -852,7 +858,7 @@ planner`) with an invocation prompt containing the absolute path to
   ```bash
   cat <<EOF >> "$audit_path"
 
-  ### Stage 2 PASS — $(date '+%Y-%m-%d %H:%M:%S')
+  ### Phase 2 PASS — $(date '+%Y-%m-%d %H:%M:%S')
 
   ## Full Plan
   EOF
@@ -867,7 +873,7 @@ planner`) with an invocation prompt containing the absolute path to
      reasoning is appended to the audit log first.
   2. Set `amendment_attempted=1`.
   3. Append the amendment reason verbatim to the audit log under
-     `### Stage 2 amendment — <ts>`.
+     `### Phase 2 amendment — <ts>`.
   4. Re-dispatch `spec-distiller` with the original prompt **plus** an
      `## Amendment notes` block carrying the planner's verbatim
      reasoning. The distiller's idempotence check (its Step 1) rewrites
@@ -879,26 +885,26 @@ per pipeline run.
 
 ---
 
-## Step 8 — Stage 3: Per-task implementation loop
+## Step 8 — Phase 3: Per-task implementation loop
 
-**SourceKit diagnostics during this stage:** when `<new-diagnostics>` system
+**SourceKit diagnostics during this phase:** when `<new-diagnostics>` system
 reminders fire post-edit but the agent's own `xcodebuild build` ran clean,
 apply the "Build vs SourceKit truth" rule in
 `~/.claude/skills/swift-engineer/SKILL.md`. The build is the truth source;
 do not re-spawn the agent on the diagnostic alone.
 
-**Subagent crashes during this stage:** if a dispatched agent returns no
+**Subagent crashes during this phase:** if a dispatched agent returns no
 usable result (raw API error, socket-closed, timeout — distinct from a
 reported failure), apply
 `[SKILL: ~/.claude/skills/subagent-reliability/SKILL.md]`. A
 recover-in-place or resumed outcome does not consume a retry-budget slot.
 
-Append stage-start entry:
+Append phase-start entry:
 
 ```bash
 cat <<EOF >> "$audit_path"
 
-## Stage 3 — Implementation — $(date '+%Y-%m-%d %H:%M:%S')
+## Phase 3 — Implementation — $(date '+%Y-%m-%d %H:%M:%S')
 
 Beginning per-task loop (blocked_cycle=${blocked_cycle:-0}).
 EOF
@@ -1042,7 +1048,7 @@ COMMITMSG
 ```bash
 cat <<EOF >> "$audit_path"
 
-### Stage 3 complete — $(date '+%Y-%m-%d %H:%M:%S')
+### Phase 3 complete — $(date '+%Y-%m-%d %H:%M:%S')
 
 All tasks committed (blocked_cycle=${blocked_cycle:-0}).
 EOF
@@ -1060,14 +1066,14 @@ behaviour exactly.
 
 ---
 
-## Step 9 — Stage 4: Whole-diff review
+## Step 9 — Phase 4: Whole-diff review
 
-Append stage-start entry:
+Append phase-start entry:
 
 ```bash
 cat <<EOF >> "$audit_path"
 
-## Stage 4 — Spec Review (cycle ${cycle}) — $(date '+%Y-%m-%d %H:%M:%S')
+## Phase 4 — Spec Review (cycle ${cycle}) — $(date '+%Y-%m-%d %H:%M:%S')
 
 Dispatching swift-spec-review for whole-branch diff.
 EOF
@@ -1085,7 +1091,7 @@ base (default `main`), and the full `SPEC_PIPELINE_*` block.
   blocked_cycle=""    # clear BLOCKED-cycle state
   ```
   Record any SHOULD-FIX / NICE-TO-HAVE notes in the audit log under
-  `### Stage 4 PASS — <ts>`. Continue to Step 10.
+  `### Phase 4 PASS — <ts>`. Continue to Step 10.
 
 - `VERDICT: BLOCKED` → BLOCKED loop:
   1. Extract the blockers table from the reviewer output.
@@ -1109,16 +1115,16 @@ base (default `main`), and the full `SPEC_PIPELINE_*` block.
 
 ---
 
-## Step 10 — Stage 5: PR (or escalation)
+## Step 10 — Phase 5: PR (or escalation)
 
-### On Stage 4 PASS — invoke /git-pr
+### On Phase 4 PASS — invoke /git-pr
 
-Append stage-start entry:
+Append phase-start entry:
 
 ```bash
 cat <<EOF >> "$audit_path"
 
-## Stage 5 — PR — $(date '+%Y-%m-%d %H:%M:%S')
+## Phase 5 — PR — $(date '+%Y-%m-%d %H:%M:%S')
 
 Invoking /git-pr.
 EOF
@@ -1148,7 +1154,7 @@ cat <<EOF >> "$audit_path"
 **PR:** <PR URL from /git-pr output>
 **Commits:** $(git -C "$worktree_path" rev-list --count main..HEAD)
 **Cycles:** $((cycle + 1))
-**Notes:** <any SHOULD-FIX / NICE-TO-HAVE from Stage 4>
+**Notes:** <any SHOULD-FIX / NICE-TO-HAVE from Phase 4>
 
 ### Cleanup reminder
 After this PR merges, remove the worktree:
@@ -1171,7 +1177,7 @@ After the PR merges, remove the worktree:
 ### On any escalation (from any earlier step)
 
 Any halt jumps here. Append `## Final Outcome — ESCALATED — <reason>` to
-the audit log with the failing stage label, the cycle count at
+the audit log with the failing phase label, the cycle count at
 escalation, and the last blockers table verbatim (if any). State that
 the worktree is preserved.
 
@@ -1181,7 +1187,7 @@ cat <<EOF >> "$audit_path"
 ## Final Outcome — $(date '+%Y-%m-%d %H:%M:%S')
 
 **Status:** ⚠️  ESCALATED — <reason>
-**Failing stage:** <Stage N label>
+**Failing phase:** <Phase N label>
 **Cycle at escalation:** ${cycle}
 **Worktree:** ${worktree_path} (preserved for manual inspection)
 EOF
@@ -1201,24 +1207,24 @@ Print to the user:
 ⚠️  Pipeline ESCALATED — see audit log for details
    Audit log:    <audit path>
    Worktree:     <worktree path> (preserved for manual inspection)
-   Failing stage: <stage label>
+   Failing phase: <phase label>
 ```
 
 **Never** create a PR on escalation. **Never** remove the worktree.
 
 ### Failure modes that trigger escalation
 
-| Stage | Reason |
+| Phase | Reason |
 |---|---|
-| Stage 1 | Spec has Open Questions after distillation |
-| Stage 2 | Plan still invalid after one amendment |
-| Stage 3 | Engineer halts on ambiguity / build failure |
-| Stage 3 | Test-writer cannot fix failing test |
-| Stage 3 | Concurrency-auditor BLOCKED twice in a row |
-| Stage 3 | Task-reviewer BLOCKED twice in a row |
-| Stage 3 | Pre-commit hook fails persistently |
-| Stage 4 | Spec-review BLOCKED past `cycle_budget` |
-| Stage 5 | `/git-pr` reports blockers or fails |
+| Phase 1 | Spec has Open Questions after distillation |
+| Phase 2 | Plan still invalid after one amendment |
+| Phase 3 | Engineer halts on ambiguity / build failure |
+| Phase 3 | Test-writer cannot fix failing test |
+| Phase 3 | Concurrency-auditor BLOCKED twice in a row |
+| Phase 3 | Task-reviewer BLOCKED twice in a row |
+| Phase 3 | Pre-commit hook fails persistently |
+| Phase 4 | Spec-review BLOCKED past `cycle_budget` |
+| Phase 5 | `/git-pr` reports blockers or fails |
 
 ---
 
@@ -1246,7 +1252,7 @@ A project must do two things to use this skill:
 - **One source flag** — never accept two of `--from-jira / --from-spec / --from-prompt`
 - **Stop on missing required config** — never invent `workspace`/`scheme`/
   `destination`/`tests_target`
-- **Never run on `main` without a worktree** — Stages 1–5 run inside a
+- **Never run on `main` without a worktree** — Phases 1–5 run inside a
   fresh worktree, on a fresh branch
 - **Never auto-confirm the worktree create** — even when the path is clear,
   the lightweight confirmation in Step 3 is required

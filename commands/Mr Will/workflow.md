@@ -10,6 +10,11 @@ This coordinator manages a single subtask end-to-end. It is launched once per
 subtask. The orchestrator (Opus) owns all branching decisions. Subagents
 (Sonnet) handle all execution. No subagent makes a branching decision.
 
+> **Related:** to ship a *whole spec* of many tasks autonomously in a disposable
+> worktree, use `/spec-pipeline` instead. `/workflow` is the single-subtask,
+> in-place, architecture-tracked tool; `/spec-pipeline` is the whole-ticket,
+> hands-off one. See `docs/adr/0003-workflow-and-spec-pipeline-are-distinct-aligned-tools.md`.
+
 **Input required before launching:**
 
 - One of:

@@ -23,7 +23,7 @@ On start, output: `🚦 SPEC-IMPLEMENT — task [N]`
 - Absolute path to the plan file
 - Absolute path to the spec file
 - Task number (e.g. `1`, `2`)
-- (Optional) Blockers table from a previous Stage 4 cycle to fold into the
+- (Optional) Blockers table from a previous Phase 4 cycle to fold into the
   engineer's brief — see "BLOCKED-cycle invocation" below
 
 ## Step 0 — Validate
@@ -192,7 +192,7 @@ Ready for: next task | swift-spec-review
 
 ## BLOCKED-cycle invocation
 
-When the orchestrator invokes this agent during a Stage 4 BLOCKED cycle, the
+When the orchestrator invokes this agent during a Phase 4 BLOCKED cycle, the
 prompt will contain an additional blockers table from the whole-diff reviewer.
 In that case:
 
