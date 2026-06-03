@@ -66,10 +66,12 @@ If the deployment target is below the minimum, ask the user via
 
 - **Option A: Bump the deployment target.** Proceed with this skill.
 - **Option B: Can't bump — keep iOS 16- support.** MV (which requires
-  `@Observable`) is not viable on this project. The skill halts and
-  hands off to `swift-architect` for an MVVM scaffold instead. Note
-  the constraint in a one-line comment at the top of the resulting
-  composition root so future readers know why MVVM was chosen over MV.
+  `@Observable`) is not viable on this project. This skill halts —
+  scaffolding MV code that won't compile is worse than nothing. Follow the
+  MVVM target architecture docs (under `docs/`) by hand instead, and note
+  the constraint in a one-line comment at the top of the
+  resulting composition root so future readers know why MVVM was chosen
+  over MV.
 - **Option C: Abort.** Stop without scaffolding anything.
 
 Do not silently scaffold MV code that won't compile on the project's
@@ -261,10 +263,18 @@ grep -rEn '@State[^=]+=[^=]+Service\(' $(cat /tmp/mv_audit_files.txt)
 grep -rEn 'final +class +[A-Za-z0-9_]+Service\b' $(cat /tmp/mv_audit_files.txt)
 # For each hit, read 3 lines of context and verify @MainActor and @Observable are present.
 
-# 6. Logic inside View.body (WARNING — heuristic)
-#    `body` blocks containing `try await`, `URLSession`, `JSONDecoder`, persistence:
-grep -rEn 'var body:.*\{|URLSession|JSONDecoder' $(cat /tmp/mv_audit_files.txt)
-# Manually correlate hits inside a `body { … }` span.
+# 6. Logic inside View.body (WARNING)
+#    Use Xcode's navigator when the project is open — the AST-aware
+#    diagnostics catch logic in body without the false positives that grep
+#    over `URLSession` produces (string literals, comments, unrelated code).
+#    Load the MCP schema first:
+#    ToolSearch("select:mcp__xcode__XcodeListNavigatorIssues,mcp__xcode__XcodeRefreshCodeIssuesInFile")
+#
+#    Fall back to grep only when Xcode is not open. The grep below is
+#    deliberately noisy — correlate every hit against an actual `body { … }`
+#    span before reporting; do not include hits inside comments or string
+#    literals.
+grep -rEn 'var body: some View' $(cat /tmp/mv_audit_files.txt)
 
 # 7. Old EnvironmentKey pattern instead of @Entry (SUGGESTION)
 grep -rEn ': *EnvironmentKey\b' $(cat /tmp/mv_audit_files.txt)
@@ -308,8 +318,8 @@ Files scanned: N
 - <list of services missing from AppDependencies or environment>
 ```
 
-Do not propose fixes inline — that's `swift-engineer` or `swift-quality`. The
-architect identifies; the engineer remediates.
+Do not propose fixes inline — that's `swift-engineer`. The architect identifies;
+the engineer remediates.
 
 ---
 
@@ -318,16 +328,19 @@ architect identifies; the engineer remediates.
 | Situation | Use |
 |---|---|
 | About to write a feature inside an MV-shaped project | `swift-engineer` |
-| Need to clean up an existing file without changing behaviour | `swift-quality` |
+| Need to clean up an existing file without changing behaviour | `swift-engineer` (rewrite mode) |
 | Pre-commit / PR review including the live Xcode navigator check | `swift-code-review` |
-| Deep audit beyond MV adherence (testability, layering, concurrency depth) | `swift-audit` |
+| Deep audit beyond MV adherence (testability, layering, concurrency depth) | `/audit-codebase` |
 
 ## References
 
+- For per-subtask discovery notes, hand off to `swift-discovery` — that
+  skill produces the engineer's brief, this one defines the architecture
+  the engineer must conform to.
 - See the in-repo `app:new-service` skill for the project-specific service +
   test scaffolding command. It assumes the MV foundations from this skill are
   already in place.
 - See the in-repo `app:new-screen` skill for the project-specific screen +
   navigation wiring command.
 - For deeper concurrency questions inside services and fetchers, see
-  `swift-concurrency` (conceptual) or `swift-concurrency-expert` (action).
+  `swift-concurrency` (conceptual) or `swift-engineer` (fix concurrency mode — action).

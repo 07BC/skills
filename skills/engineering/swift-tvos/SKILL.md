@@ -322,6 +322,6 @@ Before declaring a tvOS navigation bug fixed, verify:
 - [`references/tooling.md`](references/tooling.md) —
   `_printChanges`, `_whyIsThisViewNotFocusable`, Quick Look, XCUIRemote
 - **`swift-uitest` skill** — writing the XCUITest that verifies the fix
-- **`swift-quality` skill** — patch matches project architecture rules
+- **`swift-engineer` skill** — patch matches project architecture rules (rewrite mode)
 - **`prompt` skill** — writing the Phase 2 and Phase 3 prompts
 - **`learn` skill** — capture new tvOS gotchas at session end

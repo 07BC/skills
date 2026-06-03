@@ -31,7 +31,7 @@ Produces a living `docs/architecture.md` for a Swift/SwiftUI iOS codebase.
 
 **Scope boundary.** This skill *documents* an existing codebase. For
 *scaffolding* a new MV app skeleton or *auditing* an existing one for MVVM
-drift, use `swift-architect` instead.
+drift, use `swift-mv-guardian` instead.
 
 ---
 

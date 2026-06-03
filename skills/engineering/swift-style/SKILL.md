@@ -11,7 +11,7 @@ description: >
   chains, overlay over nested stacks, one-view-per-file, UserDefaults in
   @Observable (access / withMutation), didSet side effects, Sendable
   conformance, typed throws, and data race safety. For auditing or
-  rewriting existing messy code, use swift-quality instead.
+  rewriting existing messy code, use swift-engineer (rewrite mode) instead.
   NOT a standalone skill — loaded as a dependency by swift-engineer and
   swift-code-review. Do not invoke directly.
 ---
@@ -20,7 +20,7 @@ description: >
 
 Write-time rules companion to `swift-engineer`. Every rule here applies
 to **new** Swift and SwiftUI code as it is being generated. For rewriting
-existing messy code in place, use `swift-quality`. For reviewing code
+existing messy code in place, use `swift-engineer` (rewrite mode). For reviewing code
 before commit or PR, use `swift-code-review`.
 
 ## File Header
@@ -360,6 +360,53 @@ defaults.bool(forKey: "isNotificationsEnabled")
 defaults.bool(forKey: Keys.isNotificationsEnabled)
 ```
 
+### `@ObservationIgnored` — only for non-state properties
+
+`@ObservationIgnored` tells the `@Observable` macro to skip tracking a stored
+property. It is **not** related to access control — a `private var` is tracked
+just like any other stored property unless explicitly opted out.
+
+Apply `@ObservationIgnored` only to properties that are infrastructure, not
+state: task handles, cancellables, loggers, and identity constants that views
+should never react to.
+
+```swift
+// ✅ — @ObservationIgnored on infrastructure only
+@Observable
+final class PlayerService {
+  var isPlaying: Bool = false        // tracked — view reacts to this
+  var volume: Float = 1.0            // tracked — private access doesn't matter
+  private var currentTrack: Track?   // tracked — private access doesn't matter
+
+  @ObservationIgnored
+  private var playbackTask: Task<Void, Never>?  // infrastructure handle, not state
+
+  @ObservationIgnored
+  private var cancellable: AnyCancellable?      // side-effect object, not state
+
+  @ObservationIgnored
+  let id = UUID()                               // identity constant, not state
+}
+
+// ❌ — @ObservationIgnored on every private property is noise
+@Observable
+final class PlayerService {
+  @ObservationIgnored private var volume: Float = 1.0   // state — should be tracked
+  @ObservationIgnored private var currentTrack: Track?  // state — should be tracked
+}
+```
+
+Good candidates for `@ObservationIgnored`:
+- `Task` handles (`loadTask`, `retryTask`)
+- `AnyCancellable` / Combine subscriptions
+- Loggers, timers, or other infrastructure objects
+- Identity `let` constants that are never displayed
+
+Bad candidates (leave them tracked):
+- Any `var` that a view might display or react to
+- Any `var` that is part of loading / error / selection state
+- `private var` simply because it is private
+
 ### Avoid didSet with Side Effects
 
 Never use `didSet` property observers for side effects like persistence, networking, or analytics. Use explicit setter methods instead:
@@ -597,8 +644,7 @@ struct AboutView: View {
 
 | Skill | Purpose |
 |---|---|
-| `swift-engineer` | Main feature-building skill (loads this one as a companion) |
-| `swift-quality` | Rewrite existing messy code in place |
+| `swift-engineer` | Main feature-building, rewriting, and editing skill (loads this one as a companion) |
 | `swift-code-review` | BLOCKER / WARNING / SUGGESTION review pass |
 | `swift-concurrency` | Concurrency concepts and patterns |
 | `swift-testing` | Unit-test authoring |
