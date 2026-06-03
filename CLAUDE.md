@@ -23,19 +23,25 @@ The [Target Architecture](docs/target_architecture/README.md) contains the layou
 This repo is installed locally via `make install`. 
 - Skills are symlinked into `~/.claude/skills/`
 - Commands are symlinked into `~/.claude/commands/`
+- Agents are symlinked into `~/.claude/agents/`
 - Hooks are installed into `~/.claude/hooks/`
 
 ## Layout
 
 - Skills live under `skills/<bucket>/<skill-name>/SKILL.md`. Buckets keep the tree organised as it grows.
 - Commands live under `commands/<bucket>/<command-name>.md`. Buckets keep the tree organised as it grows.
+- Agents live under `agents/<name>.md` (flat directory). Symlinked into `~/.claude/agents/` by `make agents`.
 
 - `git/` — generic git workflow: commit, push, PR creation.
 - `engineering/` — Swift, SwiftUI, Xcode, CI, testing, concurrency, architecture, code review.
 - `documentation/` — document-authoring skills: specs, discovery notes, DocC comments, architecture docs, and skill-library ADRs.
 - `obsidian/` — Obsidian vault management, auditing, and knowledge extraction.
 - `personal/` — skills tied to my own setup; **not** in `README.md`, but symlinked locally by `link-skills.sh`.
-- `in-progress/` — drafts not ready to ship; not auto-discovered.
+- `in-progress/` — drafts not ready to ship. NOTE: `link-skills.sh` does NOT currently
+  exclude `in-progress/`, so these skills ARE symlinked and auto-discovered. The ios-*
+  skills (`ios-app-intents`, `ios-debugger-agent`, `ios-ettrace-performance`,
+  `ios-memgraph-leaks`) live here pending a ship-or-consolidate decision. Do not add
+  them to `README.md` without resolving their README/consolidation status first.
 - `deprecated/` — kept for reference; skipped by `link-skills.sh` and not auto-discovered.
 
 Skills are auto-discovered from the `skills/` directory — no manual enumeration needed.

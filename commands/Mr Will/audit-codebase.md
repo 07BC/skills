@@ -73,7 +73,7 @@ user chooses Proceed anyway.
 
 Read the following before doing anything:
 
-1. Apply skill `swift-architect` (read-only; for the target-architecture
+1. Apply skill `swift-mv-guardian` (read-only; for the target-architecture
    summary).
 2. `CLAUDE.md` — follow every linked doc from it.
 3. If `SCOPE=ticket`: the Jira ticket via Atlassian MCP, plus every
@@ -138,6 +138,33 @@ layer-specific file list inlined.
 >
 > Review every file in the layer. Apply the full BLOCKER / WARNING /
 > SUGGESTION checklist per the severity mapping in `swift-code-review`.
+>
+> In addition to the standard checklist, apply these depth checks to every
+> file in scope:
+>
+> **Separation of concerns (Fowler)**
+> - Does each type address a single topic? A View must not own network calls
+>   or data transformation. A service must not format UI strings or know
+>   about Color/UIColor.
+> - Does code that changes frequently (API parsing, feature flags) sit apart
+>   from stable domain logic?
+> - Is there a protocol boundary between business logic and external services?
+>   Direct URLSession in a View or domain type is a violation.
+>
+> **Domain layering**
+> - Does the actual layer structure match the target architecture's intent?
+> - Are Domain types free of infrastructure (`Codable`, `@Model`,
+>   database ids)? External API models used directly as domain models is a
+>   violation.
+> - Does Infrastructure avoid importing Presentation? Does a Service avoid
+>   importing Presentation?
+>
+> **Test suite quality**
+> - Are new tests using Swift Testing (`@Test`, `#expect`, `@Suite`) rather
+>   than XCTest?
+> - Are mocks/fakes in the correct location (not inline in a test file)?
+> - Do tests assert call sequence, not just call count?
+> - Are there tautological tests (always pass regardless of implementation)?
 >
 > Report findings as a **JSON array and nothing after it** — one object per
 > finding — so the orchestrator can parse and merge the layers

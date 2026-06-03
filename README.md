@@ -36,7 +36,7 @@ This repo is the source of truth. It installs via `make install`, which symlinks
 What this library deliberately does **not** cover:
 
 - **Non-Apple platforms.** Swift / SwiftUI / Xcode only — no Android, web, or backend.
-- **UIKit and MVVM.** The skills assume SwiftUI and the MV (Model-View) pattern; `swift-architect` actively flags MVVM as drift.
+- **UIKit and MVVM.** The skills assume SwiftUI and the MV (Model-View) pattern; `swift-mv-guardian` actively flags MVVM as drift.
 - **A general-purpose agent framework.** These are my opinionated workflows, not a reusable toolkit — see the note at the top.
 - **A zero-setup install.** Several skills require external services (see [External dependencies](#external-dependencies)); without them, those skills degrade or stop.
 
@@ -55,13 +55,15 @@ Every skill here is a **phase** in one delivery lifecycle: shape → architect �
 The key idea: **the orchestrators are just the manual pipeline automated.** `/workflow` and `/spec-pipeline` call the same `swift-discovery` → `swift-engineer` → `swift-testing` → `swift-code-review` skills you'd run by hand. Learn the manual skills and you understand what the orchestrators do; reach for an orchestrator when you want the whole chain run for you.
 
 ```
-shape ─► architect ─► discover ─► build ─► test ─► clean ─► review ─► ship
- │           │           │          │       │        │        │        │
-grill-me  swift-     swift-     swift-   swift-   swift-   swift-    swift-pr-gate
-story-to- architect  discovery  engineer testing  quality  code-     git-pr
- spec     swiftopher (per       swiftui- swift-            review
-mr-j      -columbus   subtask)  liquid-  uitest           swift-pre-
-                                glass                      pr-review
+shape ─► architect ─► discover ─► build/clean ─► test ─► review ─► ship
+ │           │           │             │           │        │         │
+grill-me  swift-mv-  swift-       swift-        swift-   swift-    swift-pr-gate
+story-to- guardian   discovery    engineer      testing  code-     git-pr
+ spec     swiftopher (per         (new code,    swift-   review
+mr-j      -columbus   subtask)    rewrites,     uitest   (std or
+                                  migrations,            deep mode)
+                                  concurrency
+                                  fixes)
         └──────────────  /workflow  (one subtask, orchestrated)  ──────────────┘
         └──────────────  /spec-pipeline  (whole ticket, autonomous)  ──────────┘
 ```
@@ -90,23 +92,27 @@ Pin down *what* you're building before any code. `/grill-me` interviews you unti
 
 ### 2. Establish the architecture — once per project, or before a big feature
 
-`/swift-architect` scaffolds a new MV (Model-View) app skeleton, or audits an existing app for MVVM drift. `/swiftopher-columbus` reads the whole codebase and produces a living architecture document — the authority every downstream skill reads. `/swift-mv-guardian` keeps the MV pattern honest as the app grows. Get this right and discovery + engineering have a source of truth to follow.
+`/swift-mv-guardian` scaffolds a new MV (Model-View) app skeleton, or audits an existing app for MVVM drift — keeping the pattern honest as the app grows. `/swiftopher-columbus` reads the whole codebase and produces a living architecture document — the authority every downstream skill reads. Get this right and discovery + engineering have a source of truth to follow.
 
 ### 3. Scope the subtask — before touching code
 
 `/swift-discovery` produces a scoped discovery note for one subtask: which types to touch, which to create, edge cases, patterns to follow, and — crucially — what **not** to touch. It is the engineer's primary input. For multi-subtask stories, `/discovery` (and its `discovery-init` / `discovery-check` / `discovery-audit` skills) maintain a branch-independent architecture-drift store in GitHub issues so the architecture stays coherent across the whole story.
 
-### 4. Build
+### 4. Build & clean
 
-`/swift-engineer` is the main building skill — new Swift 6.2 features, SwiftUI views, services, and async work within the MV pattern (it loads `swift-style` automatically for write-time quality). `/swiftui-liquid-glass` covers the iOS 26+ Liquid Glass API. `/swift-concurrency` explains async/await, actors, and Sendable; `/swift-concurrency-expert` fixes concrete data races and isolation errors. `/swift-tvos` diagnoses Apple TV focus-engine and navigation bugs — always use it rather than guessing.
+`/swift-engineer` is **the single entry point for all Swift writing and editing** — think of it as the **Engineer**. Writing any Swift 6 + SwiftUI is one job: new code, SwiftUI views, services, async work, behaviour-preserving rewrites and clean-ups, `@Observable` migrations from `ObservableObject`/`@Published`, and fixing concrete Swift 6 concurrency errors. There is no separate "clean" or "refactor" skill — those all route here.
+
+> **You don't pick a sub-skill when writing Swift.** `/swift-engineer` auto-applies `/swift-style` (style and Swift 6 rules) and pulls in `/swift-concurrency` (async / actor / Sendable work) and `/swiftui-liquid-glass` (iOS 26+ Liquid Glass UI) automatically as the task needs them. Those three are **parts of the Engineer**, not separate skills you invoke — they appear as their own catalogue rows below only because each is independently useful as a reference (e.g. asking `/swift-concurrency` to *explain* actor isolation without writing code).
+
+`/swift-tvos` diagnoses Apple TV focus-engine and navigation bugs — always use it rather than guessing.
 
 ### 5. Test
 
 `/swift-testing` writes unit tests with Apple's Swift Testing framework (`@Test`, `@Suite`, `#expect`). `/swift-uitest` writes XCUITest UI tests; `/swift-uitest-debug` fixes failing ones via a Sonnet-then-Opus escalation. `/swift-test-all` runs the suite and reports. `/regression-check` audits in-progress changes for blast radius and behavioural ripples before you commit.
 
-### 6. Clean & review
+### 6. Review
 
-`/swift-quality` rewrites code to meet the style guide and architecture rules without changing behaviour. `/swift-code-review` performs an in-session review (BLOCKER / WARNING / SUGGESTION with inline fixes). For high-stakes branches — a new SDK, infrastructure, lifecycle changes — `/swift-pre-pr-review` does a ruthless senior pass and writes a prioritised findings doc. `/swift-deep-audit` audits a whole codebase when you need the big picture.
+`/swift-code-review` reviews existing code without changing it — BLOCKER / WARNING / SUGGESTION findings with inline fixes. Standard mode for any commit or PR; deep/adversarial mode for high-stakes branches (new SDK, infrastructure, lifecycle changes). `/audit-codebase` audits a whole codebase when you need the big picture across all layers.
 
 ### 7. Ship
 
@@ -179,9 +185,8 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/swift-architect](./skills/engineering/swift-architect/SKILL.md) | Scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
+| [/swift-mv-guardian](./skills/engineering/swift-mv-guardian/SKILL.md) | MV architecture guardian — scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
 | [/swiftopher-columbus](./skills/documentation/swiftopher-columbus/SKILL.md) | Produces a thorough, living architecture document for an iOS/macOS Swift codebase — the downstream authority. | Opus · Plan → Execute |
-| [/swift-mv-guardian](./skills/engineering/swift-mv-guardian/SKILL.md) | MV architecture guardian — setup mode or audit mode. Complements swift-architect. | Opus · Plan → Execute |
 
 ### Discover
 
@@ -196,12 +201,12 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/swift-engineer](./skills/engineering/swift-engineer/SKILL.md) | Main building skill — new Swift 6.2 features, SwiftUI views, services, and async work within the MV pattern. | Sonnet · Direct |
-| [/swift-style](./skills/engineering/swift-style/SKILL.md) | Code style, quality rules, and Swift 6 essentials for clean code from the first line. Loaded as a dependency by swift-engineer; not invoked directly. | Sonnet · Orchestrated |
-| [/swiftui-liquid-glass](./skills/engineering/swiftui-liquid-glass/SKILL.md) | Implement, review, or improve SwiftUI features using the iOS 26+ Liquid Glass API. | Sonnet · Direct |
+| [/swift-engineer](./skills/engineering/swift-engineer/SKILL.md) | **THE entry point for all Swift writing and editing** — new Swift 6.2 code, SwiftUI views, services, async work, behaviour-preserving rewrites, `@Observable` migrations, and fixing concrete Swift 6 concurrency errors. Loads `swift-style` automatically. | Sonnet · Direct |
+| [/swift-style](./skills/engineering/swift-style/SKILL.md) | **A part of the Engineer** — code style, quality rules, and Swift 6 essentials. Auto-applied by `/swift-engineer`; never invoked directly. | Sonnet · Orchestrated |
+| [/swiftui-liquid-glass](./skills/engineering/swiftui-liquid-glass/SKILL.md) | **A part of the Engineer** — implement, review, or improve SwiftUI features with the iOS 26+ Liquid Glass API. `/swift-engineer` loads it automatically for Liquid Glass work. | Sonnet · Direct |
 | [/swift-tvos](./skills/engineering/swift-tvos/SKILL.md) | Diagnoses tvOS navigation and focus-engine bugs. Always use this — do not attempt tvOS focus diagnosis ad hoc. | Sonnet · Direct |
-| [/swift-concurrency](./skills/engineering/swift-concurrency/SKILL.md) | Conceptual guidance — async/await, actors, Sendable, Swift 6 migration. Use to learn or explain. | Sonnet · Direct |
-| [/swift-concurrency-expert](./skills/engineering/swift-concurrency-expert/SKILL.md) | Action-oriented — fix concrete concurrency errors, data races, isolation warnings, and Sendable gaps in existing code. | Sonnet · Direct |
+| [/swift-concurrency](./skills/engineering/swift-concurrency/SKILL.md) | **A part of the Engineer** — async/await, actors, Sendable, Swift 6 migration. Auto-loaded by `/swift-engineer` for async work; invoke directly only to *learn or explain* concepts (not to write or fix code). | Sonnet · Direct |
+| [/swiftui-performance-audit](./skills/engineering/swiftui-performance-audit/SKILL.md) | Audit SwiftUI runtime performance from code first — slow rendering, janky scrolling, expensive updates, profiling. | Sonnet · Direct |
 
 ### Test
 
@@ -215,12 +220,11 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 
 ### Clean & review
 
+Behaviour-preserving rewrites and refactors are part of `/swift-engineer` (rewrite mode) — not a separate skill. `/swift-code-review` is for reviewing code without changing it.
+
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/swift-quality](./skills/testing/swift-quality/SKILL.md) | Rewrites code to meet the Swift Style Guide and architecture rules without changing behaviour. | Sonnet · Direct |
-| [/swift-code-review](./skills/engineering/swift-code-review/SKILL.md) | In-session review — BLOCKER / WARNING / SUGGESTION findings with inline fixes. Run before commit or PR. | Opus · Direct |
-| [/swift-pre-pr-review](./skills/engineering/swift-pre-pr-review/SKILL.md) | Ruthless senior pre-PR review for high-stakes branches (new SDK, infra, lifecycle changes). Writes a prioritised findings doc. | Opus · Plan → Execute |
-| [/swift-deep-audit](./skills/engineering/swift-deep-audit/SKILL.md) | Exhaustive whole-codebase audit — Swift 6 concurrency, separation of concerns, state management, test quality. | Opus · Plan → Execute |
+| [/swift-code-review](./skills/engineering/swift-code-review/SKILL.md) | Reviews existing code — BLOCKER / WARNING / SUGGESTION with inline fixes. Two modes: (1) standard diff review before commit/PR; (2) adversarial deep mode for high-stakes branches (new SDK, infra, lifecycle). Do not use for writing or rewriting — use `/swift-engineer`. | Opus · Direct |
 
 ### Ship — git, gate & CI
 

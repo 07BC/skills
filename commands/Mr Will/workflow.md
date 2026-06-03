@@ -286,7 +286,7 @@ Spawn `model: SUBAGENT_MODEL, mode: normal` with the prompt below.
 > implement around it.
 >
 > For Swift 6 isolation errors that aren't trivially resolvable inline,
-> apply skill `swift-concurrency-expert` on the affected file.
+> apply skill `swift-engineer` (fix concurrency mode) on the affected file.
 >
 > Build must pass with zero errors and zero warnings. Prefer the MCP Xcode
 > tools when Xcode is open:
@@ -403,7 +403,7 @@ If tests fail:
 
 Spawn `model: SUBAGENT_MODEL, mode: normal` with the prompt below.
 
-> Apply skill `swift-quality` to every implementation file from Phase 4.
+> Apply skill `swift-engineer` (rewrite mode) to every implementation file from Phase 4.
 > Do NOT touch test files authored in Phase 5.
 >
 > [context bundle]
