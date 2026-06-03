@@ -1,18 +1,21 @@
-.PHONY: all help install uninstall link unlink commands unlink-commands hook unlink-hooks test-python venv test
+.PHONY: all help install uninstall link unlink commands unlink-commands agents unlink-agents hook unlink-hooks test-python venv test
 
-HOOKS_DEST  := $(HOME)/.claude/hooks
-SKILLS_DEST := $(HOME)/.claude/skills
+HOOKS_DEST    := $(HOME)/.claude/hooks
+SKILLS_DEST   := $(HOME)/.claude/skills
 COMMANDS_DEST := $(HOME)/.claude/commands
+AGENTS_DEST   := $(HOME)/.claude/agents
 
 help:
 	@echo "Targets:"
-	@echo "  install          full install — skills, commands, hooks"
-	@echo "  link             refresh skill symlinks in ~/.claude/skills/"
+	@echo "  install          full install — skills, commands, agents, hooks"
+	@echo "  link             prune stale, then refresh skill symlinks in ~/.claude/skills/"
 	@echo "  unlink           remove skill symlinks from ~/.claude/skills/ that point into this repo"
-	@echo "  commands         refresh command symlinks in ~/.claude/commands/"
+	@echo "  commands         prune stale, then refresh command symlinks in ~/.claude/commands/"
 	@echo "  unlink-commands  remove command symlinks from ~/.claude/commands/ that point into this repo"
-	@echo "  uninstall        remove all skill, command, and hook symlinks from ~/.claude/"
-	@echo "  hook             install hooks from hooks/ to ~/.claude/hooks/"
+	@echo "  agents           prune stale, then refresh agent symlinks in ~/.claude/agents/"
+	@echo "  unlink-agents    remove agent symlinks from ~/.claude/agents/ that point into this repo"
+	@echo "  uninstall        remove all skill, command, agent, and hook symlinks from ~/.claude/"
+	@echo "  hook             install hooks from hooks/ to ~/.claude/hooks/ and register in settings.json"
 	@echo "  unlink-hooks     remove hook symlinks from ~/.claude/hooks/ that point into this repo"
 	@echo "  test             run all tests"
 	@echo "  test-python      run Python script tests"
@@ -20,15 +23,18 @@ help:
 
 test: test-python
 
-install: link commands hook
+install: link commands agents hook
 
-uninstall: unlink unlink-commands unlink-hooks
+uninstall: unlink unlink-commands unlink-agents unlink-hooks
 
 link:
 	@bash scripts/link-skills.sh
 
 commands:
 	@bash scripts/link-commands.sh
+
+agents:
+	@bash scripts/link-agents.sh
 
 unlink:
 	@REPO="$$(cd . && pwd)"; \
@@ -48,6 +54,15 @@ unlink-commands:
 	  esac; \
 	done
 
+unlink-agents:
+	@REPO="$$(cd . && pwd)"; \
+	find "$(AGENTS_DEST)" -maxdepth 1 -type l | while read -r sym; do \
+	  target="$$(readlink "$$sym")"; \
+	  case "$$target" in \
+	    "$$REPO"/agents/*) rm "$$sym" && echo "removed $$(basename $$sym)";; \
+	  esac; \
+	done
+
 unlink-hooks:
 	@REPO="$$(cd . && pwd)"; \
 	find "$(HOOKS_DEST)" -maxdepth 1 -type l | while read -r sym; do \
@@ -58,14 +73,7 @@ unlink-hooks:
 	done
 
 hook:
-	@mkdir -p $(HOOKS_DEST)
-	@REPO="$$(cd . && pwd)"; \
-	for f in hooks/*; do \
-	  name=$$(basename "$$f"); \
-	  case "$$name" in *.md|*.json) continue;; esac; \
-	  ln -sfn "$$REPO/$$f" "$(HOOKS_DEST)/$$name"; \
-	  echo "linked $$name -> $(HOOKS_DEST)/$$name"; \
-	done
+	@bash scripts/link-hooks.sh
 	@bash scripts/register-hooks.sh
 
 venv:
