@@ -27,9 +27,18 @@ A library of Claude Code **skills** and **commands** for shipping Swift / SwiftU
 
 Claude Code's skill system lets you encode domain expertise into focused `SKILL.md` files rather than burying everything in a monolithic `CLAUDE.md`. Each skill is a self-contained module that tells Claude exactly how to approach a specific class of task — what to check, what to avoid, which model to reach for, and what a good outcome looks like.
 
-Without skills, Claude pattern-matches on its training data. That works for generic tasks but falls apart for domain-specific ones. `swift-tvos` exists because tvOS focus-engine bugs are a case where Claude confidently shuffles code around and declares the bug fixed when nothing changed — the skill enforces the diagnostic discipline that prevents it. `swift-engineer` locks in the MV (Model-View) pattern rather than defaulting to MVVM. `swift-code-review` knows to check Swift 6 concurrency, actor isolation, and `@unchecked Sendable` — not just style.
+Without skills, Claude pattern-matches on its training data. That works for generic tasks but falls apart for domain-specific ones. `swift-tvos` exists because — in my experience — tvOS focus-engine bugs are a case where Claude pattern-matches the symptom, shuffles code around, and declares the bug fixed when nothing changed; the skill enforces the diagnostic discipline that prevents it. `swift-engineer` locks in the MV (Model-View) pattern rather than defaulting to MVVM. `swift-code-review` knows to check Swift 6 concurrency, actor isolation, and `@unchecked Sendable` — not just style.
 
 This repo is the source of truth. It installs via `make install`, which symlinks skills into `~/.claude/skills/` and commands into `~/.claude/commands/`.
+
+### Out of scope
+
+What this library deliberately does **not** cover:
+
+- **Non-Apple platforms.** Swift / SwiftUI / Xcode only — no Android, web, or backend.
+- **UIKit and MVVM.** The skills assume SwiftUI and the MV (Model-View) pattern; `swift-architect` actively flags MVVM as drift.
+- **A general-purpose agent framework.** These are my opinionated workflows, not a reusable toolkit — see the note at the top.
+- **A zero-setup install.** Several skills require external services (see [External dependencies](#external-dependencies)); without them, those skills degrade or stop.
 
 ---
 
@@ -39,7 +48,7 @@ Every skill here is a **phase** in one delivery lifecycle: shape → architect �
 
 | Altitude | You run | What happens | When to use |
 |---|---|---|---|
-| **Full-auto** | `/spec-pipeline TICKET` | A whole ticket → PR, autonomously, in a disposable git worktree (60–90 min, hands-off). Splits oversized tickets first. | A well-specified ticket you want built end-to-end without babysitting. |
+| **Full-auto** | `/spec-pipeline TICKET` | A whole ticket → PR, autonomously, in a disposable git worktree (unattended; ~60–90 min in practice — an estimate, not a guarantee). Splits tickets the scope-guardian judges too large for one run before starting. | A well-specified ticket you want built end-to-end without babysitting. |
 | **Orchestrated** | `/workflow SUBTASK` | One subtask → PR, with the orchestrator (Opus) deciding and subagents (Sonnet) executing each phase, plus GitHub architecture-drift tracking across the story. | A single scoped subtask where you want control points and architecture tracking. |
 | **Manual** | the skills below, one at a time | You drive each phase yourself: `/swift-discovery`, `/swift-engineer`, `/swift-testing`, `/swift-code-review`, `/git-pr`. | Exploratory work, learning, or anything where you want to see each step. |
 
@@ -119,6 +128,18 @@ Pin down *what* you're building before any code. `/grill-me` interviews you unti
 
 > [!IMPORTANT]
 > The Python that ships with Xcode tools is unreliable. Install Python via brew.
+
+### External dependencies
+
+The core build/review skills work with Claude Code alone. Others depend on external services — without them, those skills degrade or stop rather than failing silently. Wire up the ones whose skills you intend to use.
+
+| Dependency | Owner | Skills that need it | If absent |
+|---|---|---|---|
+| **Atlassian MCP** | Atlassian (connected in Claude Code) | `story-to-spec`, `discovery-jira`, `jira-bulk`, `/workflow`, `/spec-pipeline` (Jira input) | Jira input/lifecycle steps stop; use spec/prompt input instead |
+| **GitHub `gh` CLI** | GitHub (authenticated locally) | `git-pr`, `/discovery`, `/workflow` (architecture-drift tracking) | PR creation and issue tracking stop |
+| **Obsidian CLI + a vault** | local (`obsidian` CLI, `$OBSIDIAN_VAULT`) | `daily-notes`, `obsidian-*`, and all `PLANS_DIR` artefacts | vault skills stop; plans/discovery notes have nowhere to land |
+| **XcodeBuildMCP** | local MCP server | `xcodebuildmcp-cli`, build/test phases when Xcode isn't open | falls back to raw `xcodebuild` |
+| **Context7 MCP** | local MCP server | library-docs lookups inside several skills | skills proceed on training data, which may be stale |
 
 ### Steps
 
@@ -257,7 +278,7 @@ Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code
 | Command | What it does |
 |---|---|
 | `/workflow` | One subtask → PR — Jira / spec / prompt → discovery → engineer → test → quality → review → PR, with GitHub architecture-drift tracking across the story. |
-| `/spec-pipeline` | (skill) Whole ticket → PR, autonomously, in a disposable worktree. Splits oversized tickets first. |
+| `/spec-pipeline` | (skill) Whole ticket → PR, autonomously, in a disposable worktree. Splits tickets too large for one run first. |
 | `/audit-codebase` | Structured codebase audit — per-layer Sonnet subagents apply `swift-code-review`, findings consolidated and prioritised into remediation batches ready to feed `/workflow`. |
 | `/uitest-pipeline` | End-to-end XCUITest pipeline — AC intake → plan → execute → debug → PR artefacts. |
 | `/discovery` | Standalone architecture tracking — set up the GitHub master issue + sub-issues, check drift, or import an existing arch doc when subtasks already exist. |
@@ -269,9 +290,22 @@ Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code
 Both `/workflow` and `/spec-pipeline` take a Jira ticket, spec, or prompt to a PR, but they are deliberately distinct tools (see [ADR 0003](./docs/adr/0003-workflow-and-spec-pipeline-are-distinct-aligned-tools.md)):
 
 - **`/workflow`** — drives **one subtask** in-place on a branch, wired into GitHub architecture-drift tracking (`/discovery-init` · `/discovery-check` · `/discovery-audit`) and the JIRA subtask lifecycle. Reach for it when implementing a single scoped subtask and you want architecture tracking across the story.
-- **`/spec-pipeline`** — ships a **whole spec** of many tasks autonomously in a disposable worktree (a 60–90 min unattended run). Reach for it when you want an entire ticket built end-to-end, hands-off.
+- **`/spec-pipeline`** — ships a **whole spec** of many tasks autonomously in a disposable worktree (an unattended run, ~60–90 min in practice). Reach for it when you want an entire ticket built end-to-end, hands-off.
 
 `/audit-codebase` finds the work and emits batches that `/workflow` then implements one at a time. `/uitest-pipeline` is the UI-test specialisation of the same orchestrator shape.
+
+---
+
+## When a run fails
+
+The orchestrators are built to **halt and report, not to push through a broken state** — so recovery is always possible.
+
+- **A phase fails** (build broken, tests red, review blocked): the orchestrator retries within that phase's budget, then halts. It does not continue to the next phase on a failure.
+- **On halt**: it writes a blocked report to `PLANS_DIR` naming the failing phase and reason. For `/spec-pipeline`, the disposable worktree is **preserved** (never auto-removed) so you can inspect it; resume by re-invoking the same command, which picks up where it left off.
+- **A subagent crashes** (no usable result, socket dropped): handled by `subagent-reliability` — recover-in-place, resume, or re-spawn — without burning the phase's retry budget.
+- **Install / symlink trouble**: `make install` is idempotent — re-run it. If `~/.claude/skills` was created as a real directory rather than a symlink farm, `make link` reports it; remove the offending entry and re-run.
+
+If a long unattended run appears to stop mid-flight with no message (context growth at a turn boundary), type `continue` — it resumes from the last completed phase.
 
 ---
 
