@@ -7,7 +7,7 @@ description: >
   implementation and the engineer needs to know exactly which types to touch,
   which edge cases to handle, and which patterns to follow — without re-reading
   the full architecture docs themselves. Do NOT use this skill for full codebase
-  audits or architecture documentation — use swift-architect for those.
+  audits or architecture documentation — use swift-mv-guardian for those.
 ---
 
 # Swift Discovery Skill
@@ -23,7 +23,7 @@ not need to re-read the full architecture docs themselves.
 ## What this skill does NOT do
 
 - Does not write implementation code
-- Does not produce a full architecture document (use `swift-architect` for that)
+- Does not produce a full architecture document (use `swift-mv-guardian` for that)
 - Does not audit the codebase (use `audit-codebase` for that)
 - Does not make implementation decisions — it surfaces constraints and edge
   cases so the engineer can make informed decisions

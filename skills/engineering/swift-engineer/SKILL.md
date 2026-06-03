@@ -1,6 +1,21 @@
 ---
 name: swift-engineer
-description: Main skill for building features in a Swift/SwiftUI MV (Model-View) app — writes new Swift 6.2 code, SwiftUI views, services, tests, and async work. Use when implementing new features, screens, services, or test suites. For setting up a new app or auditing an existing app for MV-pattern adherence, use swift-architect. For reviewing code before commit/PR, use swift-code-review. For rewriting existing code without behaviour changes, use swift-quality. Triggers on Swift files (.swift), Xcode projects, SwiftUI components, or questions about Swift best practices.
+description: >
+  THE entry point for writing, editing, or rewriting Swift/SwiftUI in an MV
+  (Model-View) app — new Swift 6.2 code, SwiftUI views, services, async work,
+  AND behaviour-preserving rewrites: cleaning up messy code, refactoring for
+  readability, and migrating a legacy ObservableObject/@Published type to the
+  @Observable MV form ("convert to @Observable", "clean this up", "refactor",
+  "make this readable"). Also fixes concrete Swift 6 concurrency errors, data
+  races, actor-isolation warnings, and Sendable gaps in existing code. This is
+  the single "Engineer" — writing any Swift 6 + SwiftUI is one job. You never
+  pick a sub-skill for it: it auto-applies swift-style (always) and pulls in
+  swift-concurrency (async / actor / Sendable work) and swiftui-liquid-glass
+  (iOS 26+ Liquid Glass UI) automatically as the task needs them. Triggers on
+  .swift files, Xcode projects, SwiftUI components, or any request to
+  write/change Swift. For setting up a NEW app or auditing MV adherence, use
+  swift-mv-guardian. To REVIEW code without changing it, use swift-code-review.
+  To write tests, use swift-testing.
 ---
 
 # Swift Engineering
@@ -13,7 +28,7 @@ write new Swift 6.2 code, SwiftUI views, services, tests, and async work
 > `@MainActor @Observable` and views observe them directly via
 > `@Environment` / `@Bindable`. No `ObservableObject`, no `@Published`,
 > no `*ViewModel` types. For app setup or MV-adherence audits, hand off to
-> `swift-architect`.
+> `swift-mv-guardian`.
 
 ## Required Companion Skills
 
@@ -24,8 +39,12 @@ Before writing any Swift code, load this skill:
   rule in that skill when generating new code.
 - Read skill `swift-mv-guardian` -- MV architecture rules and anti-patterns. Apply every rule when
   generating new code.
-- Load `swift-testing` when writing tests, and `swift-concurrency` when
-adding async / actor / Sendable work.
+- Load `swift-testing` when writing tests, `swift-concurrency` when
+  adding async / actor / Sendable work, and `swiftui-liquid-glass` when
+  building or adopting iOS 26+ Liquid Glass UI.
+
+These companions are **parts of the Engineer**, not separate skills the user
+invokes — load them yourself as the task needs them.
 
 ## Build vs SourceKit — truth source
 
@@ -406,24 +425,153 @@ comparison against an HTTP response code). Use a plain enum with static
 lets only when the values are heterogeneous and cannot share a raw type.
 
 
+## SwiftUI View Structure
+
+### View member ordering (top to bottom)
+
+Enforce this ordering in every view file:
+1. `@Environment` properties
+2. `private`/`public` `let` stored properties
+3. `@State` and other stored properties
+4. Computed `var` (non-view)
+5. `init`
+6. `body`
+7. Computed view builders and other view helpers
+8. Helper/async functions
+
+### Prefer dedicated subview types over computed helpers
+
+Extract dedicated `View` types for non-trivial sections (body > ~50 lines or body with multiple logical sections). Keep computed `some View` helpers rare and small. Pass explicit, minimal inputs into extracted subviews — not the entire parent state.
+
+```swift
+// Prefer this
+struct ContentView: View {
+    var body: some View {
+        List {
+            HeaderSection(title: title)
+            ResultsSection(items: items)
+        }
+    }
+}
+
+private struct HeaderSection: View {
+    let title: String
+    var body: some View { Text(title) }
+}
+
+// Avoid this
+var body: some View {
+    List {
+        header
+        results
+    }
+}
+private var header: some View { Text(title) }
+```
+
+### Stable view tree
+
+Avoid `body` that returns completely different root branches via `if/else`. Prefer a single stable base with conditions inside sections/modifiers (`overlay`, `opacity`, `disabled`, `toolbar`). Root-level branch swapping causes identity churn and broader invalidation.
+
+### Extract actions and side effects from body
+
+Do not keep non-trivial button actions or business logic inline in `body`. Move logic into services/models and call thin private methods from the view. The `body` should read like UI, not like a view controller.
+
+### Large-view handling
+
+When a view file exceeds ~300 lines, split aggressively. Extract meaningful sections into dedicated `View` types. Use `private` extensions with `// MARK: -` for actions and helpers but do not use extensions as a substitute for breaking a giant screen into smaller view types.
+
+### State ownership (quick reference)
+
+| Scenario | Pattern |
+|---|---|
+| Local UI state owned by one view | `@State` |
+| Child mutates parent-owned value state | `@Binding` |
+| Root-owned reference model (iOS 17+) | `@State` with `@Observable` type |
+| Shared app service | `@Environment(Type.self)` |
+| Legacy (iOS 16 and earlier) | `@StateObject` at root, `@ObservedObject` when injected |
+
+### Sheets
+
+Prefer `.sheet(item:)` over `.sheet(isPresented:)` when state represents a selected model. Avoid `if let` inside a sheet body. Sheets should own their actions and call `dismiss()` internally.
+
 ## Swift Testing
 > See `swift-testing` for all unit-test authoring patterns.
 
 ## Structured Concurrency
-> See `swift-concurrency` (concepts) or `swift-concurrency-expert` (fixes).
+> See `swift-concurrency` (conceptual) or the "Fix concurrency in existing code" mode below (hands-on fixes).
 
 ## Code Quality & Style
 > See `swift-style` for method length, parameter count, naming, guard
 > patterns, UserDefaults in `@Observable`, didSet, switch over if-else,
 > overlay vs nested stacks, one-view-per-file, and all other style rules.
 
+## Rewrite and migrate (no behaviour change)
+
+Use this mode when asked to: "rewrite this", "clean this up", "this is hard to read", "poor structure", "refactor", "convert this ObservableObject to @Observable", "migrate this view model to @Observable".
+
+**Hard rule: this mode does not change public API surfaces, protocol conformances, or method signatures. It does not change behaviour.**
+
+### Process
+
+1. Read the file in full before touching anything. Understand what it does and identify every public API surface.
+2. Identify violations against the rules in `swift-style`.
+3. Apply all fixes. Build. Verify zero errors and zero warnings.
+4. Confirm the public API surface is identical before and after. Run tests if they exist.
+
+### Migrating `ObservableObject` to `@Observable`
+
+The MV architecture forbids `ObservableObject` and `@Published`. Converting a legacy type is a behaviour-preserving rewrite.
+
+Mechanical steps:
+1. `import Observation`.
+2. Drop `: ObservableObject`; add `@Observable` macro to the type.
+3. Remove every `@Published` — stored properties are tracked automatically.
+4. Mark infrastructure properties `@ObservationIgnored` (task handles, cancellables, loggers, identity constants). Never blanket-annotate every `private var`.
+5. Update call sites: `@StateObject` → `@State`, `@ObservedObject` → plain `let` / `@Bindable` only where a two-way binding is needed, `@EnvironmentObject` → `@Environment`.
+
+```swift
+// Before (legacy)
+final class SearchModel: ObservableObject {
+    @Published var query = ""
+    @Published private(set) var results: [Result] = []
+    private var searchTask: Task<Void, Never>?
+}
+
+// After (@Observable)
+import Observation
+
+@MainActor @Observable
+final class SearchModel {
+    var query = ""
+    private(set) var results: [Result] = []
+
+    @ObservationIgnored
+    private var searchTask: Task<Void, Never>?
+}
+```
+
+## Fix concurrency in existing code
+
+Use this mode when asked to fix, resolve, or remediate: Swift 6 concurrency compiler errors, data race diagnostics, actor isolation warnings, Sendable conformance gaps, or when migrating completion handlers to async/await in existing code.
+
+### Diagnostic procedure
+
+1. **Triage** — Capture the exact compiler diagnostics and the offending symbol(s). Check: Swift language version (6.2+), strict concurrency level, whether approachable concurrency is enabled, current actor context, whether code is UI-bound.
+2. **Apply the smallest safe fix** — Preserve existing behaviour while satisfying data-race safety.
+   - UI-bound types: annotate the type or relevant members with `@MainActor`.
+   - Protocol conformance on `@MainActor` types: `extension Foo: @MainActor SomeProtocol`.
+   - Global/static state: protect with `@MainActor` or move into an `actor`.
+   - Background work: use a `@concurrent` async function or a `nonisolated` type.
+   - Sendable errors: prefer immutable/value types; add `Sendable` only when correct; avoid `@unchecked Sendable` unless you can prove thread safety.
+3. **Verify** — Rebuild, confirm all diagnostics resolved with no new warnings, run tests.
+4. **Iterate** — If the fix surfaces new warnings, treat each as a fresh triage.
+
+For conceptual explanations of Swift concurrency (async/await, actors, Sendable), use `swift-concurrency` instead.
+
 ## Reviewing code
 
-This skill is for **writing** new Swift. For reviewing existing code before a
-commit or PR — including the full BLOCKER / WARNING / SUGGESTION pass and the
-live Xcode navigator check — use the `swift-code-review` skill instead. It
-loads this skill plus `swift-testing` and `swift-concurrency` and applies a
-concrete checklist.
+This skill is for **writing, rewriting, and editing** Swift. For reviewing existing code before a commit or PR — including the full BLOCKER / WARNING / SUGGESTION pass and the live Xcode navigator check — use the `swift-code-review` skill instead. It loads this skill plus `swift-testing` and `swift-concurrency` and applies a concrete checklist.
 
 ## References
 
@@ -439,7 +587,7 @@ query Context7 with these library IDs (use `mcp__context7__query-docs`):
 For topic-specific guidance, hand off to the dedicated skill:
 
 - **Style & quality (write-time)** — `swift-style`
-- **Rewriting / clean-up** — `swift-quality`
-- **Concurrency** — `swift-concurrency` (conceptual) or `swift-concurrency-expert` (hands-on fixes)
+- **Rewriting / clean-up / @Observable migration** — use the "Rewrite and migrate" mode above
+- **Concurrency (conceptual)** — `swift-concurrency`
 - **Testing** — `swift-testing`
 - **Liquid Glass** — `swiftui-liquid-glass`

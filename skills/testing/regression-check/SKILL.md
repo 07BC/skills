@@ -109,7 +109,7 @@ Do not move on from this step by writing "no concurrency surface" unless you hav
 
 **Step 4 thoroughness checklist.** Tick each item before declaring
 "no concurrency surface". For deeper analysis on any flagged item,
-apply skill `swift-concurrency-expert` on the specific file.
+apply skill `swift-engineer` (fix concurrency mode) on the specific file.
 
 - [ ] Every new closure / `Task` captured value is `Sendable` (or
   documented otherwise)
