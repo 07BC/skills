@@ -20,7 +20,25 @@ fi
 
 mkdir -p "$DEST"
 
-find "$REPO/commands" -name "*.md" -not -path '*/deprecated/*' -print0 |
+echo "== Commands =="
+
+linked=0
+pruned=0
+
+# Prune stale symlinks pointing into this repo whose targets no longer exist.
+while IFS= read -r sym; do
+  target="$(readlink "$sym")"
+  case "$target" in
+    "$REPO"/commands/*)
+      if [ ! -e "$sym" ]; then
+        rm "$sym"
+        printf "  pruned: %s\n" "$(basename "$sym")"
+        pruned=$((pruned + 1))
+      fi
+      ;;
+  esac
+done < <(find "$DEST" -maxdepth 1 -type l)
+
 while IFS= read -r -d '' cmd_md; do
   name="$(basename "$cmd_md")"
   target="$DEST/$name"
@@ -30,5 +48,8 @@ while IFS= read -r -d '' cmd_md; do
   fi
 
   ln -sfn "$cmd_md" "$target"
-  echo "linked $name -> $cmd_md"
-done
+  printf "  %s\n" "$name"
+  linked=$((linked + 1))
+done < <(find "$REPO/commands" -name "*.md" -not -path '*/deprecated/*' -print0)
+
+echo "  [$linked linked, $pruned pruned]"

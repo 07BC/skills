@@ -22,7 +22,25 @@ fi
 
 mkdir -p "$DEST"
 
-find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -print0 |
+echo "== Skills =="
+
+linked=0
+pruned=0
+
+# Prune stale symlinks pointing into this repo whose targets no longer exist.
+while IFS= read -r sym; do
+  target="$(readlink "$sym")"
+  case "$target" in
+    "$REPO"/skills/*)
+      if [ ! -e "$sym" ]; then
+        rm "$sym"
+        printf "  pruned: %s\n" "$(basename "$sym")"
+        pruned=$((pruned + 1))
+      fi
+      ;;
+  esac
+done < <(find "$DEST" -maxdepth 1 -type l)
+
 while IFS= read -r -d '' skill_md; do
   src="$(dirname "$skill_md")"
   name="$(basename "$src")"
@@ -33,12 +51,14 @@ while IFS= read -r -d '' skill_md; do
   fi
 
   ln -sfn "$src" "$target"
-  echo "linked $name -> $src"
-done
+  printf "  %s\n" "$name"
+  linked=$((linked + 1))
+done < <(find "$REPO/skills" -name SKILL.md -not -path '*/node_modules/*' -not -path '*/deprecated/*' -print0)
 
-# Link shared _lib directories so scripts can resolve ../../_lib at runtime
-find "$REPO/skills" -type d -name "_lib" -not -path '*/deprecated/*' -print0 |
+# Link shared _lib directories so scripts can resolve ../../_lib at runtime.
 while IFS= read -r -d '' lib_dir; do
   ln -sfn "$lib_dir" "$DEST/_lib"
-  echo "linked _lib -> $lib_dir"
-done
+  printf "  _lib\n"
+done < <(find "$REPO/skills" -type d -name "_lib" -not -path '*/deprecated/*' -print0)
+
+echo "  [$linked linked, $pruned pruned]"
