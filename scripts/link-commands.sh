@@ -20,7 +20,9 @@ fi
 
 mkdir -p "$DEST"
 
-echo "== Commands =="
+BOLD='\033[1m'; CYAN='\033[1;36m'; YELLOW='\033[33m'; GREEN='\033[32m'; RESET='\033[0m'
+
+printf "${CYAN}${BOLD}⌘ Commands${RESET}\n"
 
 linked=0
 pruned=0
@@ -32,7 +34,7 @@ while IFS= read -r sym; do
     "$REPO"/commands/*)
       if [ ! -e "$sym" ]; then
         rm "$sym"
-        printf "  pruned: %s\n" "$(basename "$sym")"
+        printf "  ${YELLOW}🗑️  pruned: %s${RESET}\n" "$(basename "$sym")"
         pruned=$((pruned + 1))
       fi
       ;;
@@ -52,4 +54,4 @@ while IFS= read -r -d '' cmd_md; do
   linked=$((linked + 1))
 done < <(find "$REPO/commands" -name "*.md" -not -path '*/deprecated/*' -print0)
 
-echo "  [$linked linked, $pruned pruned]"
+printf "  ${GREEN}✅ %d linked, %d pruned${RESET}\n" "$linked" "$pruned"

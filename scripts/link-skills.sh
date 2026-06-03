@@ -22,7 +22,9 @@ fi
 
 mkdir -p "$DEST"
 
-echo "== Skills =="
+BOLD='\033[1m'; CYAN='\033[1;36m'; YELLOW='\033[33m'; GREEN='\033[32m'; RESET='\033[0m'
+
+printf "${CYAN}${BOLD}📚 Skills${RESET}\n"
 
 linked=0
 pruned=0
@@ -34,7 +36,7 @@ while IFS= read -r sym; do
     "$REPO"/skills/*)
       if [ ! -e "$sym" ]; then
         rm "$sym"
-        printf "  pruned: %s\n" "$(basename "$sym")"
+        printf "  ${YELLOW}🗑️  pruned: %s${RESET}\n" "$(basename "$sym")"
         pruned=$((pruned + 1))
       fi
       ;;
@@ -61,4 +63,4 @@ while IFS= read -r -d '' lib_dir; do
   printf "  _lib\n"
 done < <(find "$REPO/skills" -type d -name "_lib" -not -path '*/deprecated/*' -print0)
 
-echo "  [$linked linked, $pruned pruned]"
+printf "  ${GREEN}✅ %d linked, %d pruned${RESET}\n" "$linked" "$pruned"

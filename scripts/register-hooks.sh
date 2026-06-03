@@ -21,8 +21,10 @@ upsert() {
     '(.hooks[$event] // []) | map(select(.hooks[] | .command == $cmd)) | length > 0' \
     "$SETTINGS")
 
+  local GREEN='\033[32m'; local DIM='\033[2m'; local RESET='\033[0m'
+
   if [[ "$exists" == "true" ]]; then
-    echo "  already registered: $cmd ($event)"
+    printf "  ${DIM}↩  already registered: %s (%s)${RESET}\n" "$cmd" "$event"
     return
   fi
 
@@ -32,10 +34,10 @@ upsert() {
     '.hooks[$event] = ((.hooks[$event] // []) + [$entry])' \
     "$SETTINGS" > "$tmp"; then
     mv "$tmp" "$SETTINGS"
-    echo "  registered: $cmd ($event)"
+    printf "  ${GREEN}✅ registered: %s (%s)${RESET}\n" "$cmd" "$event"
   else
     rm -f "$tmp"
-    echo "  jq failed registering: $cmd ($event)" >&2
+    printf "  ❌ jq failed registering: %s (%s)\n" "$cmd" "$event" >&2
     return 1
   fi
 }

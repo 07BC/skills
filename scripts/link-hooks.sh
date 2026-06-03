@@ -9,7 +9,9 @@ DEST="$HOME/.claude/hooks"
 
 mkdir -p "$DEST"
 
-echo "== Hooks =="
+BOLD='\033[1m'; CYAN='\033[1;36m'; GREEN='\033[32m'; RESET='\033[0m'
+
+printf "${CYAN}${BOLD}🪝 Hooks${RESET}\n"
 
 linked=0
 
@@ -21,4 +23,4 @@ for f in "$REPO/hooks"/*; do
   linked=$((linked + 1))
 done
 
-echo "  [$linked linked]"
+printf "  ${GREEN}✅ %d linked${RESET}\n" "$linked"
