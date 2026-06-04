@@ -281,6 +281,7 @@ Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code
 
 | Command | What it does |
 |---|---|
+| `/solve` | Diagnostic + solution-design panel — a bug / architecture problem → understand → fan out competing fixes → converge on one approved approach, ready to feed `/workflow`. Stops at the plan; never writes code. |
 | `/workflow` | One subtask → PR — Jira / spec / prompt → discovery → engineer → test → quality → review → PR, with GitHub architecture-drift tracking across the story. |
 | `/spec-pipeline` | (skill) Whole ticket → PR, autonomously, in a disposable worktree. Splits tickets too large for one run first. |
 | `/audit-codebase` | Structured codebase audit — per-layer Sonnet subagents apply `swift-code-review`, findings consolidated and prioritised into remediation batches ready to feed `/workflow`. |
@@ -296,7 +297,7 @@ Both `/workflow` and `/spec-pipeline` take a Jira ticket, spec, or prompt to a P
 - **`/workflow`** — drives **one subtask** in-place on a branch, wired into GitHub architecture-drift tracking (`/discovery-init` · `/discovery-check` · `/discovery-audit`) and the JIRA subtask lifecycle. Reach for it when implementing a single scoped subtask and you want architecture tracking across the story.
 - **`/spec-pipeline`** — ships a **whole spec** of many tasks autonomously in a disposable worktree (an unattended run, ~60–90 min in practice). Reach for it when you want an entire ticket built end-to-end, hands-off.
 
-`/audit-codebase` finds the work and emits batches that `/workflow` then implements one at a time. `/uitest-pipeline` is the UI-test specialisation of the same orchestrator shape.
+`/audit-codebase` finds the work and emits batches that `/workflow` then implements one at a time. `/solve` sits one step earlier: when you have a single bug or architecture problem but *not yet a fix*, it diagnoses and designs the approach, then hands the approved plan to `/workflow`. `/uitest-pipeline` is the UI-test specialisation of the same orchestrator shape.
 
 ---
 
@@ -317,7 +318,7 @@ If a long unattended run appears to stop mid-flight with no message (context gro
 
 The library follows a few documented conventions, all enforced or recorded:
 
-- **Orchestrator contract** — every orchestrator (`workflow`, `uitest-pipeline`, `audit-codebase`, `spec-pipeline`) shares one structure: variables block, model declaration, preflight, phase gates, halt conditions, and a state-placement convention. See [`docs/orchestrator-contract.md`](./docs/orchestrator-contract.md). `tests/python/test_orchestrator_conformance.py` enforces it.
+- **Orchestrator contract** — every orchestrator (`workflow`, `uitest-pipeline`, `audit-codebase`, `solve`, `spec-pipeline`) shares one structure: variables block, model declaration, preflight, phase gates, halt conditions, and a state-placement convention. See [`docs/orchestrator-contract.md`](./docs/orchestrator-contract.md). `tests/python/test_orchestrator_conformance.py` enforces it.
 - **Skill species** — skills are **executor** (default; auto-fires), **policy** (cited by orchestrators, never auto-fires — `disable-model-invocation: true`), or **dependency** (loaded by another skill — `user-invocable: false`). See the "Skill species" section in [`CLAUDE.md`](./CLAUDE.md); `tests/python/test_skill_taxonomy.py` enforces the markers.
 - **State placement** — each kind of cross-agent state has a designated home (GitHub issues / JIRA / Obsidian audit log / `PLANS_DIR` / tmp-by-path). See the "State placement" table in the orchestrator contract.
 - **Decision records** — structural decisions about the library live as ADRs in [`docs/adr/`](./docs/adr/), written with the `/skills-adr` skill.

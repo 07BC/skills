@@ -3,7 +3,7 @@
 The canonical structure every spec-driven **orchestrator** in this repo follows.
 An orchestrator is a command or skill that drives multi-step work by spawning
 subagents and gating phases — currently `workflow`, `uitest-pipeline`,
-`audit-codebase`, and `spec-pipeline`.
+`audit-codebase`, `solve`, and `spec-pipeline`.
 
 This contract exists because the orchestrators independently converged on one
 shape and the copies were drifting (see
@@ -26,6 +26,7 @@ and runs under `make test`.
 | `commands/Mr Will/workflow.md` | yes | phase-gated, spawns subagents |
 | `commands/Mr Will/uitest-pipeline.md` | yes | phase-gated, spawns subagents |
 | `commands/Mr Will/audit-codebase.md` | yes | phase-gated, spawns subagents |
+| `commands/Mr Will/solve.md` | yes | phase-gated, fans out solver + verifier subagents |
 | `skills/engineering/spec-pipeline/SKILL.md` | yes | phase-gated, dispatches leaf agents |
 | `commands/Mr Will/discovery.md` | **no** | a setup utility — no subagents, no phase loop |
 
