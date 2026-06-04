@@ -279,14 +279,14 @@ Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code
 
 ### Mr Will
 
-| Command | What it does |
-|---|---|
-| `/solve` | Diagnostic + solution-design panel — a bug / architecture problem → understand → fan out competing fixes → converge on one approved approach, ready to feed `/workflow`. Stops at the plan; never writes code. |
-| `/workflow` | One subtask → PR — Jira / spec / prompt → discovery → engineer → test → quality → review → PR, with GitHub architecture-drift tracking across the story. |
-| `/spec-pipeline` | (skill) Whole ticket → PR, autonomously, in a disposable worktree. Splits tickets too large for one run first. |
-| `/audit-codebase` | Structured codebase audit — per-layer Sonnet subagents apply `swift-code-review`, findings consolidated and prioritised into remediation batches ready to feed `/workflow`. |
-| `/uitest-pipeline` | End-to-end XCUITest pipeline — AC intake → plan → execute → debug → PR artefacts. |
-| `/discovery` | Standalone architecture tracking — set up the GitHub master issue + sub-issues, check drift, or import an existing arch doc when subtasks already exist. |
+| Command | What it does | Model · Flow |
+|---|---|---|
+| `/solve` | Diagnostic + solution-design panel — a bug / architecture problem → understand → fan out competing fixes → converge on one approved approach, ready to feed `/workflow`. Stops at the plan; never writes code. | Opus+Sonnet · Plan → Execute |
+| `/workflow` | One subtask → PR — Jira / spec / prompt → discovery → engineer → test → quality → review → PR, with GitHub architecture-drift tracking across the story. | Opus+Sonnet · Plan → Execute |
+| `/spec-pipeline` | (skill) Whole ticket → PR, autonomously, in a disposable worktree. Splits tickets too large for one run first. | Opus+Sonnet · Orchestrated |
+| `/audit-codebase` | Structured codebase audit — per-layer Sonnet subagents apply `swift-code-review`, findings consolidated and prioritised into remediation batches ready to feed `/workflow`. | Opus+Sonnet · Plan → Execute |
+| `/uitest-pipeline` | End-to-end XCUITest pipeline — AC intake → plan → execute → debug → PR artefacts. | Opus+Sonnet · Plan → Execute |
+| `/discovery` | Standalone architecture tracking — set up the GitHub master issue + sub-issues, check drift, or import an existing arch doc when subtasks already exist. | Opus · Plan → Execute |
 
 ---
 
