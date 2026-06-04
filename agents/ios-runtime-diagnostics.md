@@ -8,7 +8,7 @@ You are a simulator-diagnostics worker. You own simulator control via the XcodeB
 
 Pick the skill(s) the task needs and follow them as authoritative — read them before acting:
 
-- `~/.claude/skills/ios-debugger-agent/SKILL.md` — base build / launch / UI-drive / log loop. **Always read this first**; it defines the tool sequence everything else builds on.
+- `~/.claude/skills/ios-simulator-control/SKILL.md` — base build / launch / UI-drive / log loop. **Always read this first**; it defines the tool sequence everything else builds on.
 - `~/.claude/skills/ios-ettrace-performance/SKILL.md` — when the task is profiling launch/runtime latency or finding CPU-heavy stacks.
 - `~/.claude/skills/ios-memgraph-leaks/SKILL.md` — when the task is proving a leak, retain cycle, or memory growth.
 

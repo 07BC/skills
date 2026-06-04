@@ -39,7 +39,7 @@ This repo is installed locally via `make install`.
 - `personal/` — skills tied to my own setup; **not** in `README.md`, but symlinked locally by `link-skills.sh`.
 - `in-progress/` — drafts not ready to ship. NOTE: `link-skills.sh` does NOT currently
   exclude `in-progress/`, so these skills ARE symlinked and auto-discovered. The ios-*
-  skills (`ios-app-intents`, `ios-debugger-agent`, `ios-ettrace-performance`,
+  skills (`ios-app-intents`, `ios-simulator-control`, `ios-ettrace-performance`,
   `ios-memgraph-leaks`) live here pending a ship-or-consolidate decision. Do not add
   them to `README.md` without resolving their README/consolidation status first.
 - `deprecated/` — kept for reference; skipped by `link-skills.sh` and not auto-discovered.

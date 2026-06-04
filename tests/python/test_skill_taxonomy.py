@@ -26,6 +26,7 @@ POLICY_SKILLS = [
 # Dependency skills: loaded by another skill, not a user action.
 DEPENDENCY_SKILLS = [
     "skills/engineering/swift-style/SKILL.md",
+    "skills/engineering/ios-simulator-control/SKILL.md",
 ]
 
 
