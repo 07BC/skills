@@ -5,7 +5,7 @@ description: Capture and interpret iOS Simulator ETTrace profiles. Use when prof
 
 # iOS ETTrace Performance
 
-Use this skill to capture a focused, symbolicated ETTrace profile from an iOS simulator app. Pair it with `../ios-debugger-agent/SKILL.md` when the task also needs simulator build, install, launch, UI driving, logs, or screenshots.
+Use this skill to capture a focused, symbolicated ETTrace profile from an iOS simulator app. Pair it with `../ios-simulator-control/SKILL.md` when the task also needs simulator build, install, launch, UI driving, logs, or screenshots.
 
 ## Core Workflow
 

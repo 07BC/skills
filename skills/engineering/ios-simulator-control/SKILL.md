@@ -1,12 +1,16 @@
 ---
-name: ios-debugger-agent
-description: Build, run, and debug iOS apps on Simulator with XcodeBuildMCP. Use when launching an app, inspecting simulator UI or logs, or diagnosing runtime behavior.
+name: ios-simulator-control
+description: Base XcodeBuildMCP simulator-control loop — discover the booted simulator, set session defaults, build and run the current scheme, drive the UI, and capture logs. Shared dependency read by the swift-debugger-agent agent and paired with the ios-ettrace-performance and ios-memgraph-leaks skills; not invoked directly.
+user-invocable: false
+disable-model-invocation: true
 ---
 
-# iOS Debugger Agent
+# iOS Simulator Control
 
 ## Overview
 Use XcodeBuildMCP to build and run the current project scheme on a booted iOS simulator, interact with the UI, and capture logs. Prefer the MCP tools for simulator control, logs, and view inspection.
+
+This is the base build / launch / UI-drive / log loop the simulator agents and the ETTrace / memgraph skills build on. Read it first, then layer the task-specific skill on top.
 
 ## Core Workflow
 Follow this sequence unless the user asks for a narrower action.
@@ -42,7 +46,7 @@ Use these when asked to inspect or interact with the running app.
 
 ## Logs & Console Output
 - Start logs: `mcp__XcodeBuildMCP__start_sim_log_cap` with the app bundle id.
-- Stop logs: `mcp__XcodeBuildMCP__stop_sim_log_cap` and summarize important lines.
+- Stop logs: `mcp__XcodeBuildMCP__stop_sim_log_cap` and summarise important lines.
 - For console output, set `captureConsole: true` and relaunch if required.
 
 ## Troubleshooting

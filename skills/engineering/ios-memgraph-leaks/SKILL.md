@@ -5,7 +5,7 @@ description: Capture and inspect iOS leaks and memgraphs. Use when debugging lea
 
 # iOS Memgraph Leaks
 
-Use this skill to prove iOS leaks from a live simulator process or an existing `.memgraph`. Pair it with `../ios-debugger-agent/SKILL.md` when the task also needs simulator build, install, launch, UI driving, logs, or screenshots.
+Use this skill to prove iOS leaks from a live simulator process or an existing `.memgraph`. Pair it with `../ios-simulator-control/SKILL.md` when the task also needs simulator build, install, launch, UI driving, logs, or screenshots.
 
 ## Core Workflow
 
