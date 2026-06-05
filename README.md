@@ -64,6 +64,7 @@ story-to- architec-  (per         (new code,    swift-   review
 mr-j                              migrations,            deep mode)
                                   concurrency
                                   fixes)
+        └──────  /discovery  (plan → hand off)  ──────┘
         └──────────────  /workflow  (one subtask, orchestrated)  ──────────────┘
         └──────────────  /spec-pipeline  (whole ticket, autonomous)  ──────────┘
 ```
