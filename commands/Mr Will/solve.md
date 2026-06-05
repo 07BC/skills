@@ -23,6 +23,16 @@ unclear, or an architecture problem with several plausible approaches. Once the
 approach is approved, `/workflow` implements it. `/solve` never writes
 implementation code or opens a PR.
 
+A locked, fully-specified plan is **not** a validated plan. If its success rests
+on a load-bearing invariant that has never been empirically demonstrated — a
+pixel/byte-exact match across two engines, an "X reproduces Y", or output pinned
+to an oracle recorded under a *different* implementation (snapshot/golden
+baselines from a prior renderer) — route it through `/solve` Phase 1 feasibility
+**before** `/workflow` commits implementation hours. (This is the front door that
+the Remove-KickText session skipped: a plan demanding a UILabel/TextKit renderer
+pass CoreText-recorded baselines pixel-for-pixel, never re-recording, was
+internally contradictory and burned ~5h before the contradiction was named.)
+
 The orchestrator (Opus) owns every branching decision — which angles to fan out
 on, which proposal wins, whether to loop. Subagents (Sonnet) explore, propose,
 and attack; no subagent makes a branching decision.
@@ -123,7 +133,21 @@ It is also where the panel decides its own shape — this is the adaptive core.
 3. **Clarify with the user.** Surface the genuine unknowns via `AskUserQuestion`
    — public-API constraints, observed-vs-allowed behaviour, what "fixed" must
    mean. Do not guess answers a one-line question would settle.
-4. **Decide the fan-out.** Choose how many solver subagents to spawn (2–4) and
+4. **Feasibility / contradiction check.** Before deciding the fan-out, prove the
+   **Constraints & invariants** and the **Definition of fixed** are *jointly*
+   achievable — not merely individually sensible. Reason explicitly (or spawn one
+   adversarial verifier) over: *"Given these constraints and this definition of
+   fixed, name the single contradicting pair, or state why they are jointly
+   satisfiable. Default to infeasible when uncertain. Attend specifically to any
+   invariant that pins output to an artefact recorded under a different
+   implementation (snapshot baselines from another rasteriser, golden files from a
+   prior engine) — that is the classic infeasible bar."* If infeasible, surface
+   the contradicting pair via `AskUserQuestion` and require the user to relax a
+   constraint or redefine "fixed" **before** fan-out. Do not spend the cycle
+   budget converging candidates against an unsatisfiable bar. This is a
+   contradiction read, not a re-litigation of intent — it fires only when a real
+   constraint forbids the plan's own mechanism.
+5. **Decide the fan-out.** Choose how many solver subagents to spawn (2–4) and
    the **distinct angle** each takes. Derive the angles from the problem — do
    not hardcode them. Examples of angle axes, not a fixed list: data-flow vs
    public-API surface; minimal-diff vs clean-redesign; preserve-behaviour vs
@@ -135,7 +159,14 @@ Write the problem model to `SOLVE_DOC` with these sections:
 - **Root-cause hypotheses** — ranked
 - **Constraints & invariants** — what must NOT change (public API, observability, behaviour)
 - **Blast radius** — files / types / call sites in scope
-- **Definition of fixed** — the testable bar the chosen approach must clear
+- **Definition of fixed** — the testable bar the chosen approach must clear,
+  stated as executable verification (command, expected count of *executed* tests,
+  the comparison oracle and its tolerances). For any cross-implementation rewrite
+  (re-implementing a renderer, parser, or serialiser), the oracle MUST be
+  re-recordable on human approval, or a structural/measurement assertion — never
+  an immutable pixel/byte baseline recorded under the prior implementation.
+- **Feasibility** — the contradiction-check verdict from step 4 (jointly
+  satisfiable, or the relaxed constraint the user approved)
 - **Fan-out plan** — the solver count and each angle, with one line of rationale
 - **Open issues** — any preflight override or unresolved unknown
 
@@ -251,6 +282,9 @@ if:
 
 - Phase 1 cannot establish a Definition of fixed because a required clarifying
   answer is not provided
+- The Phase 1 Constraints & invariants and the Definition of fixed are jointly
+  unsatisfiable and the user declines to relax either (do not fan out against an
+  impossible bar)
 - Every solver in Phase 2 fails after its retry slot
 - The Phase 3 cycle budget (2 rounds) is exhausted with no surviving candidate
 - A required Jira MCP call fails (Jira mode only)

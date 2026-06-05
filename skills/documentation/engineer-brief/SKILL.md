@@ -1,13 +1,15 @@
 ---
-name: swift-discovery
+name: engineer-brief
 description: >
-  Reads the existing target architecture docs and produces a scoped discovery
-  note for a single subtask. Use in Phase 3 of ticket-to-pr, immediately before
-  handing off to the engineer subagent. Triggers when a subtask is ready for
-  implementation and the engineer needs to know exactly which types to touch,
-  which edge cases to handle, and which patterns to follow — without re-reading
-  the full architecture docs themselves. Do NOT use this skill for full codebase
-  audits or architecture documentation — use swift-mv-guardian for those.
+  Reads the existing target architecture docs and produces a scoped brief for a
+  single subtask — the engineer's primary input, written before any code is
+  touched. Use in Phase 3 of ticket-to-pr, immediately before handing off to the
+  engineer subagent. Triggers when a subtask is ready for implementation and the
+  engineer needs to know exactly which types to touch, which edge cases to
+  handle, and which patterns to follow — without re-reading the full architecture
+  docs themselves. Do NOT use this skill for full codebase audits or MV-adherence
+  checks (use swift-mv-guardian) or to author the architecture document itself
+  (use architecture-doc).
 ---
 
 # Swift Discovery Skill
@@ -23,8 +25,8 @@ not need to re-read the full architecture docs themselves.
 ## What this skill does NOT do
 
 - Does not write implementation code
-- Does not produce a full architecture document (use `swift-mv-guardian` for that)
-- Does not audit the codebase (use `audit-codebase` for that)
+- Does not produce a full architecture document (use `architecture-doc` for that)
+- Does not audit the codebase (use `audit` for that)
 - Does not make implementation decisions — it surfaces constraints and edge
   cases so the engineer can make informed decisions
 

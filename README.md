@@ -50,18 +50,18 @@ Every skill here is a **phase** in one delivery lifecycle: shape → architect �
 |---|---|---|---|
 | **Full-auto** | `/spec-pipeline TICKET` | A whole ticket → PR, autonomously, in a disposable git worktree (unattended; ~60–90 min in practice — an estimate, not a guarantee). Splits tickets the scope-guardian judges too large for one run before starting. | A well-specified ticket you want built end-to-end without babysitting. |
 | **Orchestrated** | `/workflow SUBTASK` | One subtask → PR, with the orchestrator (Opus) deciding and subagents (Sonnet) executing each phase, plus GitHub architecture-drift tracking across the story. | A single scoped subtask where you want control points and architecture tracking. |
-| **Manual** | the skills below, one at a time | You drive each phase yourself: `/swift-discovery`, `/swift-engineer`, `/swift-testing`, `/swift-code-review`, `/git-pr`. | Exploratory work, learning, or anything where you want to see each step. |
+| **Manual** | the skills below, one at a time | You drive each phase yourself: `/engineer-brief`, `/swift-engineer`, `/swift-testing`, `/swift-code-review`, `/git-pr`. | Exploratory work, learning, or anything where you want to see each step. |
 
-The key idea: **the orchestrators are just the manual pipeline automated.** `/workflow` and `/spec-pipeline` call the same `swift-discovery` → `swift-engineer` → `swift-testing` → `swift-code-review` skills you'd run by hand. Learn the manual skills and you understand what the orchestrators do; reach for an orchestrator when you want the whole chain run for you.
+The key idea: **the orchestrators are just the manual pipeline automated.** `/workflow` and `/spec-pipeline` call the same `engineer-brief` → `swift-engineer` → `swift-testing` → `swift-code-review` skills you'd run by hand. Learn the manual skills and you understand what the orchestrators do; reach for an orchestrator when you want the whole chain run for you.
 
 ```
 shape ─► architect ─► discover ─► build/clean ─► test ─► review ─► ship
  │           │           │             │           │        │         │
-grill-me  swift-mv-  swift-       swift-        swift-   swift-    swift-pr-gate
-story-to- guardian   discovery    engineer      testing  code-     git-pr
- spec     swiftopher (per         (new code,    swift-   review
-mr-j      -columbus   subtask)    rewrites,     uitest   (std or
-                                  migrations,            deep mode)
+pm        swift-mv-  engineer-    swift-        swift-   swift-    swift-pr-gate
+grill-me  guardian   brief        engineer      testing  code-     git-pr
+story-to- architec-  (per         (new code,    swift-   review
+ spec     ture-doc    subtask)    rewrites,     uitest   (std or
+mr-j                              migrations,            deep mode)
                                   concurrency
                                   fixes)
         └──────────────  /workflow  (one subtask, orchestrated)  ──────────────┘
@@ -86,17 +86,31 @@ The catalogue tags each skill with the model to reach for and how to run it.
 
 This is the manual path. Each stage names the skill to reach for and why. The orchestrators automate stages 3–7.
 
-### 1. Shape the work — idea/ticket → spec
+### 1. Shape the work — idea/ticket → document
 
-Pin down *what* you're building before any code. `/grill-me` interviews you until the plan holds together; `/grill-with-docs` does the same but updates `CONTEXT.md` and ADRs as decisions settle. `/story-to-spec` distils a Jira story, a markdown file, or a free-form prompt into a structured spec. `/mr-j` frames a spec, ticket, or PR description so it survives senior review — every claim explains why the work exists, the root cause, rejected alternatives, the simplest version, and how failure recovers. `/discovery-jira` turns a finished plan into a Jira ticket; `/jira-bulk` does fix-version and status changes across many tickets at once.
+Pin down *what* you're building before any code. These skills each produce a **different document** — the table below is the fast way to pick one:
+
+| I have… | I want… | Skill |
+|---|---|---|
+| A vague idea | to think it through, no artefact yet | `/grill-me` |
+| A plan to pressure-test | the same, **+ `CONTEXT.md`/ADRs updated** as decisions settle | `/grill-with-docs` |
+| A ticket / raw idea / rough approach | a **PRD + build-ordered, PR-sized story files** (decompose) | `/pm` |
+| One story / ticket / prompt | **one structured spec doc** | `/story-to-spec` |
+| A whole codebase | a living **architecture document** | `/architecture-doc` |
+| One subtask, about to code | a scoped **engineer brief** | `/engineer-brief` |
+| A finished plan/spec | a **Jira ticket** | `/discovery-jira` |
+| A spec exists (`docs/specs/*.md`) | a device **QA test plan** | `/spec-test-plan` |
+| Any doc, before senior review | it **reframed to review standard** | `/mr-j` |
+
+The boundaries that matter most, because they used to blur: **`/pm` decomposes** an idea into many stories; **`/story-to-spec` distils** one ticket into one spec; **`/grill-me` interrogates** a plan you already have. `/mr-j` frames a spec, ticket, or PR description so it survives senior review — every claim explains why the work exists, the root cause, rejected alternatives, the simplest version, and how failure recovers. `/jira-bulk` does fix-version and status changes across many tickets at once.
 
 ### 2. Establish the architecture — once per project, or before a big feature
 
-`/swift-mv-guardian` scaffolds a new MV (Model-View) app skeleton, or audits an existing app for MVVM drift — keeping the pattern honest as the app grows. `/swiftopher-columbus` reads the whole codebase and produces a living architecture document — the authority every downstream skill reads. Get this right and discovery + engineering have a source of truth to follow.
+`/swift-mv-guardian` scaffolds a new MV (Model-View) app skeleton, or audits an existing app for MVVM drift — keeping the pattern honest as the app grows. `/architecture-doc` reads the whole codebase and produces a living architecture document — the authority every downstream skill reads. Get this right and discovery + engineering have a source of truth to follow.
 
 ### 3. Scope the subtask — before touching code
 
-`/swift-discovery` produces a scoped discovery note for one subtask: which types to touch, which to create, edge cases, patterns to follow, and — crucially — what **not** to touch. It is the engineer's primary input. For multi-subtask stories, `/discovery` (and its `discovery-init` / `discovery-check` / `discovery-audit` skills) maintain a branch-independent architecture-drift store in GitHub issues so the architecture stays coherent across the whole story.
+`/engineer-brief` produces a scoped brief for one subtask: which types to touch, which to create, edge cases, patterns to follow, and — crucially — what **not** to touch. It is the engineer's primary input. For multi-subtask stories, `/discovery` (and its `discovery-init` / `discovery-check` / `discovery-audit` skills) maintain a branch-independent architecture-drift store in GitHub issues so the architecture stays coherent across the whole story.
 
 ### 4. Build & clean
 
@@ -112,7 +126,7 @@ Pin down *what* you're building before any code. `/grill-me` interviews you unti
 
 ### 6. Review
 
-`/swift-code-review` reviews existing code without changing it — BLOCKER / WARNING / SUGGESTION findings with inline fixes. Standard mode for any commit or PR; deep/adversarial mode for high-stakes branches (new SDK, infrastructure, lifecycle changes). `/audit-codebase` audits a whole codebase when you need the big picture across all layers.
+`/swift-code-review` reviews existing code without changing it — BLOCKER / WARNING / SUGGESTION findings with inline fixes. Standard mode for any commit or PR; deep/adversarial mode for high-stakes branches (new SDK, infrastructure, lifecycle changes). `/audit` audits a whole codebase when you need the big picture across all layers.
 
 ### 7. Ship
 
@@ -176,7 +190,8 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 |---|---|---|
 | [/grill-me](./skills/engineering/grill-me/SKILL.md) | Interviews you relentlessly about a plan until reaching shared understanding — one question at a time. | Opus · Direct |
 | [/grill-with-docs](./skills/engineering/grill-with-docs/SKILL.md) | Same as grill-me, plus updates `CONTEXT.md` and ADRs inline as decisions crystallise. | Opus · Direct |
-| [/story-to-spec](./skills/documentation/story-to-spec/SKILL.md) | Distils a Jira story, local file, or prompt into a structured spec in the Obsidian vault. Spec authoring only — no code. | Opus · Direct |
+| [/pm](./skills/documentation/pm/SKILL.md) | **Decomposes** an idea/ticket into a PRD + build-ordered, PR-sized story files under `docs/`. One round of clarifying questions first. | Opus · Direct |
+| [/story-to-spec](./skills/documentation/story-to-spec/SKILL.md) | **Distils** one Jira story, file, or prompt into one structured spec doc. Spec authoring only — no code, no story breakdown. | Opus · Direct |
 | [/mr-j](./skills/productivity/mr-j/SKILL.md) | Frames a PR, ticket, or spec to senior-review standard — why it exists, root cause, rejected alternatives, simplest version, failure recovery. | Opus · Direct |
 | [/discovery-jira](./skills/discovery/discovery-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Asks for confirmation before creating. | Sonnet · Direct |
 | [/jira-bulk](./skills/productivity/jira-bulk/SKILL.md) | Bulk Jira operations — set fix version, transition status — across many tickets in one invocation. | Sonnet · Direct |
@@ -186,13 +201,13 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 | Skill | What it does | Model · Flow |
 |---|---|---|
 | [/swift-mv-guardian](./skills/engineering/swift-mv-guardian/SKILL.md) | MV architecture guardian — scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
-| [/swiftopher-columbus](./skills/documentation/swiftopher-columbus/SKILL.md) | Produces a thorough, living architecture document for an iOS/macOS Swift codebase — the downstream authority. | Opus · Plan → Execute |
+| [/architecture-doc](./skills/documentation/architecture-doc/SKILL.md) | Produces a thorough, living architecture document for an iOS/macOS Swift codebase — the downstream authority. | Opus · Plan → Execute |
 
 ### Discover
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/swift-discovery](./skills/documentation/swift-discovery/SKILL.md) | Produces a scoped discovery note for a single subtask. The engineer's primary input — written before any code is touched. | Opus · Direct |
+| [/engineer-brief](./skills/documentation/engineer-brief/SKILL.md) | Produces a scoped brief for a single subtask. The engineer's primary input — written before any code is touched. | Opus · Direct |
 | [/discovery-init](./skills/discovery/discovery-init/SKILL.md) | Creates the GitHub architecture master issue and per-subtask sub-issues for a story. Runs once per story. | Opus · Orchestrated |
 | [/discovery-check](./skills/discovery/discovery-check/SKILL.md) | Reconciles completed subtask work and checks the current subtask against the master architecture; updates both on drift. | Opus+Sonnet · Orchestrated |
 | [/discovery-audit](./skills/discovery/discovery-audit/SKILL.md) | Audits the finished story against its master architecture. Runs after the final subtask completes. | Opus · Orchestrated |
@@ -217,6 +232,7 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 | [/swift-uitest-debug](./skills/testing/swift-uitest-debug/SKILL.md) | Diagnoses and fixes failing XCUITest tests — two Sonnet attempts, then Opus diagnosis. | Sonnet → Opus · Direct |
 | [/swift-test-all](./skills/testing/swift-test-all/SKILL.md) | Runs the full test suite once and reports. Detects workspace, scheme, and simulator from `CLAUDE.md`. | Sonnet · Direct |
 | [/regression-check](./skills/testing/regression-check/SKILL.md) | Audits in-progress changes for side effects before committing — blast radius, behavioural ripples, concurrency regressions. | Sonnet · Direct |
+| [/spec-test-plan](./skills/testing/spec-test-plan/SKILL.md) | Generates a device-testable QA test plan from a spec (`docs/specs/*.md`). Use when a spec exists; otherwise use `pr-test-plan` (PR, no spec) or `claude-regression` (neither). | Sonnet · Direct |
 
 ### Clean & review
 
@@ -284,8 +300,8 @@ Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code
 | `/solve` | Diagnostic + solution-design panel — a bug / architecture problem → understand → fan out competing fixes → converge on one approved approach, ready to feed `/workflow`. Stops at the plan; never writes code. | Opus+Sonnet · Plan → Execute |
 | `/workflow` | One subtask → PR — Jira / spec / prompt → discovery → engineer → test → quality → review → PR, with GitHub architecture-drift tracking across the story. | Opus+Sonnet · Plan → Execute |
 | `/spec-pipeline` | (skill) Whole ticket → PR, autonomously, in a disposable worktree. Splits tickets too large for one run first. | Opus+Sonnet · Orchestrated |
-| `/audit-codebase` | Structured codebase audit — per-layer Sonnet subagents apply `swift-code-review`, findings consolidated and prioritised into remediation batches ready to feed `/workflow`. | Opus+Sonnet · Plan → Execute |
-| `/uitest-pipeline` | End-to-end XCUITest pipeline — AC intake → plan → execute → debug → PR artefacts. | Opus+Sonnet · Plan → Execute |
+| `/audit` | Structured codebase audit — per-layer Sonnet subagents apply `swift-code-review`, findings consolidated and prioritised into remediation batches ready to feed `/workflow`. | Opus+Sonnet · Plan → Execute |
+| `/uitest` | End-to-end XCUITest pipeline — AC intake → plan → execute → debug → PR artefacts. | Opus+Sonnet · Plan → Execute |
 | `/discovery` | Standalone architecture tracking — set up the GitHub master issue + sub-issues, check drift, or import an existing arch doc when subtasks already exist. | Opus · Plan → Execute |
 
 ---
@@ -297,7 +313,7 @@ Both `/workflow` and `/spec-pipeline` take a Jira ticket, spec, or prompt to a P
 - **`/workflow`** — drives **one subtask** in-place on a branch, wired into GitHub architecture-drift tracking (`/discovery-init` · `/discovery-check` · `/discovery-audit`) and the JIRA subtask lifecycle. Reach for it when implementing a single scoped subtask and you want architecture tracking across the story.
 - **`/spec-pipeline`** — ships a **whole spec** of many tasks autonomously in a disposable worktree (an unattended run, ~60–90 min in practice). Reach for it when you want an entire ticket built end-to-end, hands-off.
 
-`/audit-codebase` finds the work and emits batches that `/workflow` then implements one at a time. `/solve` sits one step earlier: when you have a single bug or architecture problem but *not yet a fix*, it diagnoses and designs the approach, then hands the approved plan to `/workflow`. `/uitest-pipeline` is the UI-test specialisation of the same orchestrator shape.
+`/audit` finds the work and emits batches that `/workflow` then implements one at a time. `/solve` sits one step earlier: when you have a single bug or architecture problem but *not yet a fix*, it diagnoses and designs the approach, then hands the approved plan to `/workflow`. `/uitest` is the UI-test specialisation of the same orchestrator shape.
 
 ---
 
@@ -318,7 +334,7 @@ If a long unattended run appears to stop mid-flight with no message (context gro
 
 The library follows a few documented conventions, all enforced or recorded:
 
-- **Orchestrator contract** — every orchestrator (`workflow`, `uitest-pipeline`, `audit-codebase`, `solve`, `spec-pipeline`) shares one structure: variables block, model declaration, preflight, phase gates, halt conditions, and a state-placement convention. See [`docs/orchestrator-contract.md`](./docs/orchestrator-contract.md). `tests/python/test_orchestrator_conformance.py` enforces it.
+- **Orchestrator contract** — every orchestrator (`workflow`, `uitest`, `audit`, `solve`, `spec-pipeline`) shares one structure: variables block, model declaration, preflight, phase gates, halt conditions, and a state-placement convention. See [`docs/orchestrator-contract.md`](./docs/orchestrator-contract.md). `tests/python/test_orchestrator_conformance.py` enforces it.
 - **Skill species** — skills are **executor** (default; auto-fires), **policy** (cited by orchestrators, never auto-fires — `disable-model-invocation: true`), or **dependency** (loaded by another skill — `user-invocable: false`). See the "Skill species" section in [`CLAUDE.md`](./CLAUDE.md); `tests/python/test_skill_taxonomy.py` enforces the markers.
 - **State placement** — each kind of cross-agent state has a designated home (GitHub issues / JIRA / Obsidian audit log / `PLANS_DIR` / tmp-by-path). See the "State placement" table in the orchestrator contract.
 - **Decision records** — structural decisions about the library live as ADRs in [`docs/adr/`](./docs/adr/), written with the `/skills-adr` skill.
@@ -338,7 +354,7 @@ docs/orchestrator-contract.md   — the shared orchestrator structure + state-pl
 docs/adr/                       — architecture decision records for the library
 tests/python/                   — conformance + script tests (make test)
 skills/discovery/               — architecture master-issue tracking (init, check, audit, jira)
-skills/documentation/           — spec, discovery-note, DocC, architecture-doc, and skills-ADR authoring
+skills/documentation/           — spec, PRD/stories (pm), engineer-brief, DocC, architecture-doc, and skills-ADR authoring
 skills/engineering/             — Swift / iOS / Xcode / CI / concurrency skills + spec-pipeline
 skills/git/                     — generic git workflow skills
 skills/obsidian/                — Obsidian vault management skills

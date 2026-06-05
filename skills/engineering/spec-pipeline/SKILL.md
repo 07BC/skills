@@ -184,12 +184,12 @@ If the file is missing, ask the user via `AskUserQuestion`:
 > `swift-engineer` skill body as the only architecture authority. What would
 > you like to do?
 
-- Option A: **Generate it inline with `swiftopher-columbus`** (Recommended) — apply the `swiftopher-columbus` skill in this session to produce the architecture doc at the configured path, then continue to Step 2.
+- Option A: **Generate it inline with `architecture-doc`** (Recommended) — apply the `architecture-doc` skill in this session to produce the architecture doc at the configured path, then continue to Step 2.
 - Option B: **Proceed without it** — unset `SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC` for the rest of this run so agents skip it cleanly. Use this when you've decided the doc isn't worth producing for this work.
 - Option C: **Abort** — stop and let the user fix the config (e.g. correct the path or remove the field from CLAUDE.md).
 
 On Option A:
-- Apply skill `swiftopher-columbus` to generate the doc at
+- Apply skill `architecture-doc` to generate the doc at
   `$SPEC_PIPELINE_TARGET_ARCHITECTURE_DOC`.
 - When the skill reports completion, re-verify the file exists, then
   continue to Step 2 without exiting the pipeline.

@@ -145,6 +145,31 @@ invent defaults.
 
 Do not proceed until you have read all of the above.
 
+**Premise / internal-consistency read (when the input is a fully-specified
+plan or carries a load-bearing invariant).** Before any implementation,
+read the plan *against itself*, not only against the code: identify its
+central premise and any invariant marked hard/never/must, and ask whether a
+constraint **forbids the plan's own mechanism**. Classic self-contradictions:
+"swap renderer/parser/serialiser A→B" + "match A's recorded baselines exactly,
+never re-record" (a backend swap changes output by definition); "pixel/byte
+identical across two engines"; "output pinned to an oracle recorded under a
+different implementation". This is a contradiction read, **not** a
+re-litigation of intent — it fires only when a constraint and the plan's own
+mechanism genuinely collide, and the plan being *locked* does not exempt it.
+If a collision is found, do NOT proceed on faith — ask via `AskUserQuestion`:
+
+| Option | Action |
+| --- | --- |
+| **Relax the invariant** | Adopt the revised bar (e.g. re-record the oracle from the new implementation on sign-off; perceptual not pixel tolerance). Record it in the discovery note "Definition of done". |
+| **Prove it first (spike)** | Run the smallest experiment that confirms/refutes feasibility before committing the full plan. |
+| **Route to `/solve`** | If the premise itself is the open question, hand the plan to `/solve` Phase 1 feasibility before implementing. |
+| **Proceed as specified** | Record the feasibility risk in the discovery note "Open issues"; the Convergence Checkpoint will catch non-convergence if the premise fails. |
+
+A user-supplied plan is the highest-leverage place to surface a contradiction
+— everything downstream inherits its premise. (Remove-KickText precedent: the
+plan's "never re-record CoreText baselines while swapping to a UILabel/TextKit
+renderer" was self-contradictory and cost ~5h before it was named.)
+
 ---
 
 ## Phase 2 — Decompose AC → Create Subtasks in Jira
@@ -215,7 +240,7 @@ master issue without confirmation.
 
 ### Opus, plan mode
 
-Apply skill `swift-discovery` for the current subtask. The skill produces a
+Apply skill `engineer-brief` for the current subtask. The skill produces a
 discovery note at `${PLANS_DIR}/[SUBTASK-KEY]-discovery.md` with the
 required sections:
 
@@ -234,7 +259,7 @@ If `mode = jira`, include the `Non-goals` list from Phase 2 in the
 
 **Validate before handing off.** After the skill runs, grep the discovery
 note for each required section header. If any is missing → re-run
-`swift-discovery` with a `MISSING_SECTIONS:` note. Do not spawn Phase 4
+`engineer-brief` with a `MISSING_SECTIONS:` note. Do not spawn Phase 4
 against an incomplete discovery note.
 
 Do not write any implementation code in this phase.
@@ -311,7 +336,7 @@ failure → halt + blocked report (see Halt Conditions).
 
 **Bounce-back: 1 attempt per subtask.** If the subagent reports
 `BOUNCE:`, return to Phase 3 with the bounce reason and re-spawn
-`swift-discovery`. If the re-bounce → halt + blocked report.
+`engineer-brief`. If the re-bounce → halt + blocked report.
 
 **SourceKit diagnostics.** When `<new-diagnostics>` fire after the
 subagent reports completion but the subagent's own build was clean, apply
@@ -380,7 +405,25 @@ swift test
 
 **Retry budget: 3 fix attempts.**
 
-If tests pass (exit 0): proceed to Phase 6.5.
+A green result is **not trusted** until it passes the **real-green gate**:
+
+1. **Executed-test count > 0 (and ≥ expected).** If the run reports
+   "0 tests" / "Suite passed (0 tests)", or fewer executed tests than the
+   suite contains, treat it as a HARD FAILURE (stale bundle ran nothing),
+   not a pass. Parse the *executed* count from the result bundle, not the
+   artefact count (e.g. snapshot PNG count legitimately differs).
+2. **Clean build for the trusted green.** The first green of a session, and
+   any green immediately after a change to test infrastructure or a
+   snapshot/golden suite, must come from a clean build (`xcodebuild clean`,
+   or clear DerivedData) before it is believed.
+3. **Never accept a subagent's self-reported pass / "pixel-identical /
+   zero-delta / different simulator pass"** when your own last run
+   disagreed — require the artefact (diff image, the executed-count line)
+   or re-run the assertion yourself.
+
+Only after the real-green gate passes does exit 0 count as a pass: proceed to
+Phase 6.5. (Remove-KickText precedent: two stale-bundle false-greens — "Suite
+passed (0 tests)" — masked a real regression and corrupted a triage round.)
 
 If tests fail:
 
@@ -561,6 +604,7 @@ If `mode = jira`: transition the Jira subtask to `Blocked` with a comment.
 | Phase 6.5 quality build/test | 1 attempt | Halt + blocked report |
 | Phase 7 review fix | 1 attempt | Halt + flag for manual review |
 | Phase 7.5 UI verify fix | 1 attempt | Halt + flag for manual review |
+| Convergence (run-level) | 4 cycles w/o real-green progress · recurring failure-class · user cost-concern | Checkpoint `AskUserQuestion` → rethink-via-`/solve`, relax-bar, continue, or abort |
 
 The budget counts subagent **failures** (build broken, test failed, scope
 violated — anything the subagent reported as a failure). Subagent
@@ -568,6 +612,55 @@ violated — anything the subagent reported as a failure). Subagent
 timeout) are a different failure mode — apply skill `subagent-reliability`
 first. A "recover-in-place" or "resumed" outcome does NOT consume a retry
 slot; a "re-spawn fresh" outcome does.
+
+---
+
+## Convergence Checkpoint (run-level)
+
+The per-phase budgets above catch a stuck *task*. This catches a stuck
+*approach* — and applies even to build/test/compare cycles the orchestrator
+runs **by hand**, which otherwise escape every per-phase budget (in the
+Remove-KickText session the triage loop was hand-driven *outside* the phases,
+so the Phase 6 cap never fired and ~5h elapsed at near-zero net yield).
+
+Maintain, across the whole subtask, a run-level meter:
+
+- `fix_cycles_since_green` — edit→build→test cycles since the last
+  **real-green** (Phase 6 gate) on a clean build. Reset ONLY on a real green —
+  never on a 0-test green or a subagent's self-reported pass.
+- `net_loc` — non-test source lines added minus removed since Phase 1.
+- `failure_class` — the assertion / symptom class of the current failures.
+
+**Trip the checkpoint when ANY holds** (empirical non-progress — NOT subjective
+slowness; a correct-but-hard approach must not be abandoned on a stopwatch):
+
+- `fix_cycles_since_green >= 4` with no reduction in the failing-assertion count
+- the **same `failure_class` recurs across 3+ cycles** (the approach is
+  relocating the symptom, not converging)
+- a fix the orchestrator predicted would resolve a failure **changes nothing**
+  twice (the causal model is wrong — you are fighting the oracle, not a bug)
+- the **user voices a cost/progress concern** in any phrasing ("not much done",
+  "taking a while", "should this be faster/parallel") — a HARD prompt to
+  surface the meter, answered with the numbers, not a defence of the loop
+
+On trip, present the meter and ask via `AskUserQuestion`:
+
+| Option | Action |
+| --- | --- |
+| **Rethink (hand to `/solve`)** | Halt the loop; launch `/solve` with the current state + recurring `failure_class` as the problem. Non-convergence is the symptom `/solve` Phase 1 reasons over. |
+| **Relax the bar** | Take the user's reframe (drop an invariant, re-record the oracle); update the discovery note "Definition of done"; reset the meter; continue. |
+| **Continue as-is** | Record the override in "Open issues"; reset the trip counter once — it re-trips at the next threshold. |
+| **Abort** | Halt, no blocked report. A user choice. |
+
+Escalation is mandatory once tripped: a micro-fix that goes green *after* the
+trip does not retroactively reset it — do not "do the small fixes and keep
+going".
+
+**Delegate slow loops.** If a single test run exceeds ~2 min (simulator
+snapshot/UI suites) and the loop will iterate more than twice, do not
+hand-drive run→read→fix→re-run from the orchestrator — spawn one Sonnet
+subagent that owns the whole run-fix-re-run cycle with a fixed iteration cap
+and the convergence metric, reporting back only final state + meter + verdict.
 
 ---
 

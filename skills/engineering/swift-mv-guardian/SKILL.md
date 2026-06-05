@@ -330,11 +330,11 @@ the engineer remediates.
 | About to write a feature inside an MV-shaped project | `swift-engineer` |
 | Need to clean up an existing file without changing behaviour | `swift-engineer` (rewrite mode) |
 | Pre-commit / PR review including the live Xcode navigator check | `swift-code-review` |
-| Deep audit beyond MV adherence (testability, layering, concurrency depth) | `/audit-codebase` |
+| Deep audit beyond MV adherence (testability, layering, concurrency depth) | `/audit` |
 
 ## References
 
-- For per-subtask discovery notes, hand off to `swift-discovery` — that
+- For a per-subtask scoped brief, hand off to `engineer-brief` — that
   skill produces the engineer's brief, this one defines the architecture
   the engineer must conform to.
 - See the in-repo `app:new-service` skill for the project-specific service +
