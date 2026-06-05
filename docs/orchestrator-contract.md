@@ -2,8 +2,8 @@
 
 The canonical structure every spec-driven **orchestrator** in this repo follows.
 An orchestrator is a command or skill that drives multi-step work by spawning
-subagents and gating phases — currently `workflow`, `uitest-pipeline`,
-`audit-codebase`, `solve`, and `spec-pipeline`.
+subagents and gating phases — currently `workflow`, `uitest`,
+`audit`, `solve`, and `spec-pipeline`.
 
 This contract exists because the orchestrators independently converged on one
 shape and the copies were drifting (see
@@ -24,8 +24,8 @@ and runs under `make test`.
 | File | In scope? | Why |
 |---|---|---|
 | `commands/Mr Will/workflow.md` | yes | phase-gated, spawns subagents |
-| `commands/Mr Will/uitest-pipeline.md` | yes | phase-gated, spawns subagents |
-| `commands/Mr Will/audit-codebase.md` | yes | phase-gated, spawns subagents |
+| `commands/Mr Will/uitest.md` | yes | phase-gated, spawns subagents |
+| `commands/Mr Will/audit.md` | yes | phase-gated, spawns subagents |
 | `commands/Mr Will/solve.md` | yes | phase-gated, fans out solver + verifier subagents |
 | `skills/engineering/spec-pipeline/SKILL.md` | yes | phase-gated, dispatches leaf agents |
 | `commands/Mr Will/discovery.md` | **no** | a setup utility — no subagents, no phase loop |
@@ -69,10 +69,10 @@ listed so legitimately-different orchestrators (e.g. `spec-pipeline`) still pass
 Settled in [ADR 0003](./adr/0003-workflow-and-spec-pipeline-are-distinct-aligned-tools.md):
 
 - Take a **positional, auto-detected primary input** (Jira key / spec path /
-  prompt) where one obvious input exists — `workflow`, `uitest-pipeline`, and
+  prompt) where one obvious input exists — `workflow`, `uitest`, and
   `spec-pipeline`'s positional Jira shorthand all do this.
 - Use `--flags` **only for a genuine mode** that cannot be inferred from the
-  argument. `audit-codebase --scope=ticket|all` is the sanctioned exception:
+  argument. `audit --scope=ticket|all` is the sanctioned exception:
   ticket-vs-all is a real mode, not inferable from an input.
 
 ---
