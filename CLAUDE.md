@@ -82,7 +82,7 @@ user action (e.g. `swift-concurrency`) take `user-invocable: false` alone.
 
 An orchestrator is a command or skill that drives multi-step work by spawning
 subagents and gating phases (`workflow`, `uitest`, `audit`,
-`solve`, `spec-pipeline`). Follow [`docs/orchestrator-contract.md`](docs/orchestrator-contract.md)
+`solve`, `discovery`, `spec-pipeline`). Follow [`docs/orchestrator-contract.md`](docs/orchestrator-contract.md)
 — copy its skeleton, then add the new file's path to the `ORCHESTRATORS` list in
 `tests/python/test_orchestrator_conformance.py`. `make test` enforces the
 contract.
