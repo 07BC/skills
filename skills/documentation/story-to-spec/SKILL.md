@@ -1,10 +1,11 @@
 ---
 name: story-to-spec
 description: >
-  Takes a story from Jira, a local markdown file, or a free-form prompt
-  and distils it into a structured spec document. Writes the spec to
-  docs/specs/ in the project and the Obsidian vault. No worktrees, no
-  planning, no implementation — spec authoring only.
+  Takes ONE story from Jira, a local markdown file, or a free-form prompt and
+  distils it into ONE structured spec document. Writes the spec to docs/specs/
+  in the project and the Obsidian vault. No worktrees, no planning, no
+  implementation — spec authoring only. Do NOT use to break a feature into
+  multiple stories (use pm) or to interrogate an unsettled plan (use grill-me).
 ---
 
 # Story to Spec

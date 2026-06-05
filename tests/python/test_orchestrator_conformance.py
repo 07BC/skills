@@ -18,8 +18,8 @@ REPO_ROOT = Path(__file__).parent.parent.parent
 
 ORCHESTRATORS = [
     "commands/Mr Will/workflow.md",
-    "commands/Mr Will/uitest-pipeline.md",
-    "commands/Mr Will/audit-codebase.md",
+    "commands/Mr Will/uitest.md",
+    "commands/Mr Will/audit.md",
     "commands/Mr Will/solve.md",
     "skills/engineering/spec-pipeline/SKILL.md",
 ]
