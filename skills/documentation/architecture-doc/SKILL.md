@@ -1,5 +1,5 @@
 ---
-name: swiftopher-columbus
+name: architecture-doc
 description: >
   Produces a thorough, living architecture document for an iOS/macOS Swift
   codebase by systematically reading the project before writing anything.

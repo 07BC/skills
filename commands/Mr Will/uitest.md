@@ -1,4 +1,4 @@
-# uitest-pipeline
+# uitest
 
 End-to-end XCUITest command. Takes a story from AC to PR-ready artefacts
 in one continuous session. You write the tests, run them, debug them, and
@@ -7,9 +7,9 @@ produce the PR outputs — all without stopping for external input.
 Usage:
 
 ```
-/uitest-pipeline PROJ-123
-/uitest-pipeline <story-file-path>
-/uitest-pipeline <pasted-AC>
+/uitest PROJ-123
+/uitest <story-file-path>
+/uitest <pasted-AC>
 ```
 
 ---

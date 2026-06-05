@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 1 exploration for swiftopher-columbus: emit raw observations about a
+# Phase 1 exploration for architecture-doc: emit raw observations about a
 # Swift codebase before any prose synthesis. Read-only.
 # Usage: explore.sh
 #

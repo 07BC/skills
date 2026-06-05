@@ -7,7 +7,7 @@ description: >
   hypothesis is supplied or when N >= 2 failing tests share an assertion line.
   Use when a UI test is failing after being written or after a code change, when
   xcodebuild reports XCUITest failures, when a test passes locally but fails on
-  CI, or when the swift-uitest-pipeline debug phase is invoked. Triggers on:
+  CI, or when the uitest pipeline debug phase is invoked. Triggers on:
   "this test is failing", "fix this UI test", "debug uitest", "uitest is broken",
   "XCUITest failure", or any failing xcresult output shared in chat. Always use
   this skill — do not attempt to diagnose UI test failures ad hoc.
