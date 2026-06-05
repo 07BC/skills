@@ -302,7 +302,7 @@ Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code
 | `/spec-pipeline` | (skill) Whole ticket → PR, autonomously, in a disposable worktree. Splits tickets too large for one run first. | Opus+Sonnet · Orchestrated |
 | `/audit` | Structured codebase audit — per-layer Sonnet subagents apply `swift-code-review`, findings consolidated and prioritised into remediation batches ready to feed `/workflow`. | Opus+Sonnet · Plan → Execute |
 | `/uitest` | End-to-end XCUITest pipeline — AC intake → plan → execute → debug → PR artefacts. | Opus+Sonnet · Plan → Execute |
-| `/discovery` | Standalone architecture tracking — set up the GitHub master issue + sub-issues, check drift, or import an existing arch doc when subtasks already exist. | Opus · Plan → Execute |
+| `/discovery` | Planning front door — Jira / GitHub issue / prompt / file → a Three-Amigos panel (PM + Architect + QA) plans the work, a devil's advocate trims scope creep, then it materialises tracked work items into the project's configured backend (`jira` / `github` / `local`) and hands off to `/workflow` or `/spec-pipeline`. Backend declared in a `discovery:` YAML block in the project `CLAUDE.md`. | Opus+Sonnet · Plan → Execute |
 
 ---
 
@@ -314,6 +314,8 @@ Both `/workflow` and `/spec-pipeline` take a Jira ticket, spec, or prompt to a P
 - **`/spec-pipeline`** — ships a **whole spec** of many tasks autonomously in a disposable worktree (an unattended run, ~60–90 min in practice). Reach for it when you want an entire ticket built end-to-end, hands-off.
 
 `/audit` finds the work and emits batches that `/workflow` then implements one at a time. `/solve` sits one step earlier: when you have a single bug or architecture problem but *not yet a fix*, it diagnoses and designs the approach, then hands the approved plan to `/workflow`. `/uitest` is the UI-test specialisation of the same orchestrator shape.
+
+`/discovery` is the **planning front door for a feature** (vs `/solve`, the front door for a *bug*): a ticket / issue / prompt / doc → a Three-Amigos panel (PM + Architect + QA) plans it, a devil's advocate trims scope creep, and the result is materialised as tracked work items in the backend declared by the project's `discovery:` config (`jira` subtasks / `github` sub-issues / `local` docs), then handed to `/workflow` or `/spec-pipeline`. It absorbs the former standalone architecture-tracking entry point — re-running on already-tracked work enters track/reconcile mode (via `discovery-init` · `discovery-check` · `discovery-audit`) instead of re-planning.
 
 ---
 
