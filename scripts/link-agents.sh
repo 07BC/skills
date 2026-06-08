@@ -1,47 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Links all agents in this repo to ~/.claude/agents/ so they can be loaded by
-# Claude Code. Each agent's .md file is symlinked directly.
+# Symlinks the entire agents/ folder from this repo to ~/.claude/agents.
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="$HOME/.claude/agents"
 
-mkdir -p "$DEST"
-
-BOLD='\033[1m'; CYAN='\033[1;36m'; YELLOW='\033[33m'; GREEN='\033[32m'; RESET='\033[0m'
+BOLD='\033[1m'; CYAN='\033[1;36m'; GREEN='\033[32m'; RESET='\033[0m'
 
 printf "${CYAN}${BOLD}🤖 Agents${RESET}\n"
 
-linked=0
-pruned=0
-
-while IFS= read -r sym; do
-  target="$(readlink "$sym")"
-  case "$target" in
-    "$REPO"/agents/*)
-      if [ ! -e "$sym" ]; then
-        rm "$sym"
-        printf "  ${YELLOW}🗑️  pruned: %s${RESET}\n" "$(basename "$sym")"
-        pruned=$((pruned + 1))
-      fi
-      ;;
-  esac
-done < <(find "$DEST" -maxdepth 1 -type l)
-
-if [ -d "$REPO/agents" ]; then
-  while IFS= read -r -d '' agent_md; do
-    name="$(basename "$agent_md")"
-    target="$DEST/$name"
-
-    if [ -e "$target" ] && [ ! -L "$target" ]; then
-      rm -rf "$target"
-    fi
-
-    ln -sfn "$agent_md" "$target"
-    printf "  %s\n" "$name"
-    linked=$((linked + 1))
-  done < <(find "$REPO/agents" -maxdepth 1 -name "*.md" -print0)
+if [ -d "$DEST" ] && [ ! -L "$DEST" ]; then
+  rm -rf "$DEST"
+elif [ -L "$DEST" ]; then
+  rm "$DEST"
 fi
 
-printf "  ${GREEN}✅ %d linked, %d pruned${RESET}\n" "$linked" "$pruned"
+ln -sfn "$REPO/agents" "$DEST"
+printf "  ${GREEN}✅ linked: %s → %s${RESET}\n" "$DEST" "$REPO/agents"

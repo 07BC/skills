@@ -56,12 +56,12 @@ unlink-commands:
 
 unlink-agents:
 	@REPO="$$(cd . && pwd)"; \
-	find "$(AGENTS_DEST)" -maxdepth 1 -type l | while read -r sym; do \
-	  target="$$(readlink "$$sym")"; \
+	if [ -L "$(AGENTS_DEST)" ]; then \
+	  target="$$(readlink "$(AGENTS_DEST)")"; \
 	  case "$$target" in \
-	    "$$REPO"/agents/*) rm "$$sym" && echo "removed $$(basename $$sym)";; \
+	    "$$REPO"/agents) rm "$(AGENTS_DEST)" && echo "removed agents symlink";; \
 	  esac; \
-	done
+	fi
 
 unlink-hooks:
 	@REPO="$$(cd . && pwd)"; \
