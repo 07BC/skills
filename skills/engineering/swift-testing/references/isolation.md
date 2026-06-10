@@ -126,6 +126,33 @@ The engineer assumed `@MainActor` on the test was sufficient — it isn't. The t
 
 The correct fix was Mitigation 1 above — construct the service explicitly in the test, do not go through `.preview` at all, and assert on the seeded rows directly. This would have taken ten minutes and produced a test that actually verified the spec.
 
+## Compiler limitation: task group + `@MainActor` child + `AsyncPublisher.values`
+
+A specific shape trips the region-based isolation checker and fails to compile with `pattern that the region-based isolation checker does not understand how to check. Please file a bug`:
+
+```swift
+// ❌ Trips the region-based isolation checker.
+try await withThrowingTaskGroup(of: Void.self) { group in
+    group.addTask { @MainActor in
+        for await _ in cache.objectWillChange.values where isSettled() { return }
+    }
+    group.addTask { try await Task.sleep(for: .seconds(2)); throw TimeoutError() }
+    try await group.next(); group.cancelAll()
+}
+```
+
+It is a compiler limitation, not a real data race — but you cannot ship code that doesn't compile. Don't fight it with annotations; use the simpler `AsyncStream` + Combine `.sink` continuation gate instead (see `references/concurrency.md`, "Subscribe-then-recheck"), and rely on a `.timeLimit(.minutes(1))` suite trait for the hang backstop rather than a hand-rolled timeout child task:
+
+```swift
+// ✅ No task group, no AsyncPublisher.values — compiles, and is simpler.
+if isSettled() { return }
+let (stream, continuation) = AsyncStream<Void>.makeStream()
+let token = cache.objectWillChange.sink { _ in continuation.yield() }
+defer { token.cancel() }
+if isSettled() { return }
+for await _ in stream where isSettled() { return }
+```
+
 ## Diagnostic phrases
 
 When a Swift Testing trap mentions `assumeIsolated`, the diagnostic phrase is **"Swift 6 checks task isolation, not thread identity."** Once that phrase is in your head, the fix path becomes obvious:

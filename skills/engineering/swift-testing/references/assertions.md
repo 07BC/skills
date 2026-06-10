@@ -77,6 +77,8 @@ let unwrapped = try #require(optionalValue)
 }
 ```
 
+⚠️ `throws: (any Error).self` / `throws: Error.self` is a **weak assertion** — it passes for *any* thrown error, including one thrown for the wrong reason (an unrelated trap, a different decode failure). It is the error-path `!= nil`. Prefer the specific type or case (the two examples above). Use the any-error form only when "throws something" genuinely is the contract and the type is outside the SUT's control. See `references/anti-patterns.md` ("over-wide-throws").
+
 ### Expect no throw
 ```swift
 #expect(throws: Never.self) {

@@ -127,6 +127,53 @@ func emitsProgress() async throws {
 
 If the stream might never produce, wrap the iteration in a `withTimeout`-style helper. Do **not** use `Task.sleep` to "give it time."
 
+### `await task.value` to assert cancellation / completion
+
+To assert that a `Task` was cancelled (or simply finished), `await` its `.value` — it blocks until the task actually exits, regardless of how slowly cancellation propagates. Never sleep a fixed interval "to let cancellation propagate"; that is a race.
+
+```swift
+// ❌ Racy — assumes 50ms is enough for the task to observe cancellation.
+task.cancel()
+try await Task.sleep(nanoseconds: 50_000_000)
+#expect(!didFinish.get())
+
+// ✅ Deterministic — blocks until the task has fully unwound.
+task.cancel()
+_ = await task.value
+#expect(!didFinish.get())
+```
+
+If you also need the task to have *started* before you cancel (e.g. to prove a running task is cancellable), gate the start on a real signal — yield a value through an `AsyncStream` from the top of the task body and `await` its first element — rather than polling a flag.
+
+### Subscribe-then-recheck to close the publisher race
+
+When you bridge a Combine publisher / `NotificationCenter` into a continuation, there is a window between "the SUT did the work" and "your sink is subscribed". If the signal fired in that window, a naive `await` hangs forever. Subscribe **first**, then re-check the condition once before suspending:
+
+```swift
+if isSettled() { return }                       // fast path
+let (stream, continuation) = AsyncStream<Void>.makeStream()
+let token = publisher.sink { _ in continuation.yield() }
+defer { token.cancel() }
+if isSettled() { return }                       // re-check after subscribing — closes the gap
+for await _ in stream where isSettled() { return }
+```
+
+Prefer this over replacing a `Task.yield()` "settle" with anything time-based.
+
+## Time limits and the 1-second rule
+
+`SKILL.md` bans unit tests that run longer than one second. The fix for a slow test is to remove the wait (the patterns above), **not** to cap it with a trait — and `.timeLimit` cannot cap it anyway:
+
+- `.timeLimit` has a **1-minute granularity minimum**. `.timeLimit(.seconds(1))` does not compile/validate; only whole-minute durations are accepted.
+- So `.timeLimit` is a *runaway-hang* backstop, never a "this should be fast" assertion. Apply `.timeLimit(.minutes(1))` to an async suite that bridges genuinely-uncontrolled async (streams, notifications) so a stuck test fails instead of hanging the run — then still make the body deterministic so it finishes in milliseconds.
+
+```swift
+@Suite("Live updates", .tags(.realtime), .timeLimit(.minutes(1)))   // hang backstop only
+struct LiveUpdateTests { ... }
+```
+
+If a test needs the backstop to pass, it has a determinism bug — fix the wait, don't lean on the limit.
+
 ## `@TaskLocal` for clocks, UUIDs, and locales
 
 Mocking `Date.now`, `UUID()`, or `Locale.current` by injecting a closure into every type that needs them is invasive. `@TaskLocal` scopes the value to a single test:
