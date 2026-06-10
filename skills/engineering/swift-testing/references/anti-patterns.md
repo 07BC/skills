@@ -2,7 +2,7 @@
 
 Patterns that compile, often pass, and verify nothing useful. Each one has fired in real-world Swift projects; the fix in every case is to write a test that would actually fail if the implementation was broken.
 
-Read this alongside the "Avoid Tautological Tests" section in `SKILL.md`. That section covers tests that assert what was just set. This file covers four further patterns the skill body does not address.
+Read this alongside the "Avoid Tautological Tests" section in `SKILL.md`. That section covers tests that assert what was just set. This file covers several further patterns the skill body does not address.
 
 ## Anti-pattern: parallel-setup tests
 
@@ -195,3 +195,83 @@ The fix is `Decimal(string:)` in both production and test code. The test fixture
 ### Detecting this in review
 
 Search the test diff for `Decimal\s*=\s*\d+\.\d+` or any `Decimal`-typed parameter receiving a float literal. Both are smells.
+
+## Anti-pattern: pass-through-mock (mock-asserts-mock)
+
+The subtler sibling of parallel-setup. Here the test *does* go through the SUT — but it asserts a value the mock was configured to return and that the SUT forwards unchanged. The SUT runs; it just does nothing observable to the value, so the assertion verifies the stub's fixture.
+
+```swift
+// ❌ The stub returns a Profile; profile(for:) forwards it. The assertion checks
+//    the fixture you wrote two lines up, not any ProfileService behaviour.
+@Test("returns the profile")
+func returnsProfile() async throws {
+    let stub = StubProfileAPI(profile: .fixture(name: "Ada"))
+    let sut = ProfileService(api: stub)
+    #expect(await sut.profile(for: "1")?.name == "Ada")
+}
+```
+
+### The fix
+
+Assert something the SUT *does*, not something it *relays*:
+
+```swift
+// ✅ Assert the SUT's own transformation of the dependency's output.
+@Test("composes display name from profile parts")
+func composesDisplayName() async throws {
+    let stub = StubProfileAPI(profile: .fixture(first: "Ada", last: "Lovelace"))
+    let sut = ProfileService(api: stub)
+    #expect(await sut.displayName(for: "1") == "Ada Lovelace")
+}
+
+// ✅ Or assert the call the SUT made — what it asked the dependency for.
+@Test("requests the profile by the supplied id")
+func requestsByID() async throws {
+    let api = MockProfileAPI()          // actor recording requestedIDs
+    let sut = ProfileService(api: api)
+    await sut.refresh(id: "42")
+    #expect(await api.requestedIDs == ["42"])
+}
+```
+
+### The diagnostic question
+
+Same as parallel-setup, sharpened: **"If I replaced the SUT method body with `return <the mock's configured value>` (or `return nil`), would this test still pass?"** If yes, you are testing the stub. Either the SUT has a transformation worth asserting, or the interesting behaviour is *which call it made* — assert that on a recorder actor.
+
+This is a hard-stop ban in `SKILL.md`. Stateless stubs are still the right mock shape (see "Mock taxonomy"); the ban is about the *assertion*, not the mock.
+
+## Anti-pattern: disjunctive assertion
+
+An assertion with an `||` that includes the "not yet populated" state passes whenever the real path didn't run.
+
+```swift
+// ❌ Passes whenever videoSeries is nil — i.e. exactly when the code under test
+//    failed to populate it. Asserts nothing on the path that matters.
+#expect(dimensions.videoSeries == nil || dimensions.videoSeries == expectedSeries)
+```
+
+### The fix
+
+Assert the specific value. If `nil` is a legitimate separate case, give it its own test with its own input — don't fold it into an `||`.
+
+```swift
+// ✅ Forces the populated path.
+#expect(dimensions.videoSeries == expectedSeries)
+```
+
+If the strengthened assertion goes red, you've learned something real: either the production code doesn't populate the field, or the test's premise about *what* the value should be is wrong. Investigate — do not retreat to the disjunction.
+
+## Anti-pattern: over-wide `throws: Error.self`
+
+`#expect(throws: Error.self) { ... }` (and `#expect(throws: (any Error).self)`) passes for *any* thrown error — including one thrown for a completely different reason than the test intends (a force-unwrap trap, a precondition, an unrelated decode failure). It is the error-path equivalent of `!= nil`.
+
+```swift
+// ❌ Green even if the code throws the wrong error for the wrong reason.
+#expect(throws: Error.self) { try decoder.decode(Foo.self, from: data) }
+
+// ✅ Match the specific error type (or case) the behaviour should produce.
+#expect(throws: DecodingError.self) { try decoder.decode(Foo.self, from: data) }
+#expect(throws: ValidationError.empty) { try sut.validate("") }
+```
+
+`throws: Error.self` is acceptable only when the contract genuinely is "throws *something*" and the specific type is an implementation detail outside the SUT's control — rare. Default to the specific type; see `references/assertions.md`.

@@ -86,6 +86,27 @@ If you find yourself typing any of these, stop and re-read this section:
 - **Never silence Swift 6 concurrency warnings in test targets.** `@preconcurrency import`, `@unchecked Sendable`, and `nonisolated(unsafe)` in test code are not workarounds — they are the bug.
 - **Crash budget: 5 minutes.** If a test traps at runtime and you cannot fix it without changing the SUT's assertion contract within 5 minutes, **stop and escalate**. Do not rewrite the test to a weaker assertion that sidesteps the crash. That is silent coverage loss. See `references/anti-patterns.md` ("weaker-after-crash").
 - **Never assert on test-built state.** A test that constructs its own collaborators, mutates them, then asserts on its own mutations is testing the collaborator, not the SUT. The test must observe state **through the SUT's own returned instance or its own context**. See `references/anti-patterns.md` ("parallel-setup tests").
+- **Never assert on a value the mock was configured to return.** If the mock is stubbed to return `X` and the SUT passes `X` straight through, `#expect(result == X)` tests the stub, not the SUT — delete the SUT's logic and it still passes. Observe production behaviour **through the consumer**: assert the SUT's *transformation/derivation* of the mock's output, or assert (on a call-recorder `actor`) that the SUT **called the dependency with the right inputs**. See `references/anti-patterns.md` ("pass-through-mock").
+
+  ```swift
+  // ❌ pass-through: stub returns the model, profile(for:) forwards it unchanged.
+  //    The assertion checks the stub's own fixture, not any ProfileService logic.
+  let stub = StubProfileAPI(profile: .fixture(name: "Ada"))
+  let sut = ProfileService(api: stub)
+  #expect(await sut.profile(for: "1")?.name == "Ada")
+
+  // ✅ assert the SUT's own transformation
+  let stub = StubProfileAPI(profile: .fixture(first: "Ada", last: "Lovelace"))
+  let sut = ProfileService(api: stub)
+  #expect(await sut.displayName(for: "1") == "Ada Lovelace")   // tests ProfileService's formatting
+
+  // ✅ or assert the call the SUT made (recorder actor)
+  let api = MockProfileAPI()                 // actor recording requests
+  let sut = ProfileService(api: api)
+  await sut.refresh(id: "42")
+  #expect(await api.requestedIDs == ["42"])  // tests that the SUT asked correctly
+  ```
+- **No unit test runs longer than 1 second.** A slow unit test is almost always a `Task.sleep`/timeout/wall-clock wait in disguise — fix it deterministically (above), don't tune the duration. `.timeLimit` **cannot** enforce this: its granularity is a 1-minute minimum, so `.timeLimit(.seconds(1))` is illegal. Use `.timeLimit(.minutes(1))` only as a runaway-*hang* backstop on async suites; the real fix is removing the wait. See `references/concurrency.md`.
 
 ### Diagnostic workflow when a test is flaky
 
@@ -206,6 +227,17 @@ The only behaviours worth testing on enums and value types are the ones the comp
 - Simple property getters/setters
 - Private implementation details
 - Third-party library internals
+
+## Raising coverage
+
+When the task is "increase coverage" rather than "test this change", treat it as a yield problem, not a sweep. Full playbook in `references/coverage.md`; the essentials:
+
+- **Measure, don't infer** — `xcodebuild test … -enableCodeCoverage YES` then `xcrun xccov view --report`. Re-measure after each batch and record the delta.
+- **Chase logic, not view bodies** — line coverage counts SwiftUI `View` bodies that unit tests don't cover by design. A low app % is usually "logic well-covered, view layer 0%". Stop climbing a file when the rest is `body`/logging/`#Preview`.
+- **Prioritise by `uncovered lines × blast radius`** — grade blast radius with `gitnexus_impact` (`references/tooling.md`). Attack pure-logic types first (parameterise — cheapest %), then decode/error/nil/empty branches, then ViewModel edge branches.
+- **Fix the seam first** — if you can't inject a stub, the injection point is the bug. Make it injectable (impact-gated; stop on HIGH/CRITICAL) before writing the test. Never reach for a singleton or real network to "make it testable".
+
+Every new test must answer *what regression does this catch?* — a coverage number that rises while regression-catching power stays flat is false confidence.
 
 ## Never touch process-global state
 
@@ -469,6 +501,43 @@ func emailValidation(email: String, expected: Bool) async throws {
 }
 ```
 
+### Regression-guard: prove the fix is load-bearing
+
+When you write a test for a bug fix or a tolerance/workaround, prove the test would actually catch the regression: assert the **raw/unfixed input fails** *and* the **fixed path succeeds**. A test that only checks the fixed path can't tell you the fix is doing anything.
+
+```swift
+// The production decoder tolerates a field the backend sometimes sends as a JSON-encoded string.
+@Test("string-encoded metadata decodes after the repair")
+func repairedDecodes() throws {
+    let fixed = Repair.fixStringEncodedJSON(in: rawWithStringMetadata)
+    #expect(throws: Never.self) { try JSONDecoder().decode(Response.self, from: fixed) }
+}
+
+@Test("raw string-encoded metadata fails to decode without the repair")  // the guard
+func rawFails() {
+    #expect(throws: (any Error).self) {
+        try JSONDecoder().decode(Response.self, from: rawWithStringMetadata)
+    }
+}
+```
+
+The second test is what makes the first meaningful — it shows the repair is the reason decoding succeeds.
+
+### Characterisation: pin behaviour whose "correct" policy you don't know
+
+When you must cover code but don't know the intended policy (legacy logic, a gating rule with no spec), assert what it does **today** so any future change is caught. Say so in the description — it signals the assertion documents current behaviour, not a specification.
+
+```swift
+@Test("characterisation: over-18 gate hides mature streams for an under-18 viewer (current behaviour)")
+func maturalGateCurrentBehaviour() async throws {
+    let sut = await PlayerViewModel(viewer: .fixture(isOver18: false), repo: stub)
+    await sut.load(matureStream)
+    #expect(await MainActor.run { sut.viewState } == .blocked)
+}
+```
+
+Do not invent the "right" policy — lock in the observed one and flag it for the owner if it looks wrong.
+
 ## Workflow: Writing Tests for a File
 
 1. Read the source file to understand public interface
@@ -481,11 +550,13 @@ func emailValidation(email: String, expected: Bool) async throws {
    ```
    ToolSearch("select:mcp__xcode__RunSomeTests,mcp__xcode__RunAllTests,mcp__xcode__XcodeListNavigatorIssues")
    ```
-   Use `mcp__xcode__RunSomeTests` for the specific test class, then `mcp__xcode__XcodeListNavigatorIssues` to confirm no new issues. Fall back to `swift-test-all` skill if Xcode is not open.
+   Use `mcp__xcode__RunSomeTests` for the specific test class, then `mcp__xcode__XcodeListNavigatorIssues` to confirm no new issues. Fall back to `swift-test-all` skill if Xcode is not open. `xcodebuild` is the build/test truth — SourceKit "No such module" on a file you just edited is indexing lag, not a failure. Run serially when verifying. See `references/tooling.md`.
 8. **Review: Could any new tests be consolidated with existing ones?**
 
 ## References
 
+- `references/coverage.md` — raising coverage: measure with `xccov`, the view-body denominator trap, prioritise by uncovered × blast-radius, fix untestable seams first
+- `references/tooling.md` — the full toolkit: gitnexus/codegraph (consumers, blast radius, pre-change impact), `xccov`, `xcodebuild`-is-truth (SourceKit lag, run serially, SPM platform conflicts), context7, Xcode MCP, gate-commit-on-green
 - `references/assertions.md` — complete assertion reference (`#expect`, `#require`, error matching)
 - `references/tags.md` — tag organisation patterns
 - `references/concurrency.md` — testing `@MainActor`-isolated services, bridging async callbacks (`confirmation`, `withCheckedContinuation`), `@TaskLocal` clocks/UUID providers, async cleanup
