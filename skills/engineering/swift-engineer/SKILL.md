@@ -124,6 +124,7 @@ alone. Re-verify with the build before declaring the task done.
     properties must be broken down into smaller services.
 
 ## Swift 6 Essentials
+
 > See `swift-style` for Data Race Safety, Isolation Boundaries, and Typed Throws.
 
 ## SwiftUI Patterns
@@ -177,16 +178,17 @@ struct UserRow: View {
 
 ### State Management (MV pattern)
 
-| Wrapper | Use Case |
-|---------|----------|
-| `@State` | View-local value types only (e.g. `isPresented: Bool`, search text) |
-| `@Binding` | Two-way connection to parent value state |
-| `@Observable` | Applied to **services** (reference types). Never to ViewModels — there are no ViewModels |
-| `@Environment(\.someService)` | How views read services. This is the default injection mechanism |
-| `@Bindable` | Bridge to write into an `@Observable` service from a view (only at the view boundary, never the property of choice) |
-| `@AppStorage` | UserDefaults-backed persistence **in SwiftUI views only** — never inside an `@Observable` class |
+| Wrapper                       | Use Case                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `@State`                      | View-local value types only (e.g. `isPresented: Bool`, search text)                                                 |
+| `@Binding`                    | Two-way connection to parent value state                                                                            |
+| `@Observable`                 | Applied to **services** (reference types). Never to ViewModels — there are no ViewModels                            |
+| `@Environment(\.someService)` | How views read services. This is the default injection mechanism                                                    |
+| `@Bindable`                   | Bridge to write into an `@Observable` service from a view (only at the view boundary, never the property of choice) |
+| `@AppStorage`                 | UserDefaults-backed persistence **in SwiftUI views only** — never inside an `@Observable` class                     |
 
 **Forbidden in this codebase:**
+
 - `ObservableObject` conformance
 - `@Published`
 - Any type named `*ViewModel`
@@ -228,12 +230,14 @@ extension EnvironmentValues {
 ```
 
 **Benefits of @Entry:**
+
 - Less boilerplate — no separate key type needed
 - Cleaner syntax — default value inline with property
 - Grouped definitions — all environment values in one place
 - Type-safe — compiler-generated key management
 
 **Usage in views:**
+
 ```swift
 struct TimerView: View {
     @Environment(\.timerService) private var service
@@ -250,7 +254,7 @@ struct TimerView: View {
 // ✅ Type-safe navigation with NavigationStack
 struct ContentView: View {
     @State private var path = NavigationPath()
-    
+
     var body: some View {
         NavigationStack(path: $path) {
             HomeView()
@@ -341,10 +345,11 @@ private nonisolated func rounded(_ value: Decimal) -> Decimal {
 ```
 
 // ❌ Avoid: Global functions or static functions on classes
+
 ```swift
 func formatDate(_ date: Date) -> String {
     // ...
-}   
+}
 
 // ✅ Prefer: Static functions on structs or enums
 enum DateFormatter {
@@ -352,13 +357,14 @@ enum DateFormatter {
         // ...
     }
 }
-``` 
+```
 
 // ❌ Avoid: Functions with more than 4 parameters
+
 ```swift
 func createUser(name: String, email: String, age: Int, isAdmin: Bool, avatarURL: URL) -> User {
     // ...
-}   
+}
 
 // ✅ Prefer: Parameter objects for complex data
 struct CreateUserRequest {
@@ -377,23 +383,27 @@ func createUser(request: CreateUserRequest) -> User {
 ### Variables
 
 // ❌ Avoid: Missing types when they can't be inferred, or when they improve readability
+
 ```swift
-let user = functionThatReturnsAUser() // Type of 'user' is not clear   
+let user = functionThatReturnsAUser() // Type of 'user' is not clear
 ```
 
 // ✅ Prefer: Explicit types for clarity
+
 ```swift
 let user: User = functionThatReturnsAUser() // Clear that 'user' is of type User
 ```
 
-
 ### Optionals
 
 // ❌ NEVER: Force-unwrapping optionals in production code
-```swift 
+
+```swift
 let httpResponse = response as! HTTPURLResponse // swiftlint:disable:this force_cast
 ```
+
 // ✅ Always: Use safe unwrapping with guard or if-let, and handle nil cases explicitly
+
 ```swift
 guard let httpResponse = response as? HTTPURLResponse else {
     throw NetworkError.invalidResponse
@@ -424,12 +434,85 @@ Use a `RawRepresentable` enum when the underlying value matters (e.g. for
 comparison against an HTTP response code). Use a plain enum with static
 lets only when the values are heterogeneous and cannot share a raw type.
 
+### Bool should read like a sentence. Avoid negative conditions and double negatives.
+
+```swift
+// ❌ Avoid: negative conditions and double negatives
+if !user.isAdmin {
+    // ...
+}
+```
+
+// ✅ Prefer: positive conditions that read like a sentence
+
+```swift
+if user.isAdmin {
+    // ...
+}
+```
+
+// ❌ Avoid: double negative conditions
+
+```swift
+if !user.isNotAdmin {
+    // ...
+}
+```
+
+// ✅ Prefer: positive conditions without double negatives
+
+```swift
+if user.isAdmin {
+    // ...
+}
+```
+
+// ❌ Avoid: negative variable names that lead to double negatives in conditions
+
+```swift
+let isNotAdmin = !user.isAdmin
+if !isNotAdmin {
+    // ...
+}
+```
+
+// ✅ Prefer: positive variable names that read clearly in conditions
+
+```swift
+let isAdmin = user.isAdmin
+if isAdmin {
+    // ...
+}
+```
+
+// ❌ Avoid: !isEmpty or !isPresented in conditions
+
+```swift
+if !items.isEmpty {
+    // ...
+}
+if !isPresented {
+    // ...
+}
+```
+
+// ✅ Prefer: positive conditions using isEmpty or isPresented directly
+
+```swift
+if items.isEmpty == false {
+    // ...
+}
+if isPresented {
+    // ...
+}
+```
 
 ## SwiftUI View Structure
 
 ### View member ordering (top to bottom)
 
 Enforce this ordering in every view file:
+
 1. `@Environment` properties
 2. `private`/`public` `let` stored properties
 3. `@State` and other stored properties
@@ -483,25 +566,28 @@ When a view file exceeds ~300 lines, split aggressively. Extract meaningful sect
 
 ### State ownership (quick reference)
 
-| Scenario | Pattern |
-|---|---|
-| Local UI state owned by one view | `@State` |
-| Child mutates parent-owned value state | `@Binding` |
-| Root-owned reference model (iOS 17+) | `@State` with `@Observable` type |
-| Shared app service | `@Environment(Type.self)` |
-| Legacy (iOS 16 and earlier) | `@StateObject` at root, `@ObservedObject` when injected |
+| Scenario                               | Pattern                                                 |
+| -------------------------------------- | ------------------------------------------------------- |
+| Local UI state owned by one view       | `@State`                                                |
+| Child mutates parent-owned value state | `@Binding`                                              |
+| Root-owned reference model (iOS 17+)   | `@State` with `@Observable` type                        |
+| Shared app service                     | `@Environment(Type.self)`                               |
+| Legacy (iOS 16 and earlier)            | `@StateObject` at root, `@ObservedObject` when injected |
 
 ### Sheets
 
 Prefer `.sheet(item:)` over `.sheet(isPresented:)` when state represents a selected model. Avoid `if let` inside a sheet body. Sheets should own their actions and call `dismiss()` internally.
 
 ## Swift Testing
+
 > See `swift-testing` for all unit-test authoring patterns.
 
 ## Structured Concurrency
+
 > See `swift-concurrency` (conceptual) or the "Fix concurrency in existing code" mode below (hands-on fixes).
 
 ## Code Quality & Style
+
 > See `swift-style` for method length, parameter count, naming, guard
 > patterns, UserDefaults in `@Observable`, didSet, switch over if-else,
 > overlay vs nested stacks, one-view-per-file, and all other style rules.
@@ -524,6 +610,7 @@ Use this mode when asked to: "rewrite this", "clean this up", "this is hard to r
 The MV architecture forbids `ObservableObject` and `@Published`. Converting a legacy type is a behaviour-preserving rewrite.
 
 Mechanical steps:
+
 1. `import Observation`.
 2. Drop `: ObservableObject`; add `@Observable` macro to the type.
 3. Remove every `@Published` — stored properties are tracked automatically.
@@ -578,11 +665,11 @@ This skill is for **writing, rewriting, and editing** Swift. For reviewing exist
 This skill teaches the MV pattern. For canonical, up-to-date API details,
 query Context7 with these library IDs (use `mcp__context7__query-docs`):
 
-| Library ID | Use for |
-|---|---|
-| `/websites/developer_apple_swiftui` | SwiftUI views, modifiers, navigation, environment, animations |
-| `/swiftlang/swift` | Swift language semantics, generics, macros, typed throws, result builders |
-| `/websites/swift` | Swift language guide, the concurrency book, package manager |
+| Library ID                          | Use for                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `/websites/developer_apple_swiftui` | SwiftUI views, modifiers, navigation, environment, animations             |
+| `/swiftlang/swift`                  | Swift language semantics, generics, macros, typed throws, result builders |
+| `/websites/swift`                   | Swift language guide, the concurrency book, package manager               |
 
 For topic-specific guidance, hand off to the dedicated skill:
 

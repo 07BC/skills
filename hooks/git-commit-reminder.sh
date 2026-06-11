@@ -9,5 +9,5 @@
 # commit -am "x"`.
 input=$(cat)
 if echo "$input" | grep -qE 'git[[:space:]]+commit($|[[:space:]"])'; then
-    echo '{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "REMINDER: You just made a git commit. Per CLAUDE.md, you MUST now update the most recent daily note in ~/Developer/obsidian/daily/ with a ## Handover section documenting what was committed, why, what files changed, and what the UK team needs to know. Do not skip this step."}}'
+    echo '{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "REMINDER: You just made a git commit. Append a ## Handover section to TODAY'\''s Obsidian daily note using the CLI: obsidian daily:append content=\"...\". Do NOT find or edit the file manually and do NOT use a hardcoded path — the CLI resolves the correct note for today (vault uses nested YYYY/MM-MMM/YY-MM-D.md format, not a flat daily/ folder). Document: what was committed, why, what files changed, UK team impact. Do not skip this step."}}'
 fi
