@@ -1,6 +1,6 @@
 ---
 name: ios-memgraph-leaks
-description: Capture and inspect iOS leaks and memgraphs. Use when debugging leaked objects, retain cycles, memory growth, or before/after leak evidence.
+description: Capture and inspect iOS and tvOS leaks and memgraphs. Use when debugging leaked objects, retain cycles, memory growth, or before/after leak evidence — including tvOS simulators, adhoc-signed or preinstalled bundles that only yield a restricted "corpse", and per-screen accumulation across a navigate-in-and-out flow.
 ---
 
 # iOS Memgraph Leaks
@@ -37,6 +37,36 @@ MEMGRAPH_DIR="$(mktemp -d "${TMPDIR:-/tmp}/claude-ios-memgraph.XXXXXX")"
 Do not derive `SKILL_DIR` from the target app repo's `pwd`; installed plugins usually live outside the app being debugged. Store captures in a run-specific temp or user-chosen folder, not under `SKILL_DIR`.
 
 If the process cannot be found, confirm the bundle identifier and use `xcrun simctl spawn "$SIM" launchctl list` to inspect running labels.
+
+## Restricted "corpse" captures (adhoc-signed / preinstalled bundles)
+
+A bundle without the `get-task-allow` entitlement (Release/adhoc-signed, or already installed) cannot be attached to by `leaks`, so a live `leaks <pid>` yields only a restricted **corpse** with no symbolication. Do not re-sign the installed bundle in place to add the entitlement — it breaks the bundle seal and the app will not launch. Instead:
+
+1. Capture the graph anyway — the corpse still contains the full heap:
+   ```bash
+   xcrun simctl spawn booted leaks --outputGraph /tmp/app.memgraph <bundle.id>
+   ```
+2. Analyse the graph file with `heap` (resolves class names and counts on a corpse where live `leaks` cannot):
+   ```bash
+   heap /tmp/app.memgraph                       # full class histogram
+   leaks --traceTree=<address> /tmp/app.memgraph
+   ```
+3. For trace trees, relaunch the app with malloc stack logging so allocation backtraces are recorded:
+   ```bash
+   SIMCTL_CHILD_MallocStackLogging=1 xcrun simctl launch booted <bundle.id>
+   ```
+
+If a clean Debug rebuild is possible in the environment it will carry `get-task-allow` and avoid this entirely — but in CI/headless or signing-identity-less setups, the corpse + `heap` path is the reliable route.
+
+## tvOS: driving the flow and reading the signal
+
+tvOS has no coordinate taps — the focus engine is driven by remote/HID **key presses**. Drive the flow with `Select=40`, `Menu=41`, and arrow keys (Up/Down/Left/Right), via XcodeBuildMCP UI automation or `xcrun simctl`, and **gate every input with a screenshot** to confirm focus actually moved before the next press.
+
+For "does X release after the user leaves it", the reliable signal is the **live instance count of a per-screen class after returning to a baseline screen**, not a smaller total memgraph:
+
+1. Drive `enter screen → back ×N` (e.g. watch a stream → Home, repeated 3+ times), settle ~10s, capture.
+2. Count live instances of a class that exists **only** on the target screen (`heap` histogram). More than one after returning to baseline = accumulation / leak.
+3. Avoid confounded classes — e.g. `AVPlayer` is inflated by Home-screen preview players, so prefer a class unique to the target screen (a chat/session view model, its WebSocket, etc.). Note the confound in the report rather than over-claiming.
 
 ## Summarize
 
