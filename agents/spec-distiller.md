@@ -31,6 +31,19 @@ On start, output: `📐 SPEC-DISTILLER — <spec-id>`
 - `spec_id` — canonical kebab-case id (derived upstream by `derive-spec-id.sh`)
 - `raw_text` — the input source verbatim
 - `source_type` — one of `issue`, `jira`, `spec`, `prompt`
+- `distill_mode` — `distil` (default) or `verbatim`
+
+### Verbatim mode (`distill_mode=verbatim`)
+
+The caller has already copied an authoritative, already-canonical spec to
+`docs/specs/<spec-id>.md`. **Do not rewrite, reinterpret, or re-format it.** Skip
+Steps 1.5 (conflict rewriting), 2.5 (UI grilling), and 3 (writing the spec
+entirely). Run only: Step 0 (read context), Step 2 (explore the codebase the spec
+touches), Step 4 (write the plan from the spec as written), and the master-plan
+entry. If the existing spec lacks the structure needed to plan against it (no
+requirements or criteria you can decompose into tasks), do **not** invent any —
+report what is missing and stop with a clear message. Everything below applies to
+`distil` mode unless noted.
 - **(`source_type=issue` only)** `covers` — the frozen master AC IDs this child
   implements (e.g. `NAT-123-AC1, NAT-123-AC2`) and their verbatim text, passed by
   the SKILL from the GitHub sub-issue + master issue. `depends_on` — child issue
