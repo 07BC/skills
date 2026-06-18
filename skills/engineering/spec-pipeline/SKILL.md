@@ -4,8 +4,8 @@ description: >
   Runs the full spec-to-PR pipeline: distil a spec from a Jira ticket, an
   existing markdown spec, or a free-form prompt; validate the plan fits the
   codebase; implement task-by-task through the engineer → test-writer →
-  concurrency-auditor → task-reviewer inner loop; whole-diff review; then
-  open a PR via /git-pr. Each pipeline runs in its own git worktree.
+  concurrency-auditor → dual-reviewer inner loop; whole-diff review; then
+  open a PR via /git-pr. Runs in-place on a fresh branch (no worktree).
   Inputs are passed as flags. Use when the user says "ship this ticket",
   "run the pipeline", "spec-pipeline PROJ-123", "build this spec", or
   "/spec-pipeline …". Project must declare its config in a fenced
@@ -14,18 +14,19 @@ description: >
 
 # Spec Pipeline
 
-`/spec-pipeline` is the top-level entry point. It validates inputs, sets
-up a worktree, then drives Phases 1–5 inline by dispatching one leaf
-specialist agent at a time.
+`/spec-pipeline` implements **one** child spec end-to-end. It validates inputs,
+creates a fresh branch on the current checkout (in-place — no worktree), then
+drives Phases 1–5 inline by dispatching one leaf specialist agent at a time.
 
-This skill creates git worktrees and branches. **Never auto-invoke.** Always
+Decomposition and the master-spec tree are `/spec-master`'s job; this skill ships
+one unit. It creates branches and commits. **Never auto-invoke.** Always an
 explicit user trigger.
 
-> **Related:** to drive a *single subtask* in-place on a branch with GitHub
-> architecture-drift tracking and the JIRA subtask lifecycle, use `/workflow`
-> instead. `/spec-pipeline` is the whole-spec, worktree-isolated, hands-off
-> tool; `/workflow` is the single-subtask, architecture-tracked one. See
-> `docs/adr/0003-workflow-and-spec-pipeline-are-distinct-aligned-tools.md`.
+> **Related:** `/spec-master` decomposes a Jira story into a GitHub master issue +
+> child sub-issues; run `/spec-pipeline --from-issue <#>` per child, in dependency
+> order. The two are aligned — see the ADR on the master-spec layer (which
+> supersedes the worktree-isolation distinction in
+> `docs/adr/0003-workflow-and-spec-pipeline-are-distinct-aligned-tools.md`).
 
 ---
 
@@ -54,28 +55,29 @@ Usage:
   /spec-pipeline --help                 show this message
 
 What it does:
-  0. (Jira only) Scope check — splits oversized tickets into sub-tasks before
-     any other work. Skipped for --from-spec / --from-prompt, on resume, or
-     when the ticket already has a parent or sub-tasks.
   1. Reads spec_pipeline YAML config from your CLAUDE.md (see SCHEMA.md)
-  2. Creates a per-pipeline git worktree at ../<repo>-<branch-id>/ on a fresh branch
-     (branch-id = ticket key for Jira, spec-id slug for other sources)
-  3. Distils the input into docs/specs/ and docs/plans/ (gitignored, inside the worktree)
-  4. Drives engineer → test-writer → concurrency-auditor → task-reviewer per task
-  5. Whole-diff swift-spec-review (up to 3 cycles before escalation)
-  6. Opens a PR via /git-pr after your confirmation
+  2. (--from-issue) Sequencing gate: hard-stops until every depends_on child is
+     merged to main. Then creates a fresh branch IN-PLACE (no worktree).
+  3. Distils the input into docs/specs/ and docs/plans/ (gitignored)
+  4. (--from-issue) Drift gate: traceability + drift-auditor vs the master spec
+  5. Drives engineer → test-writer → test gate → concurrency-auditor →
+     two diverse-lens reviewers (both must PASS) per task
+  6. Whole-diff swift-spec-review (up to 3 cycles before escalation)
+  7. Opens a PR via /git-pr; reconciles the child sub-issue + master issue
+
+Scope decomposition lives in /spec-master, not here. If a --from-jira/-spec/
+-prompt input is too big for one PR, run /spec-master --from-jira KEY first.
 
 One-time project setup:
-  - Add a spec_pipeline YAML block to the project's CLAUDE.md
-    (see SCHEMA.md alongside this SKILL.md for the schema)
+  - Add a spec_pipeline YAML block to the project's CLAUDE.md, including
+    github_repo and (optional) coverage_floor (see SCHEMA.md)
   - Add docs/specs/, docs/plans/, master-plan.md to .gitignore
 
 Durable artefacts after a run:
-  - The PR (on GitHub)
+  - The PR (on GitHub) and the branch on the current checkout
+  - The reconciled GitHub master issue + child sub-issue (--from-issue)
   - Audit log at $OBSIDIAN_VAULT/AI/plans/<spec-id>.md
     (full spec + full plan + phase log)
-  - The worktree at ../<repo>-<branch-id>/ until you remove it with
-    `git worktree remove`
 
 You're asked at minimum twice during a run, and more when the input or spec
 has unresolved questions:
@@ -130,9 +132,17 @@ Then use `$SCRIPTS/read-pipeline-config.sh` etc. throughout.
 
 Exactly one source flag is required:
 
+- `--from-issue <GH#>` — resolves a child spec from a GitHub sub-issue created by
+  `/spec-master` (the intended path; carries the traceability spine and sequencing)
 - `--from-jira <KEY>` — fetches the ticket via the Atlassian MCP
 - `--from-spec <PATH>` — reads an existing markdown spec
 - `--from-prompt "<TEXT>"` — distils a free-form description
+
+`--from-issue` is the canonical entry point: it inherits the frozen AC IDs,
+`covers`, and `depends_on` from the master spec, which feed the sequencing gate
+(Step 3.7), the drift gate (Step 5.6), and the test gate (Phase 3). The other
+three sources have no master to track against — their drift/sequencing gates are
+skipped (a one-off spec with no master is its own authority).
 
 `$ARGUMENTS` from the slash-command invocation is parsed left-to-right; the
 first flag wins. Unrecognised flags fail fast — print *"unknown flag <flag>;
@@ -209,6 +219,29 @@ lower-stakes and agents handle them with a per-file read that fails softly.
 ---
 
 ## Step 2 — Resolve input → (raw_text, spec_id)
+
+### `--from-issue <GH#>`
+
+1. Resolve the repo (`$SPEC_PIPELINE_GITHUB_REPO`, else `gh repo view --json
+   nameWithOwner -q .nameWithOwner`). Verify `gh auth status` succeeds.
+2. Read the child sub-issue:
+   ```bash
+   gh issue view "<GH#>" --repo "$REPO" --json number,title,body,parent,labels
+   ```
+   From the body, parse the fenced spine block: `covers: [<AC ids>]` and
+   `depends_on: [<child-issue-#s>]`. Capture `master_issue` = the `parent` number.
+3. Read the master issue body (`gh issue view "$master_issue" …`) to obtain the
+   verbatim AC text for each ID in `covers`, plus the Jira story link.
+4. Compose `raw_text` as a markdown blob: the child title + summary, the covered
+   ACs (ID + text), and a pointer to the Jira story. Carry `covers` and
+   `depends_on` forward as pipeline variables — they are written into the spec
+   frontmatter the distiller produces (`covers:`) and drive Steps 3.7 / 5.6.
+5. ```bash
+   spec_id="$(bash ${SKILL_DIR}/scripts/derive-spec-id.sh --from-spec "<child-issue-title-slug>")"
+   branch_id="${spec_id}"
+   ```
+6. `source_type=issue`. Record `master_issue`, `child_issue=<GH#>`, `covers`,
+   `depends_on` for later phases.
 
 ### `--from-jira <KEY>`
 
@@ -287,16 +320,16 @@ Show the user a summary before any disk operation:
 ## Pipeline ready
 
 **Spec ID:** <spec-id>
-**Source:** <jira KEY | spec PATH | prompt>
-**Worktree (to be created):** <repo-parent>/<repo-name>-<branch-id>
+**Source:** <issue #GH | jira KEY | spec PATH | prompt>
+**Mode:** in-place on the current checkout (no worktree)
 **Branch (to be created):** <type>/<branch-id> (type: feat | bug | chore — derived
                                               from spec source or defaulted to feat)
 **Cycle budget:** ${SPEC_PIPELINE_CYCLE_BUDGET}
 **Audit log:** ${SPEC_PIPELINE_VAULT}/${SPEC_PIPELINE_AUDIT_DIR}/<spec-id>.md
 ```
 
-If the source is `jira`, also show:
-- Summary, Type, Labels, AC count
+If the source is `issue`, also show: master issue #, covers (AC IDs), depends_on.
+If the source is `jira`, also show: Summary, Type, Labels, AC count.
 
 Ask via `AskUserQuestion`:
 
@@ -317,174 +350,60 @@ Do not proceed without explicit confirmation.
 
 ---
 
-## Step 3.5 — Scope check (Jira only)
+## Step 3.5 — Scope decomposition has moved to `/spec-master`
 
-Run only when `source_type == jira`. Otherwise skip to Step 4.
+Splitting a large story into sequential specs is no longer done here. That is
+`/spec-master`'s job: it reads the Jira story, freezes AC IDs, and creates a
+GitHub master issue + child sub-issues. `/spec-pipeline` implements **one** unit
+of work.
 
-Compute the worktree path the same way Step 4 will:
-
-```bash
-repo_root="$(git rev-parse --show-toplevel)"
-repo_name="$(basename "$repo_root")"
-worktree_path="$(dirname "$repo_root")/${repo_name}-${branch_id}"
-```
-
-### Skip conditions — in order
-
-1. **Resume in progress.** If `[[ -d "$worktree_path" ]]`, the user is
-   resuming an in-flight pipeline. Skip Phase 0 and print one line:
-
-   ```
-   ⏭️  Scope check skipped — worktree exists, resuming
-   ```
-
-   Continue to Step 4.
-
-2. **Ticket already has a parent.** If `parent_key` (from Step 2) is
-   non-empty, this ticket is already a sub-task. Skip Phase 0 and print:
-
-   ```
-   ⏭️  Scope check skipped — ticket already has a parent
-   ```
-
-   Continue to Step 4.
-
-3. **Parent already has sub-tasks.** If `existing_subtask_keys` is
-   non-empty, the parent has already been split. Halt:
-
-   ```
-   Parent ticket <jira_key> already has sub-tasks: <KEY1, KEY2, ...>.
-   Re-invoke /spec-pipeline --from-jira <child_key> per child.
-   ```
-
-   Exit. Do not create the worktree.
-
-If none of the above apply, run scope-guardian.
-
-### Scope-guardian invocation
-
-```bash
-proposal_path="${TMPDIR:-/tmp}/spec-pipeline-${spec_id}-proposal.yaml"
-rm -f "$proposal_path"
-```
-
-Spawn `spec-scope-guardian` via the Agent tool (subagent_type: `spec-scope-guardian`). Pass:
-
-- `jira_key`
-- `raw_text` (the same blob assembled in Step 2)
-- `proposal_path`
-- The `SPEC_PIPELINE_*` config block (so the agent can read context_docs
-  and target_architecture_doc)
-
-Parse the agent's **last non-empty stdout line**:
-
-- `SCOPE: OK` → continue to Step 4.
-- `SCOPE: SPLIT` → run the split flow below.
-- Anything else (missing verdict, truncated output, error) → halt:
-
-  ```
-  spec-scope-guardian produced no SCOPE: verdict — see output above.
-  ```
-
-  Do not create the worktree. The user re-invokes.
-
-### Split flow
-
-1. Read `proposal_path`. If absent or malformed YAML, halt with the same
-   parse-error message as above.
-
-2. Render the proposed sub-tasks (titles, summaries, AC distribution,
-   rationales) and ask via `AskUserQuestion`:
-
-   - Option A: **Approve and create sub-tickets** (Recommended) — proceed
-     to step 3 below.
-   - Option B: **Cancel** — exit with the hint *"Re-scope the ticket in
-     Jira and re-invoke /spec-pipeline."* No worktree, no Jira writes.
-
-3. On Approve, load Jira write tools:
-
-   ```
-   ToolSearch("select:mcp__plugin_atlassian_atlassian__getJiraProjectIssueTypesMetadata,mcp__plugin_atlassian_atlassian__createJiraIssue,mcp__plugin_atlassian_atlassian__createIssueLink,mcp__plugin_atlassian_atlassian__addCommentToJiraIssue")
-   ```
-
-   If any fail to load (MCP not available), halt with the same message as
-   Step 2's MCP-unavailable case.
-
-4. Resolve the Sub-task issue type:
-
-   - Project key = the substring of `jira_key` before the `-`.
-   - Call `mcp__plugin_atlassian_atlassian__getJiraProjectIssueTypesMetadata`.
-   - Find an issue type whose name case-insensitively matches `Sub-task`,
-     `Subtask`, or `Sub-Task`.
-   - **Fallback if none exists** (some Kanban projects have no Sub-task
-     type): ask via `AskUserQuestion`:
-     - Option A: **Create siblings linked to the parent** — create issues
-       of the same type as the parent and link them with
-       `createIssueLink` relationship `"relates to"`.
-     - Option B: **Abort** — exit without writes.
-
-5. For each proposed sub-task in order, call
-   `mcp__plugin_atlassian_atlassian__createJiraIssue` with:
-
-   - `project: { key: <project_key> }`
-   - `summary: <title>`
-   - `description: <YAML's summary + the ACs rendered as a markdown
-     checklist with - [ ] per AC>`
-   - `issuetype: { name: <resolved type> }`
-   - `parent: { key: <jira_key> }` (true Sub-task path) — OR omit the
-     `parent` field and call `createIssueLink` after creation (sibling
-     fallback path)
-
-   Collect the returned KEY for each.
-
-6. Post a comment to the parent via
-   `mcp__plugin_atlassian_atlassian__addCommentToJiraIssue` with body:
-
-   ```
-   spec-pipeline scope-guardian split this ticket into N sub-tasks:
-   - <KEY1>: <title1>
-   - <KEY2>: <title2>
-   Re-invoke /spec-pipeline --from-jira <KEY> per child when ready.
-   ```
-
-7. Print and exit:
-
-   ```
-   ## Scope SPLIT — sub-tickets created
-   Parent:  <jira_key>  (comment posted)
-   Created: <KEY1>, <KEY2>, ...
-   Re-invoke /spec-pipeline --from-jira <KEY> per child when ready.
-   ```
-
-   Do NOT create the worktree. Do NOT spawn the orchestrator. The
-   proposal file is left on disk for post-hoc debugging — the OS reaps
-   tmpdir.
-
-### Partial-failure handling
-
-If `createJiraIssue` fails after some children have already been created,
-print the keys that succeeded, name the one that failed, and ask via
-`AskUserQuestion`:
-
-- Option A: Retry the failed sub-task
-- Option B: Accept the partial result and post the parent comment with
-  what was created
-- Option C: Stop — leave created sub-tickets as-is, skip the parent
-  comment
-
-**Never auto-rollback** created Jira issues. Jira undo is destructive and
-noisy.
+- `--from-issue` — the child was already scoped by `/spec-master`; nothing to do.
+- `--from-jira` / `--from-spec` / `--from-prompt` — treated as a single spec as
+  given (no in-pipeline split). If the input is too big to ship as one PR, stop
+  and run `/spec-master --from-jira <KEY>` to decompose it first.
 
 ---
 
-## Step 4 — Worktree management
+## Step 3.7 — Sequencing gate (`--from-issue` only)
 
-Compute the worktree path:
+Skip unless `source_type == issue` with a non-empty `depends_on`. This enforces
+the user's hard-stop rule: a child does not start until every child it depends on
+is **merged to main**.
+
+For each issue number in `depends_on`:
+
+```bash
+state="$(gh issue view "<dep#>" --repo "$REPO" --json state,stateReason -q '.state')"
+# A child is "complete" when its issue is CLOSED by a merged PR.
+```
+
+Confirm the dependency's linked PR is merged (the issue is closed as completed,
+and `gh pr list --search "<dep#>" --state merged` shows its PR). If **any**
+dependency is not merged, halt:
+
+```
+⛔️ Sequencing gate — child #<GH#> depends on #<dep#>, which is not yet merged.
+   Finish and merge #<dep#> first, then re-run:
+   /spec-pipeline --from-issue <GH#>
+```
+
+Do not create the branch. When all dependencies are merged, continue to Step 4.
+
+---
+
+## Step 4 — Branch management (in-place, no worktree)
+
+This pipeline runs **in-place** on the current checkout — it does not create a
+git worktree. If you want isolation, set up a worktree manually before invoking
+`/spec-pipeline`; the pipeline simply runs wherever it is invoked.
+
+`worktree_path` below is retained as the variable name for the in-place checkout
+root so the per-task `git -C "$worktree_path"` calls downstream are unchanged.
 
 ```bash
 repo_root="$(git rev-parse --show-toplevel)"
+worktree_path="$repo_root"          # in-place — NOT a separate worktree
 repo_name="$(basename "$repo_root")"
-worktree_path="$(dirname "$repo_root")/${repo_name}-${branch_id}"
 ```
 
 Compute the branch name. Type is `bug/` for ticket type Bug, `chore/` for
@@ -494,177 +413,37 @@ Chore, otherwise `feat/`:
 branch="<type>/${branch_id}"
 ```
 
-### If the worktree path exists
-
-Read `${worktree_path}/master-plan.md` if present. Show the user:
-
-```
-A worktree for <spec-id> already exists at <worktree_path>.
-Last status: <status from master-plan.md, or "unknown">
-```
-
-Ask via `AskUserQuestion`:
-
-- Option A: Resume from where it left off (Recommended)
-- Option B: Restart fresh (will require confirmation before removing the existing worktree)
-- Option C: Abort
-
-On **Resume**: jump straight to Step 5 in the existing worktree path.
-
-On **Restart**:
-1. Confirm one more time via `AskUserQuestion`:
-   "This will run `git worktree remove ${worktree_path}` and delete its state. Confirm?"
-2. If confirmed, run the removal, then continue to "create" below.
-
-On **Abort**: stop. No changes.
-
-### If the worktree path does not exist
-
-Pre-flight check the current state of the parent repo:
+### Dirty-tree preflight
 
 ```bash
 git -C "$repo_root" status --porcelain
-git -C "$repo_root" rev-parse --abbrev-ref HEAD
+current_branch="$(git -C "$repo_root" rev-parse --abbrev-ref HEAD)"
 ```
 
-If `main` (or the configured base) has uncommitted changes, surface them and
-ask the user whether to proceed anyway. Worktree create from a dirty main is
-allowed but worth flagging.
+- If the working tree is dirty, surface the changes and ask via `AskUserQuestion`
+  whether to proceed (stash / commit first / proceed anyway / abort). Running a
+  pipeline over uncommitted local edits risks mixing them into pipeline commits.
+- The base branch must be `main` (or the configured base). If `current_branch` is
+  not the base, ask before branching from a non-base HEAD.
 
-Create the worktree:
+### Create or resume the branch
 
 ```bash
-git -C "$repo_root" worktree add "$worktree_path" -b "$branch"
+if git -C "$repo_root" rev-parse --verify "$branch" >/dev/null 2>&1; then
+  # Branch already exists — resuming this spec. Check it out.
+  git -C "$repo_root" checkout "$branch"
+else
+  git -C "$repo_root" checkout -b "$branch"   # branches off the current base (clean main)
+fi
 cd "$worktree_path"
 ```
 
----
+On resume (branch already existed), read `master-plan.md` if present and show the
+user the last status before continuing.
 
-## Step 4.5 — Workspace setup
-
-**Goal:** make the worktree buildable. This means understanding what the project
-needs to compile and test, then providing it — not blindly running README commands.
-
-```bash
-cd "$worktree_path"
-```
-
-### Check for README.md
-
-If `README.md` is absent, print a warning and continue. Do not halt.
-
-```
-⚠️  No README.md found in ${worktree_path}. Skipping workspace setup.
-    Projects should include a README.md with setup instructions.
-```
-
-### Understand the setup holistically
-
-If `README.md` exists, read the **entire file**. Do not scan only for code
-blocks — understand the full narrative:
-
-1. **What does each setup step produce?** Config files, generated Swift,
-   `.xcconfig`, `.plist`, resolved packages, installed pods, etc.
-2. **What does each step require?** API keys, CI credentials, developer team
-   membership, environment variables, etc.
-3. **Is the output per-worktree or shared?** Gitignored files generated by
-   scripts are per-worktree. Package caches, SPM `.build/`, CocoaPods `Pods/`,
-   and Xcode DerivedData are shared across worktrees automatically.
-
-If the README contains no setup steps that affect the worktree's ability to
-build, continue to Step 5 without action.
-
-### Classify each setup step
-
-Assign each identified step to one of three categories:
-
-**Category A — Shared / auto-resolved (skip)**
-`swift package resolve`, `pod install`, `npm install`, `bundle install`, or
-anything that writes to a shared cache or a path already present in the
-repo. Xcode resolves these automatically. **Skip** — do not re-run in the
-worktree.
-
-**Category B — Gitignored config or secrets generator**
-A script that reads environment variables or credentials and writes one or
-more files to gitignored paths (`.xcconfig`, `.swift`, `.plist`, `.env`,
-`GoogleService-Info.plist`, etc.). These files are absent from a fresh
-worktree because they are not in git.
-
-For each Category B step:
-
-1. **Identify the output paths** the script produces. Read the script itself
-   if needed — look for `write_file`, `open(…, 'w')`, file path arguments, or
-   grep for path strings. Cross-check with `.gitignore` to confirm the outputs
-   are gitignored.
-
-2. **Check the main working tree first:**
-   ```bash
-   test -f "${repo_root}/<output_path>"
-   ```
-   If all outputs exist in `repo_root`: **copy** them to the corresponding
-   location in the worktree. This is the common case — the developer already
-   has a configured checkout.
-   ```bash
-   mkdir -p "${worktree_path}/$(dirname <output_path>)"
-   cp "${repo_root}/<output_path>" "${worktree_path}/<output_path>"
-   ```
-
-3. **If outputs are missing from the main tree:** check whether the required
-   environment variables are set in the current shell. If yes, run the script
-   from the worktree root. If no, halt with the message in the error section
-   below.
-
-**Category C — Developer environment / one-time setup (skip)**
-Adding a team membership, installing Xcode, obtaining certificates, or
-installing system tools. These are machine-level requirements. If the main
-tree builds, they are already satisfied. **Skip.**
-
-### Surface the plan, then execute
-
-Before running or copying anything, print a brief plan:
-
-```
-## Workspace setup — <worktree_path>
-
-  [skip]  <step description>  (Category A — shared with main tree)
-  [copy]  <output_path>  (from main tree → worktree)
-  [run]   <command>  (Category B — env vars present)
-  [skip]  <step description>  (Category C — developer environment)
-```
-
-Then execute every `[copy]` and `[run]` step in order.
-
-### Error: Category B script cannot be satisfied
-
-If a Category B output is absent from both the main tree and the worktree, and
-the required environment variables are not set, halt:
-
-```
-Setup cannot be completed automatically.
-
-Script `<script>` produces `<output_path>` but:
-  - The file does not exist in the main tree at `<repo_root>/<output_path>`
-  - Required environment variables are not set: <VAR1>, <VAR2>, …
-
-To proceed, either:
-  1. Run the setup script manually in <worktree_path> with the required
-     credentials, then re-invoke /spec-pipeline.
-  2. Copy <output_path> from another configured checkout of this repo.
-
-Worktree preserved at: <worktree_path>
-```
-
-Do not proceed to Step 5. The engineer agents will fail to build against an
-unconfigured workspace.
-
-### Success
-
-If all `[copy]` and `[run]` steps complete without error, print one line and
-continue:
-
-```
-✅ Workspace setup complete — <N> files copied, <M> commands run.
-```
+> The in-place checkout is already configured to build — there is no separate
+> workspace-setup step. (The old worktree-buildability setup was removed when the
+> pipeline moved in-place.)
 
 ---
 
@@ -712,7 +491,7 @@ if [[ ! -f "$audit_path" ]]; then
 **Started:** $(date '+%Y-%m-%d %H:%M:%S')
 **Source:** ${source_type}
 **Spec ID:** ${spec_id}
-**Worktree:** ${worktree_path}
+**Checkout:** ${worktree_path} (in-place)
 **Branch:** $(git -C "$worktree_path" rev-parse --abbrev-ref HEAD)
 
 ---
@@ -759,10 +538,39 @@ decision. When a signal fires, ask the user how to proceed via
 `AskUserQuestion` before dispatching the distiller. When the skill emits
 `Pre-flight clean.`, proceed to Phase 1 without further prompting.
 
-The existing parent-repo cleanliness check inside Step 4 (worktree create
-path) is narrower than this pre-flight — both run; they are not redundant.
-The worktree-side check guards the worktree creation itself; the pipeline
-pre-flight guards the pipeline's downstream assumptions about doc accuracy.
+The dirty-tree preflight inside Step 4 is narrower than this pre-flight — both
+run; they are not redundant. The Step 4 check guards the in-place branch
+creation itself; the pipeline pre-flight guards the pipeline's downstream
+assumptions about doc accuracy.
+
+---
+
+## Step 5.6 — Drift gate (`--from-issue` only)
+
+Skip unless `source_type == issue`. A spec with no master is its own authority;
+there is nothing to drift against.
+
+Run **after** the distiller has written the spec/plan (so it can be re-ordered
+to run at the top of Phase 1's tail — dispatch the distiller first, then gate).
+Two layers, both must pass before implementation:
+
+1. **Deterministic** — child-scope traceability, **scope-only** (no tests exist
+   yet, so the UNTESTED check is deferred to the Phase 3 test gate):
+   ```bash
+   bash ${SCRIPTS}/check-traceability.sh \
+     --spec "$spec_path" --plan "$plan_path" --scope-only
+   ```
+   This runs the SCOPE-CREEP and UNPLANNED checks only. A non-zero exit means the
+   plan's `implements:` tags drifted from the child's `covers:` → escalate via
+   Step 10.
+
+2. **Semantic** — dispatch `drift-auditor` (`subagent_type: drift-auditor`) with
+   the `master_issue` reference, `spec_path`, and `covers`. On `VERDICT:
+   BLOCKED`, write its findings to the audit log and escalate via Step 10 with
+   reason `Drift from master`. (Subagent crash → `subagent-reliability`.)
+
+The master-scope coverage check (every master AC covered by some child) is **not**
+run here — it reads all sibling sub-issues from GitHub and lives in `/spec-master`.
 
 ---
 
@@ -785,8 +593,13 @@ Dispatch the `spec-distiller` agent via the `Agent` tool
 - The absolute path to `$agents_dir/spec-distiller.md`
 - `spec_id`, `source_type`
 - The full `SPEC_PIPELINE_*` block
-- The `raw_text` (Jira blob, spec contents, or prompt text — verbatim,
+- The `raw_text` (issue/Jira blob, spec contents, or prompt text — verbatim,
   inside a `<<<RAW … RAW` fence)
+- **(`source_type=issue` only)** `covers` (the frozen master AC IDs **with their
+  verbatim text** from the master issue) and `depends_on`. The distiller writes
+  these into the spec frontmatter, labels the ACs with the frozen IDs, and tags
+  each plan task `implements: [...]` — this is what makes Steps 5.6 / the test
+  gate able to run. Without it the spine is inert.
 - (On Phase 2 amendment re-entry only) an appended `## Amendment notes`
   block carrying the planner's verbatim reasoning
 
@@ -958,7 +771,11 @@ Append `### Task N start — <ts>` to the audit log.
 
 2. **Test-writer dispatch** via `Agent` tool with `subagent_type:
    test-writer`. Pass `spec_path`, `task_n`, `engineer_files`, full
-   `SPEC_PIPELINE_*` block.
+   `SPEC_PIPELINE_*` block, and (for `source_type=issue`) the
+   `xcresult_path` defined in step 4 below with the instruction to run the
+   targeted suite **with coverage** to that bundle (`-enableCodeCoverage YES
+   -resultBundlePath "$xcresult_path"`). The test-writer also annotates each
+   `@Test` with `// AC: <frozen id>` so the gate can map tests to ACs.
 
    Failure mode: unrecoverable test failure → escalate. Otherwise
    continue with combined `impl_files` = engineer_files ∪ new test
@@ -977,19 +794,60 @@ Append `### Task N start — <ts>` to the audit log.
      the same "Apply each Required fix exactly" instruction. Then
      re-dispatch `concurrency-auditor` once. If still BLOCKED → escalate.
 
-4. **Task-reviewer dispatch** via `Agent` tool with `subagent_type:
-   task-reviewer`. Pass `plan_path`, `spec_path`, `task_n`, full
-   `SPEC_PIPELINE_*` block.
+4. **Test gate** — deterministic, before any reviewer sees the task. Skipped for
+   non-`issue` sources (no master ⇒ no `covers` to gate). Two checks.
 
-   Parse the verdict:
-   - `✅ PASS` → continue
-   - `VERDICT: BLOCKED` → write the reviewer's blockers to a tmp file
-     (`$TMPDIR/spec-pipeline-${spec_id}-task-review-task${task_n}.md`).
-     Re-dispatch `engineer` with that tmp path. Then re-run the full
-     chain **from test-writer onwards** (test-writer → concurrency-auditor
-     → task-reviewer). If still BLOCKED → escalate.
+   The test-writer (step 2) is instructed to run its targeted suite **with
+   coverage** to a known bundle so the gate can read it:
+   ```bash
+   xcresult_path="${TMPDIR:-/tmp}/spec-pipeline-${spec_id}-task${task_n}.xcresult"
+   # test-writer runs: xcodebuild test … -enableCodeCoverage YES \
+   #   -resultBundlePath "$xcresult_path"   (rm -rf it first; xcodebuild won't overwrite)
+   tests_dir="${SPEC_PIPELINE_TESTS_DIR:-$(git -C "$worktree_path" ls-files \
+     | grep -E '(Tests/|UITests/)' | sed -E 's#/[^/]+$##' | sort -u | head -1)}"
+   exclusions="${TMPDIR:-/tmp}/spec-pipeline-${spec_id}-test-exclusions.txt"
+   ```
 
-5. **Commit** — inline `/git-commit` semantics. Do not dispatch an
+   a. **AC→test mapping** (every covered AC has an asserting test, or is excluded):
+      ```bash
+      bash ${SCRIPTS}/check-traceability.sh \
+        --spec "$spec_path" --plan "$plan_path" \
+        --tests-dir "$worktree_path/$tests_dir" \
+        $( [[ -f "$exclusions" ]] && printf -- '--exclusions %s' "$exclusions" )
+      ```
+   b. **Changed-line coverage** ≥ `${SPEC_PIPELINE_COVERAGE_FLOOR}` (default 90):
+      ```bash
+      bash ${SCRIPTS}/coverage-gate.sh \
+        --xcresult "$xcresult_path" --base main \
+        --floor "${SPEC_PIPELINE_COVERAGE_FLOOR}" --root "$worktree_path" \
+        $( [[ -f "$exclusions" ]] && printf -- '--exclusions %s' "$exclusions" )
+      ```
+
+   On either failure, re-dispatch `test-writer` (missing/insufficient tests) or
+   `engineer` (genuinely untestable code that should be refactored, or an
+   exclusion to record) with the gate output by path. Re-run the gate. If it
+   still fails after one fix cycle → escalate via Step 10 with reason
+   `Test gate failed`. A genuinely-untestable path is added to the exclusions
+   file with a one-line reason — never silently dropped.
+
+5. **Dual review — two diverse lenses, in parallel, blind to each other.**
+   Dispatch BOTH in a single message (two `Agent` calls) so neither sees the
+   other's verdict:
+   - `task-reviewer` (`subagent_type: task-reviewer`) — spec-correctness lens.
+   - `quality-reviewer` (`subagent_type: quality-reviewer`) — architecture &
+     code-quality lens.
+   Pass each `plan_path`, `spec_path`, `task_n`, full `SPEC_PIPELINE_*` block.
+
+   The task proceeds to commit only when **both** return `✅ PASS`. For each that
+   returns `VERDICT: BLOCKED`:
+   - Write that reviewer's blockers to a tmp file
+     (`$TMPDIR/spec-pipeline-${spec_id}-<lens>-task${task_n}.md`). If both
+     blocked, concatenate both files so the engineer fixes them in one pass.
+   - Re-dispatch `engineer` with the blockers path(s). Then re-run the full chain
+     **from test-writer onwards** (test-writer → test gate → concurrency-auditor →
+     both reviewers). If either lens is still BLOCKED after the retry → escalate.
+
+6. **Commit** — inline `/git-commit` semantics. Do not dispatch an
    agent; the SKILL drives `git` directly.
 
    ```bash
@@ -1027,7 +885,7 @@ COMMITMSG
    create a **new** commit (never amend, never `--no-verify`). If the
    failure is not fixable after one attempt → escalate.
 
-6. **Update plan + master-plan** — only on first-time completion (not
+7. **Update plan + master-plan** — only on first-time completion (not
    BLOCKED-cycle, where the task is already ✅):
 
    ```bash
@@ -1040,7 +898,7 @@ COMMITMSG
    fi
    ```
 
-7. **Append per-task done entry** to the audit log with the commit hash
+8. **Append per-task done entry** to the audit log with the commit hash
    and modified file count.
 
 ### After the loop
@@ -1143,7 +1001,22 @@ The SKILL does **not** inline `gh pr create`. If `/git-pr` reports
 blockers from its own code-review pass that the whole-diff review
 missed, halt — do not bypass.
 
-### On success — append Final Outcome and exit
+### On success — reconcile GitHub, append Final Outcome, exit
+
+**Reconcile the master spec (`--from-issue` only).** Before writing the outcome,
+update the GitHub tree so the master issue reflects reality:
+
+1. Tick this child's per-AC checkboxes in its sub-issue body for every covered AC
+   now implemented + tested (`gh issue edit "$child_issue" --repo "$REPO"
+   --body-file <updated>`).
+2. Tick this child's row in the master issue's `## Child specs` task-list
+   (`gh issue edit "$master_issue" …`). The PR merging will close the sub-issue;
+   the master's native sub-issue progress bar advances automatically.
+3. Add a comment on the child sub-issue linking the PR
+   (`gh issue comment "$child_issue" --repo "$REPO" --body "Implemented in <PR URL>"`).
+
+These are the durable drift-tracking writes — the master issue stays the single
+source of truth and visibly tracks every child to completion.
 
 ```bash
 cat <<EOF >> "$audit_path"
@@ -1154,32 +1027,27 @@ cat <<EOF >> "$audit_path"
 **PR:** <PR URL from /git-pr output>
 **Commits:** $(git -C "$worktree_path" rev-list --count main..HEAD)
 **Cycles:** $((cycle + 1))
+**Child issue:** <#GH, reconciled to master> (issue source only)
 **Notes:** <any SHOULD-FIX / NICE-TO-HAVE from Phase 4>
-
-### Cleanup reminder
-After this PR merges, remove the worktree:
-git worktree remove ${worktree_path}
 EOF
 ```
 
-Print the same final block to the user:
+Print the final block to the user:
 
 ```
 ✅ Pipeline complete
    PR:        <URL>
-   Worktree:  <worktree path>
+   Branch:    <branch> (in-place, on the current checkout)
    Audit log: <audit path>
-
-After the PR merges, remove the worktree:
-  git worktree remove <worktree path>
+   Master:    <master issue URL — child reconciled>   (issue source only)
 ```
 
 ### On any escalation (from any earlier step)
 
 Any halt jumps here. Append `## Final Outcome — ESCALATED — <reason>` to
 the audit log with the failing phase label, the cycle count at
-escalation, and the last blockers table verbatim (if any). State that
-the worktree is preserved.
+escalation, and the last blockers table verbatim (if any). The branch and
+its commits are left in place for manual inspection.
 
 ```bash
 cat <<EOF >> "$audit_path"
@@ -1189,7 +1057,7 @@ cat <<EOF >> "$audit_path"
 **Status:** ⚠️  ESCALATED — <reason>
 **Failing phase:** <Phase N label>
 **Cycle at escalation:** ${cycle}
-**Worktree:** ${worktree_path} (preserved for manual inspection)
+**Branch:** $(git -C "$worktree_path" rev-parse --abbrev-ref HEAD) (in-place, preserved for inspection)
 EOF
 
 if [[ -n "$blockers_path" ]]; then
@@ -1206,11 +1074,11 @@ Print to the user:
 ```
 ⚠️  Pipeline ESCALATED — see audit log for details
    Audit log:    <audit path>
-   Worktree:     <worktree path> (preserved for manual inspection)
+   Branch:       <branch> (in-place, preserved for manual inspection)
    Failing phase: <phase label>
 ```
 
-**Never** create a PR on escalation. **Never** remove the worktree.
+**Never** create a PR on escalation. **Never** discard the branch or its commits.
 
 ### Failure modes that trigger escalation
 
@@ -1241,25 +1109,28 @@ A project must do two things to use this skill:
    master-plan.md
    ```
 
-   The pipeline writes these inside each worktree. The Obsidian audit log
-   is the durable record (the worktree is disposable).
+   The pipeline writes these on the in-place branch. The Obsidian audit log
+   and the GitHub master/child issues are the durable records.
 
 ---
 
 ## Hard rules
 
-- **Never auto-invoke** — user trigger only. The skill creates worktrees and branches; do not invoke it from description-matching alone.
-- **One source flag** — never accept two of `--from-jira / --from-spec / --from-prompt`
+- **Never auto-invoke** — user trigger only. The skill creates branches and
+  commits; do not invoke it from description-matching alone.
+- **One source flag** — never accept two of
+  `--from-issue / --from-jira / --from-spec / --from-prompt`
 - **Stop on missing required config** — never invent `workspace`/`scheme`/
   `destination`/`tests_target`
-- **Never run on `main` without a worktree** — Phases 1–5 run inside a
-  fresh worktree, on a fresh branch
-- **Never auto-confirm the worktree create** — even when the path is clear,
-  the lightweight confirmation in Step 3 is required
-- **Never create the worktree before the scope check passes** on Jira input —
-  Step 3.5 either approves OK or halts on SPLIT before Step 4 runs
+- **Runs in-place, never creates a worktree** — Phases 1–5 run on a fresh branch
+  off the current base in the current checkout. The user sets up a worktree
+  manually beforehand if they want isolation.
+- **Never run directly on the base branch** — always branch first (Step 4)
+- **Never auto-confirm the branch create** — the lightweight confirmation in
+  Step 3 and the dirty-tree preflight in Step 4 are required
+- **Honour the sequencing gate** — never start a child whose `depends_on` is not
+  fully merged to main (Step 3.7)
 - **Never invent acceptance criteria** — if the input has none, stop and ask
-- **Never auto-remove worktrees** — the user removes them post-merge
 
 ---
 

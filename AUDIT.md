@@ -4,6 +4,50 @@ A running record of audit passes against this skill library. Each dated section 
 
 ---
 
+## 2026-06-18
+
+Spec-pipeline rebuild. Fixes a silent regression and adds the master-spec layer,
+dual review, the traceability spine, and a test-coverage gate. Design and
+decisions recorded in [ADR 0014](docs/adr/0014-master-spec-layer-and-in-place-spec-pipeline.md)
+and `~/Developer/obsidian/skills/plans/spec-pipeline-rebuild.md`.
+
+### Root-cause regression
+
+Commit `da5fc1c "removing agents"` (2026-05-24) deleted the eight leaf agents
+`/spec-pipeline` dispatches by `subagent_type`. The SKILL kept dispatching them,
+so since late May every phase ran through a generic fallback agent with no
+specialist instructions — the literal cause of "no reviewer" and "weak tests".
+All eight were restored verbatim from `da5fc1c^`.
+
+### Changed / new
+
+| Path | Change |
+|---|---|
+| `agents/{engineer,planner,spec-distiller,test-writer,concurrency-auditor,task-reviewer,swift-spec-review,spec-scope-guardian}.md` | Restored from git. |
+| `agents/task-reviewer.md` | Narrowed to the spec-correctness lens (architecture moved out). |
+| `agents/quality-reviewer.md` | **New** — architecture/quality lens; runs in parallel with task-reviewer, both must PASS. |
+| `agents/test-writer.md` | Emits the `// AC: <id>` mapping convention; every test carries its AC. |
+| `agents/drift-auditor.md` | **New** — semantic master↔child drift gate. |
+| `agents/spec-scope-guardian.md` | Repurposed: proposes GitHub child specs (`covers`/`depends_on`), not Jira sub-tasks. |
+| `agents/spec-distiller.md` | Producer end of the spine: writes `covers:` frontmatter, labels ACs with frozen master IDs, tags each plan task `implements: [...]`. |
+| `agents/planner.md` | Validates the spine (every covered AC planned, no creep, test pairing) when the spec carries `covers:`. |
+| `skills/engineering/spec-master/SKILL.md` | **New** orchestrator — Jira story → GitHub master issue + native child sub-issues + matrix. |
+| `skills/engineering/spec-pipeline/SKILL.md` | In-place (no worktree); `--from-issue`; sequencing gate; drift gate; dual review + test gate; GitHub reconciliation. |
+| `skills/engineering/spec-pipeline/scripts/check-traceability.sh` | **New** — child-scope traceability gate. |
+| `skills/engineering/spec-pipeline/scripts/coverage-gate.sh` | **New** — changed-line coverage gate (xccov ∩ diff). |
+| `skills/engineering/spec-pipeline/scripts/read-pipeline-config.sh` | Added `coverage_floor` default; `github_repo` parses via the generic reader. |
+| `SCHEMA.md` | Documented `github_repo`, `coverage_floor`. |
+| `docs/adr/0014-*.md` | **New** ADR; partially supersedes ADR 0003 (worktree distinction). |
+| `tests/python/test_orchestrator_conformance.py` | Added `/spec-master` to the ORCHESTRATORS list. |
+| `README.md` | New `/spec-master` row; updated `/spec-pipeline` and the altitude table. |
+
+### Verification still owed
+
+`coverage-gate.sh` is syntax-clean but unverified against a real `.xcresult` (no
+Xcode project in this repo). `check-traceability.sh` smoke-tested green across
+pass / scope-creep / exclusion cases. The `gh api graphql addSubIssue` path is
+written but not yet exercised against a live repo.
+
 ## 2026-05-19
 
 Introduction of `/spec-pipeline` — a top-level orchestrator skill that drives the existing per-domain skills end-to-end (input → spec → plan → per-task implement → whole-diff review → PR). This is the library's first orchestrator-shaped skill. Design rationale, fork-by-fork decisions, and verification plan are recorded in `~/.claude/plans/on-the-plan-before-temporal-starfish.md`.

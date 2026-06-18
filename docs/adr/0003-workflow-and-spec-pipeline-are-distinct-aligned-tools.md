@@ -2,6 +2,11 @@
 status: accepted
 ---
 
+> **Partially superseded by [[0014-master-spec-layer-and-in-place-spec-pipeline]].**
+> `spec-pipeline` is now in-place (no worktree), so the worktree-vs-in-place
+> distinction below no longer holds. The scope distinction (whole child spec vs
+> single subtask) and the argument-style / alignment guidance still stand.
+
 # workflow and spec-pipeline are two distinct orchestrators, kept aligned rather than merged
 
 `workflow` (a command) and `spec-pipeline` (a skill) both take an input to a PR,
