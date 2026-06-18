@@ -10,6 +10,7 @@ description: >
   "run the pipeline", "spec-pipeline PROJ-123", "build this spec", or
   "/spec-pipeline …". Project must declare its config in a fenced
   spec_pipeline YAML block in CLAUDE.md — see SCHEMA.md.
+disable-model-invocation: true
 ---
 
 # Spec Pipeline
