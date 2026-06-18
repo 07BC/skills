@@ -29,6 +29,15 @@ DEPENDENCY_SKILLS = [
     "skills/engineering/ios-simulator-control/SKILL.md",
 ]
 
+# User-invoked orchestrator skills: explicitly triggered (/name or Skill tool),
+# never auto-fired, because they create branches/commits/issues. They must set
+# disable-model-invocation: true but stay user-invocable. (Pinned here because
+# spec-pipeline once silently lost this flag — see ADR 0014.)
+NO_AUTOFIRE_ORCHESTRATOR_SKILLS = [
+    "skills/engineering/spec-pipeline/SKILL.md",
+    "skills/engineering/spec-master/SKILL.md",
+]
+
 
 def _frontmatter(path: Path) -> str:
     text = path.read_text(encoding="utf-8")
@@ -60,4 +69,18 @@ def test_dependency_skill_carries_both_markers(rel_path):
     assert re.search(r"(?m)^user-invocable:\s*false\b", fm), (
         f"{rel_path} is a dependency skill and must set "
         f"`user-invocable: false` (see ADR 0004)."
+    )
+
+
+@pytest.mark.parametrize("rel_path", NO_AUTOFIRE_ORCHESTRATOR_SKILLS)
+def test_orchestrator_skill_disables_model_invocation(rel_path):
+    fm = _frontmatter(REPO_ROOT / rel_path)
+    assert _has_flag(fm, "disable-model-invocation"), (
+        f"{rel_path} is a user-invoked orchestrator that creates branches/commits/"
+        f"issues and must set `disable-model-invocation: true` so it never "
+        f"auto-fires (see ADR 0014). It stays user-invocable."
+    )
+    assert not re.search(r"(?m)^user-invocable:\s*false\b", fm), (
+        f"{rel_path} must stay user-invocable (do not set user-invocable: false) "
+        f"— users trigger it explicitly via /{Path(rel_path).parent.name}."
     )
