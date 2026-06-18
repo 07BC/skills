@@ -14,9 +14,10 @@
 # Claude Code — local overrides (never commit)
 .claude/settings.local.json
 
-# Editor
+# Editor / local tool state (per-machine, not repo content)
 .vscode/
 .idea/
+.opal/
 *.swp
 *.swo
 
