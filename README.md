@@ -222,6 +222,7 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 | [/swift-tvos](./skills/engineering/swift-tvos/SKILL.md) | Diagnoses tvOS navigation and focus-engine bugs. Always use this — do not attempt tvOS focus diagnosis ad hoc. | Sonnet · Direct |
 | [/swift-concurrency](./skills/engineering/swift-concurrency/SKILL.md) | **A part of the Engineer** — async/await, actors, Sendable, Swift 6 migration. Auto-loaded by `/swift-engineer` for async work; invoke directly only to *learn or explain* concepts (not to write or fix code). | Sonnet · Direct |
 | [/swiftui-performance-audit](./skills/engineering/swiftui-performance-audit/SKILL.md) | Audit SwiftUI runtime performance from code first — slow rendering, janky scrolling, expensive updates, profiling. | Sonnet · Direct |
+| [/proxyman-scripting](./skills/engineering/proxyman-scripting/SKILL.md) | Write and edit Proxyman JS scripts to intercept and modify HTTP/HTTPS traffic — mock APIs, inject headers/tokens, map remote→local, rewrite status/body, use built-in addons (Base64/JWT/AES/GZip). | Sonnet · Direct |
 
 ### Test
 
@@ -268,6 +269,7 @@ Behaviour-preserving rewrites and refactors are part of `/swift-engineer` (rewri
 |---|---|---|
 | [/spec-master](./skills/engineering/spec-master/SKILL.md) | Decomposition front door — turns a Jira story into a GitHub master issue + sequential child sub-issues (native, via `gh api graphql`), freezing a stable AC ID per criterion and building the traceability matrix. Does not implement. | Opus · Orchestrated |
 | [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | Implements one child spec → PR, in-place on a fresh branch (no worktree), driving engineer → test-writer → test gate → concurrency-auditor → two diverse-lens reviewers (both must PASS) per task, then reconciling the child + master issues. Hard-stops until its `depends_on` children are merged. Run `--from-issue <#>` per child from `/spec-master`. | Opus+Sonnet · Orchestrated |
+| [/spec-validation](./skills/pipelines/spec-validation/SKILL.md) | Validates drafted specs against the live codebase with a multi-lens agent panel, then reconciles findings back into the spec — run after a fix is designed (e.g. by `/solve`), before implementation. Confirms every file/line/symbol and proposed diff is real. | Opus · Direct |
 | [/pipeline-preflight](./skills/pipelines/pipeline-preflight/SKILL.md) | Pre-flight checks before any pipeline starts — progress-doc drift, out-of-scope stories, dirty working tree. Cited by orchestrators; does not auto-fire. | Sonnet · Orchestrated |
 | [/subagent-reliability](./skills/pipelines/subagent-reliability/SKILL.md) | Recovery procedure for dropped or crashed subagents — recover-in-place, resume, or re-spawn. Cited by orchestrators; does not auto-fire. | Sonnet · Orchestrated |
 
