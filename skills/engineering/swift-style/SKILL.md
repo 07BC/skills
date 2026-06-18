@@ -12,6 +12,8 @@ description: >
   rewriting existing messy code, use swift-engineer (rewrite mode) instead.
   NOT a standalone skill — loaded as a dependency by swift-engineer and
   swift-code-review. Do not invoke directly.
+user-invocable: false
+disable-model-invocation: true
 ---
 
 # Swift Style
