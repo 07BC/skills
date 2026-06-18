@@ -47,8 +47,10 @@ create a worktree, do not spawn the orchestrator, do not run any script.
 /spec-pipeline — end-to-end spec-driven orchestration
 
 Usage:
+  /spec-pipeline --from-issue GH#       build a child spec from a GitHub sub-issue
   /spec-pipeline --from-jira KEY        distil a Jira ticket → spec → plan → PR
   /spec-pipeline --from-spec PATH       build from an existing markdown spec
+  /spec-pipeline --from-spec PATH --verbatim   use the spec as-is (no re-distill)
   /spec-pipeline --from-prompt "TEXT"   build from a free-form description
   /spec-pipeline KEY                    shorthand for --from-jira when KEY matches ^[A-Z]+-[0-9]+$
 
@@ -135,8 +137,17 @@ Exactly one source flag is required:
 - `--from-issue <GH#>` — resolves a child spec from a GitHub sub-issue created by
   `/spec-master` (the intended path; carries the traceability spine and sequencing)
 - `--from-jira <KEY>` — fetches the ticket via the Atlassian MCP
-- `--from-spec <PATH>` — reads an existing markdown spec
+- `--from-spec <PATH>` — reads an existing markdown spec (re-distilled into the
+  canonical format by default)
 - `--from-prompt "<TEXT>"` — distils a free-form description
+
+Modifier (valid only with `--from-spec`):
+
+- `--verbatim` — treat the on-disk spec as **authoritative and already canonical**.
+  The distiller does not rewrite or reinterpret it; it only derives the plan from
+  it. Use this when you have hand-written the spec and want it implemented as
+  written. If the spec lacks the structure needed to plan against, the distiller
+  reports and stops rather than inventing.
 
 `--from-issue` is the canonical entry point: it inherits the frozen AC IDs,
 `covers`, and `depends_on` from the master spec, which feed the sequencing gate
@@ -145,8 +156,10 @@ three sources have no master to track against — their drift/sequencing gates a
 skipped (a one-off spec with no master is its own authority).
 
 `$ARGUMENTS` from the slash-command invocation is parsed left-to-right; the
-first flag wins. Unrecognised flags fail fast — print *"unknown flag <flag>;
-run `/spec-pipeline --help` for usage"* and exit.
+first **source** flag wins. `--verbatim` is a recognised modifier (valid only
+alongside `--from-spec`; reject it for any other source). Any other unrecognised
+flag fails fast — print *"unknown flag <flag>; run `/spec-pipeline --help` for
+usage"* and exit.
 
 If no flag is provided but the argument looks like a Jira key
 (matches `^[A-Z]+-[0-9]+$`), assume `--from-jira`.
@@ -286,12 +299,14 @@ lower-stakes and agents handle them with a per-file read that fails softly.
 ### `--from-spec <PATH>`
 
 1. Verify the file exists. If not, stop with a clear error.
-2. `raw_text="$(cat <PATH>)"`
+2. `raw_text="$(cat <PATH>)"`; record `original_spec_path="<PATH>"`.
 3. ```bash
    spec_id="$(bash ${SKILL_DIR}/scripts/derive-spec-id.sh --from-spec "<PATH>")"
    branch_id="${spec_id}"
    ```
-4. `source_type=spec`
+4. `source_type=spec`. If the `--verbatim` modifier was passed, set
+   `distill_mode=verbatim` (otherwise `distill_mode=distil`). `--verbatim` is only
+   valid here — reject it for any other source with the unknown-flag error.
 
 ### `--from-prompt "<TEXT>"`
 
@@ -600,12 +615,23 @@ Dispatch the `spec-distiller` agent via the `Agent` tool
   these into the spec frontmatter, labels the ACs with the frozen IDs, and tags
   each plan task `implements: [...]` — this is what makes Steps 5.6 / the test
   gate able to run. Without it the spine is inert.
+- **(`distill_mode=verbatim` only)** before dispatching, copy the authoritative
+  spec into place unchanged so it is not reinterpreted:
+  ```bash
+  mkdir -p "$(dirname "$spec_path")"
+  cp "$original_spec_path" "$spec_path"
+  ```
+  Then pass `distill_mode=verbatim` in the prompt with the instruction: *"VERBATIM
+  MODE — the spec at spec_path is authoritative and already canonical. Do NOT
+  rewrite or reinterpret it. Produce ONLY the plan and master-plan entry from it.
+  If it lacks the structure needed to plan, report and stop — do not invent."*
 - (On Phase 2 amendment re-entry only) an appended `## Amendment notes`
   block carrying the planner's verbatim reasoning
 
-Wait for completion. The distiller writes `docs/specs/<spec-id>.md`,
-`docs/plans/<spec-id>.md`, and updates `master-plan.md` inside the
-worktree.
+Wait for completion. In `distil` mode the distiller writes
+`docs/specs/<spec-id>.md`, `docs/plans/<spec-id>.md`, and updates
+`master-plan.md`. In `verbatim` mode it leaves the copied spec untouched and
+writes only the plan + master-plan entry.
 
 ### Parse the result
 
@@ -771,11 +797,12 @@ Append `### Task N start — <ts>` to the audit log.
 
 2. **Test-writer dispatch** via `Agent` tool with `subagent_type:
    test-writer`. Pass `spec_path`, `task_n`, `engineer_files`, full
-   `SPEC_PIPELINE_*` block, and (for `source_type=issue`) the
-   `xcresult_path` defined in step 4 below with the instruction to run the
-   targeted suite **with coverage** to that bundle (`-enableCodeCoverage YES
-   -resultBundlePath "$xcresult_path"`). The test-writer also annotates each
-   `@Test` with `// AC: <frozen id>` so the gate can map tests to ACs.
+   `SPEC_PIPELINE_*` block, and — for **every** source — the `xcresult_path`
+   defined in step 4 below, with the instruction to run the targeted suite
+   **with coverage** to that bundle (`-enableCodeCoverage YES -resultBundlePath
+   "$xcresult_path"`). The coverage floor applies to all sources, so coverage is
+   always collected. For `source_type=issue` additionally instruct it to annotate
+   each `@Test` with `// AC: <frozen id>` so the AC→test check can map tests.
 
    Failure mode: unrecoverable test failure → escalate. Otherwise
    continue with combined `impl_files` = engineer_files ∪ new test
@@ -794,11 +821,9 @@ Append `### Task N start — <ts>` to the audit log.
      the same "Apply each Required fix exactly" instruction. Then
      re-dispatch `concurrency-auditor` once. If still BLOCKED → escalate.
 
-4. **Test gate** — deterministic, before any reviewer sees the task. Skipped for
-   non-`issue` sources (no master ⇒ no `covers` to gate). Two checks.
-
-   The test-writer (step 2) is instructed to run its targeted suite **with
-   coverage** to a known bundle so the gate can read it:
+4. **Test gate** — deterministic, before any reviewer sees the task. Common setup
+   (the test-writer in step 2 runs its targeted suite **with coverage** to this
+   bundle so the gate can read it):
    ```bash
    xcresult_path="${TMPDIR:-/tmp}/spec-pipeline-${spec_id}-task${task_n}.xcresult"
    # test-writer runs: xcodebuild test … -enableCodeCoverage YES \
@@ -808,18 +833,21 @@ Append `### Task N start — <ts>` to the audit log.
    exclusions="${TMPDIR:-/tmp}/spec-pipeline-${spec_id}-test-exclusions.txt"
    ```
 
-   a. **AC→test mapping** (every covered AC has an asserting test, or is excluded):
-      ```bash
-      bash ${SCRIPTS}/check-traceability.sh \
-        --spec "$spec_path" --plan "$plan_path" \
-        --tests-dir "$worktree_path/$tests_dir" \
-        $( [[ -f "$exclusions" ]] && printf -- '--exclusions %s' "$exclusions" )
-      ```
-   b. **Changed-line coverage** ≥ `${SPEC_PIPELINE_COVERAGE_FLOOR}` (default 90):
+   a. **Changed-line coverage** ≥ `${SPEC_PIPELINE_COVERAGE_FLOOR}` (default 90) —
+      runs for **every source** (it needs no ACs, just the diff vs main):
       ```bash
       bash ${SCRIPTS}/coverage-gate.sh \
         --xcresult "$xcresult_path" --base main \
         --floor "${SPEC_PIPELINE_COVERAGE_FLOOR}" --root "$worktree_path" \
+        $( [[ -f "$exclusions" ]] && printf -- '--exclusions %s' "$exclusions" )
+      ```
+   b. **AC→test mapping** (every covered AC has an asserting test, or is excluded)
+      — **`source_type=issue` only** (jira/spec/prompt have no frozen AC IDs to
+      map, so this check is skipped for them):
+      ```bash
+      bash ${SCRIPTS}/check-traceability.sh \
+        --spec "$spec_path" --plan "$plan_path" \
+        --tests-dir "$worktree_path/$tests_dir" \
         $( [[ -f "$exclusions" ]] && printf -- '--exclusions %s' "$exclusions" )
       ```
 

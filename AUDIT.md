@@ -41,6 +41,17 @@ All eight were restored verbatim from `da5fc1c^`.
 | `tests/python/test_orchestrator_conformance.py` | Added `/spec-master` to the ORCHESTRATORS list. |
 | `README.md` | New `/spec-master` row; updated `/spec-pipeline` and the altitude table. |
 
+### Follow-up refinements (same session)
+
+- **Coverage gate runs on all sources.** Split the Phase 3 test gate: the
+  changed-line coverage floor (`coverage-gate.sh`) now runs for every source
+  (issue/jira/spec/prompt — it needs no ACs); only AC→test mapping stays
+  issue-only. `--from-spec` therefore gets the 90% floor too.
+- **`--from-spec --verbatim`.** New modifier: treats the on-disk spec as
+  authoritative and already canonical — the distiller does not rewrite it, only
+  derives the plan (verbatim mode in `spec-distiller.md`). For hand-written specs
+  that must be implemented as written.
+
 ### Verification still owed
 
 `coverage-gate.sh` is syntax-clean but unverified against a real `.xcresult` (no
