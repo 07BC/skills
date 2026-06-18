@@ -48,7 +48,7 @@ Every skill here is a **phase** in one delivery lifecycle: shape → architect �
 
 | Altitude | You run | What happens | When to use |
 |---|---|---|---|
-| **Full-auto** | `/spec-pipeline TICKET` | A whole ticket → PR, autonomously, in a disposable git worktree (unattended; ~60–90 min in practice — an estimate, not a guarantee). Splits tickets the scope-guardian judges too large for one run before starting. | A well-specified ticket you want built end-to-end without babysitting. |
+| **Full-auto** | `/spec-master TICKET` then `/spec-pipeline --from-issue #` | `/spec-master` decomposes a story into a GitHub master issue + sequential child sub-issues; `/spec-pipeline` ships each child → PR, in-place, autonomously (unattended; ~60–90 min per child — an estimate, not a guarantee). | A well-specified story you want decomposed, tracked, and built end-to-end without babysitting. |
 | **Orchestrated** | `/workflow SUBTASK` | One subtask → PR, with the orchestrator (Opus) deciding and subagents (Sonnet) executing each phase, plus GitHub architecture-drift tracking across the story. | A single scoped subtask where you want control points and architecture tracking. |
 | **Manual** | the skills below, one at a time | You drive each phase yourself: `/engineer-brief`, `/swift-engineer`, `/swift-testing`, `/swift-code-review`, `/git-pr`. | Exploratory work, learning, or anything where you want to see each step. |
 
@@ -266,7 +266,8 @@ Behaviour-preserving rewrites and refactors are part of `/swift-engineer` (rewri
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | Whole-spec orchestrator — ships an entire Jira ticket / spec / prompt to a PR autonomously in a disposable worktree, driving engineer → test-writer → concurrency-auditor → task-reviewer per task. | Opus+Sonnet · Orchestrated |
+| [/spec-master](./skills/engineering/spec-master/SKILL.md) | Decomposition front door — turns a Jira story into a GitHub master issue + sequential child sub-issues (native, via `gh api graphql`), freezing a stable AC ID per criterion and building the traceability matrix. Does not implement. | Opus · Orchestrated |
+| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | Implements one child spec → PR, in-place on a fresh branch (no worktree), driving engineer → test-writer → test gate → concurrency-auditor → two diverse-lens reviewers (both must PASS) per task, then reconciling the child + master issues. Hard-stops until its `depends_on` children are merged. Run `--from-issue <#>` per child from `/spec-master`. | Opus+Sonnet · Orchestrated |
 | [/pipeline-preflight](./skills/pipelines/pipeline-preflight/SKILL.md) | Pre-flight checks before any pipeline starts — progress-doc drift, out-of-scope stories, dirty working tree. Cited by orchestrators; does not auto-fire. | Sonnet · Orchestrated |
 | [/subagent-reliability](./skills/pipelines/subagent-reliability/SKILL.md) | Recovery procedure for dropped or crashed subagents — recover-in-place, resume, or re-spawn. Cited by orchestrators; does not auto-fire. | Sonnet · Orchestrated |
 

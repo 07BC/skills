@@ -12,6 +12,7 @@ In the target project's `CLAUDE.md`:
 ```yaml
 spec_pipeline:
   ticket_prefix: NAT
+  github_repo: my-org/my-app
   workspace: MyApp.xcworkspace
   scheme: "MyApp"
   destination: "platform=tvOS Simulator,name=Apple TV"
@@ -22,6 +23,7 @@ spec_pipeline:
   plan_dir: docs/plans
   audit_dir: AI/plans
   cycle_budget: 3
+  coverage_floor: 90
 ```
 ````
 
@@ -31,7 +33,10 @@ The parser extracts the first ```` ```yaml ```` block that contains a top-level 
 
 | Key | Required | Type | Default | Meaning |
 |---|---|---|---|---|
-| `ticket_prefix` | recommended | string | (none) | Ticket prefix for branch naming and `/git-commit`. E.g. `NAT`. When absent, the pipeline derives branch names from spec ID without a prefix. |
+| `ticket_prefix` | recommended | string | (none) | Ticket prefix for branch naming and `/git-commit`. E.g. `NAT`. When absent, the pipeline derives branch names from spec ID without a prefix. Also anchors frozen AC IDs (`<PREFIX>-NNN-ACn`) in `/spec-master`. |
+| `github_repo` | recommended | string | (current repo) | `owner/name` of the GitHub repo holding the master + child issues. Required by `/spec-master` and by `/spec-pipeline --from-issue`. When unset, both fall back to `gh repo view`. |
+| `coverage_floor` | optional | integer | `90` | Minimum changed-line coverage percent the Phase 3 test gate enforces (`coverage-gate.sh`). Genuinely-untestable paths go in an exclusions file, not a lower floor. |
+| `tests_dir` | optional | string | (auto-detected) | Directory holding test sources, scanned by the test gate for `// AC:` annotations. When unset, the pipeline derives it from tracked `*Tests/` / `*UITests/` paths. Set it when auto-detection picks the wrong dir. |
 | `workspace` | yes | string | — | `.xcworkspace` file at repo root. |
 | `scheme` | yes | string | — | Xcode scheme name (quote if contains spaces). |
 | `destination` | yes | string | — | Full `-destination` argument value (quote it). |
@@ -83,6 +88,8 @@ SPEC_PIPELINE_SPEC_DIR='docs/specs'
 SPEC_PIPELINE_PLAN_DIR='docs/plans'
 SPEC_PIPELINE_AUDIT_DIR='AI/plans'
 SPEC_PIPELINE_CYCLE_BUDGET='3'
+SPEC_PIPELINE_GITHUB_REPO='my-org/my-app'
+SPEC_PIPELINE_COVERAGE_FLOOR='90'
 ```
 
 - Exits non-zero with a printable error if any required field is missing or the fence cannot be found.

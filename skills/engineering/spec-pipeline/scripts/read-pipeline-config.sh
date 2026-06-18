@@ -116,6 +116,8 @@ add_default SPEC_DIR 'docs/specs'
 add_default PLAN_DIR 'docs/plans'
 add_default AUDIT_DIR 'AI/plans'
 add_default CYCLE_BUDGET '3'
+add_default COVERAGE_FLOOR '90'
+# github_repo has no safe default — callers fall back to `gh repo view` when unset.
 
 # Resolve $OBSIDIAN_VAULT for downstream convenience.
 if [[ -z "${OBSIDIAN_VAULT:-}" ]]; then
