@@ -30,7 +30,7 @@ This repo is installed locally via `make install`.
 
 - Skills live under `skills/<bucket>/<skill-name>/SKILL.md`. Buckets keep the tree organised as it grows.
 - Commands live under `commands/<bucket>/<command-name>.md`. Buckets keep the tree organised as it grows.
-- Agents live under `agents/<name>.md` (flat directory). Symlinked into `~/.claude/agents/` by `make agents`.
+- Agents live under `agents/<bucket>/<name>.md`. Buckets keep the tree organised as it grows. Symlinked flat into `~/.claude/agents/` by `make agents`.
 
 - `git/` — generic git workflow: commit, push, PR creation.
 - `engineering/` — Swift, SwiftUI, Xcode, CI, testing, concurrency, architecture, code review.
