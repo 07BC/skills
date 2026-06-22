@@ -568,9 +568,11 @@ contentView
 - Complex layering with more than 2-3 overlapping elements
 - When children need to share the same coordinate space for animations
 
-### One View Per File
+### One Type Per File
 
-Every SwiftUI view must be in its own file. Never use `private struct` views, computed properties, or functions to create subviews within a parent view file.
+Every `struct`, `class`, `enum`, and `actor` lives in its own file. The only exception is `extension` — a file may contain extensions on its primary type. No secondary named types of any kind alongside the primary type.
+
+For `View` types specifically: never use `private struct` subviews or `@ViewBuilder` computed properties in a parent view file. Every `View` file must end with a `#Preview` block.
 
 ```swift
 // Avoid: Private subviews in same file
@@ -632,7 +634,7 @@ struct AboutView: View {
 }
 ```
 
-**Why one view per file:**
+**Why one type per file:**
 - Each view has its own `#Preview` for rapid iteration
 - Clearer file organisation and smaller files
 - Easier to locate and modify components
