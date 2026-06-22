@@ -85,14 +85,22 @@ Include file path and line number. Provide an inline fix for every BLOCKER.
 - [ ] **BLOCKER** — `MainActor.run` inside a `Task { }` on a `@MainActor` type (task inherits isolation; the hop is a no-op and signals misunderstanding)
 - [ ] Unstructured `Task { }` only when structured concurrency is not possible
 
-### MV Architecture Checklist (BLOCKER)
+### Architecture Checklist (BLOCKER)
 
+Read the project `CLAUDE.md` for `architecture: MV | MVVM`. Apply the matching
+architect skill (`swift-mv-architect` or `swift-mvvm-architect`). Common to both:
 - [ ] No `ObservableObject` conformance in new code
 - [ ] No `@Published` in new code
-- [ ] No type named `*ViewModel`
 - [ ] No business logic or networking in `View.body`
-- [ ] Services not constructed inside views (`@State private var s = Service()`)
 - [ ] `@Entry` used for environment values (not `EnvironmentKey`)
+
+MV-specific (if architecture is MV):
+- [ ] No type named `*ViewModel`
+- [ ] Services not constructed inside views (`@State private var s = Service()`)
+
+MVVM-specific (if architecture is MVVM):
+- [ ] No `@Observable` on a Repository
+- [ ] No ViewModels in `@Environment` or `AppDependencies`
 
 ### Testing Checklist (WARNING)
 

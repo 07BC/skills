@@ -73,8 +73,9 @@ user chooses Proceed anyway.
 
 Read the following before doing anything:
 
-1. Apply skill `swift-mv-guardian` (read-only; for the target-architecture
-   summary).
+1. Apply the matching architect skill (`swift-mv-architect` for MV projects,
+   `swift-mvvm-architect` for MVVM projects — read `CLAUDE.md` to determine
+   which) for the target-architecture summary.
 2. `CLAUDE.md` — follow every linked doc from it.
 3. If `SCOPE=ticket`: the Jira ticket via Atlassian MCP, plus every
    acceptance criterion on the ticket.

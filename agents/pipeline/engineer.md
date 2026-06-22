@@ -70,12 +70,12 @@ The spec must be updated before this task can be implemented.
 
 ## Step 2 — Implement
 
-Follow the architecture authority you read in Step 0. Defaults if the project
-specifies nothing else:
+Follow the architecture authority you read in Step 0. The project's `CLAUDE.md`
+declares `architecture: MV | MVVM` — apply `swift-mv-architect` or
+`swift-mvvm-architect` rules accordingly. If no architecture is declared and no
+`target_architecture_doc` is set, **STOP and ask the user** before proceeding.
 
-- Services: `@MainActor @Observable final class`
-- Heavy work behind a `private actor` composed into the service
-- Views observe services via `@Environment` / `@Bindable` — no ViewModel layer
+Universal defaults (both architectures):
 - One type per file
 - `Mutex` over `NSLock` for synchronisation
 - `nonisolated init(from:)` on `Decodable` model types

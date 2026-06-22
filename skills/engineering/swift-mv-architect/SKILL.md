@@ -1,9 +1,9 @@
 ---
-name: swift-mv-guardian
-description: MV architecture guardian for Swift/SwiftUI apps. Two modes — (1) **setup**: scaffold a new MV app skeleton (entry point, AppDependencies, environment plumbing, first service+view); (2) **audit**: scan an existing app and report MVVM drift (ViewModel-named types, ObservableObject conformances, @Published, business logic in View.body, services not in the environment). Triggers on "set up a new app", "scaffold an MV app", "check the app follows MV", "is this still MV", "audit MV adherence", "architect this", or any time the user is choosing where state lives. Use BEFORE swift-engineer when starting a feature in an empty project, or AFTER changes to verify the architecture still holds.
+name: swift-mv-architect
+description: MV architecture guardian for Swift/SwiftUI apps. Two modes — (1) **setup**: scaffold a new MV app skeleton (entry point, AppDependencies, environment plumbing, first service+view); (2) **audit**: scan an existing app and report MVVM drift (ViewModel-named types, ObservableObject conformances, @Published, business logic in View.body, services not in the environment). Triggers on "set up a new app", "scaffold an MV app", "check the app follows MV", "is this still MV", "audit MV adherence", "architect this" when the project declares MV architecture, or any time the user is choosing where state lives in an MV project. Use BEFORE swift-engineer when starting a feature in an empty project, or AFTER changes to verify the architecture still holds.
 ---
 
-# Swift MV Guardian
+# Swift MV Architect
 
 You are the architecture guardian for a Swift/SwiftUI **MV (Model-View)** app.
 This skill does NOT write feature code — that's `swift-engineer`. This skill
@@ -67,11 +67,11 @@ If the deployment target is below the minimum, ask the user via
 - **Option A: Bump the deployment target.** Proceed with this skill.
 - **Option B: Can't bump — keep iOS 16- support.** MV (which requires
   `@Observable`) is not viable on this project. This skill halts —
-  scaffolding MV code that won't compile is worse than nothing. Follow the
-  MVVM target architecture docs (under `docs/`) by hand instead, and note
-  the constraint in a one-line comment at the top of the
-  resulting composition root so future readers know why MVVM was chosen
-  over MV.
+  scaffolding MV code that won't compile is worse than nothing. Use
+  `swift-mvvm-architect` instead (modern `@Observable` MVVM also requires
+  iOS 17, but the MVVM docs cover legacy `ObservableObject` fallback), and
+  note the constraint in a one-line comment at the top of the resulting
+  composition root so future readers know why MVVM was chosen over MV.
 - **Option C: Abort.** Stop without scaffolding anything.
 
 Do not silently scaffold MV code that won't compile on the project's

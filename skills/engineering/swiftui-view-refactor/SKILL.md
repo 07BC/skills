@@ -21,12 +21,25 @@ Refactor SwiftUI views toward small, explicit, stable view types. Default to van
 - computed view builders / other view helpers
 - helper / async functions
 
-### 2) Default to MV, not MVVM
-- Views should be lightweight state expressions and orchestration points, not containers for business logic.
-- Favor `@State`, `@Environment`, `@Query`, `.task`, `.task(id:)`, and `onChange` before reaching for a view model.
-- Inject services and shared models via `@Environment`; keep domain logic in services/models, not in the view body.
-- Do not introduce a view model just to mirror local view state or wrap environment dependencies.
-- If a screen is getting large, split the UI into subviews before inventing a new view model layer.
+### 2) Follow the project's declared architecture
+
+Read the project `CLAUDE.md` for `architecture: MV | MVVM`. Apply accordingly:
+
+**MV projects** — Views should be lightweight state expressions and orchestration
+points, not containers for business logic. Favour `@State`, `@Environment`,
+`@Query`, `.task`, `.task(id:)`, and `onChange` before reaching for a ViewModel.
+Inject services via `@Environment`; keep domain logic in services, not the view body.
+Do not introduce a ViewModel just to mirror local view state or wrap environment
+dependencies. If a screen is getting large, split the UI into subviews first.
+
+**MVVM projects** — The ViewModel is the correct home for view-facing state. Views
+own their ViewModel via `@State`; a thin Screen wrapper reads the Repository from
+`@Environment` and passes it into the View's `init(repository:)`. Do not move state
+from the ViewModel into the view, and do not register ViewModels in `@Environment`.
+If a view is getting large, split the UI into subviews before duplicating ViewModel
+logic.
+
+**Both** — keep business logic, networking, and persistence out of `View.body`.
 
 ### 3) Strongly prefer dedicated subview types over computed `some View` helpers
 - Flag `body` properties that are longer than roughly one screen or contain multiple logical sections.

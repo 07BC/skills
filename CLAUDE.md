@@ -16,7 +16,9 @@ It also covers note management for Obsidian.
 
 ## Target Architectures
 
-The [Target Architecture](docs/target_architecture/README.md) contains the layout for a modern, MV (Model View) Application
+Two target architectures are supported, declared in the consuming project's `CLAUDE.md` (`architecture: MV` or `architecture: MVVM`):
+- [MV Target Architecture](docs/MV%20target%20architecture/README.md) — `@Observable` services, no ViewModel layer
+- [MVVM Target Architecture](docs/MVVM%20target%20architecture/README.md) — `@Observable` ViewModels + stateless Repositories
 
 ### Managing Claude
 

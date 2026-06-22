@@ -133,7 +133,7 @@ The shape of a mock depends on what it stands in for. **Picking the wrong shape 
 | Call recorder / argument captor — test reads back what was called | `actor` | Mutable stored state (`var recordedEndpoints: [String]`, `var callCount: Int`) requires actor isolation. Protocol methods must be `async` so the test can `await` the actor's accessors. |
 | `URLSession` and HTTP-layer mocking | `URLProtocol` subclass registered per-test | `URLProtocol` is the supported Apple extension point. The system handles request isolation; do not wrap in an actor. |
 | `Date`, `UUID`, `Locale`, `Calendar`, clocks | `@TaskLocal` provider, or constructor-injected closure (`() -> Date`) | Tests scope the value to a single test via `$now.withValue(...) { ... }`. No shared mutable state across tests. |
-| `@Observable` SwiftUI service (`@MainActor`-isolated) | The real type, exercised from the test with `await` | Don't mock your own `@Observable` services. Construct them with mocked dependencies and `await` their methods. See `references/concurrency.md`. |
+| `@Observable` SwiftUI service or ViewModel (`@MainActor`-isolated) | The real type, exercised from the test with `await` | Don't mock your own `@Observable` services (MV) or ViewModels (MVVM). Construct the real type with mocked dependencies (MV: mocked fetcher actor; MVVM: `MockRepository`) and `await` its methods. See `references/concurrency.md`. |
 
 ### Worked example: `actor MockUserDefaults`
 

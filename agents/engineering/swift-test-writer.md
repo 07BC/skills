@@ -20,10 +20,15 @@ writing XCTest. You are NOT writing UI tests. You are NOT using
 
 ## Foundation Rules (Swift Developer)
 
-All code in the app under test follows MV architecture:
-- Services are `@MainActor @Observable final class`
-- No ViewModels, no `ObservableObject`, no `@Published`
-- For architecture detail, read: `~/Developer/myzsh/ai-config/skills/engineering/swift-engineer/SKILL.md`
+Read the project `CLAUDE.md` for `architecture: MV | MVVM` before writing tests.
+The SUT shape differs:
+- **MV**: SUT is a `@MainActor @Observable` **service**. Construct it with a mocked
+  private actor/fetcher. No ViewModels.
+- **MVVM**: SUT is a `@MainActor @Observable` **ViewModel**. Construct it with a
+  `MockRepository` conforming to the `…RepositoryProtocol`. The Repository is
+  the seam — inject the mock into the ViewModel.
+- Both: no `ObservableObject`, no `@Published`.
+- For full architecture detail, read: `~/Developer/myzsh/ai-config/skills/engineering/swift-engineer/SKILL.md`
 
 ---
 

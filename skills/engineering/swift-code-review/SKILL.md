@@ -156,7 +156,7 @@ git diff --name-only "origin/${BASE}...HEAD" > /tmp/pre-pr-files.txt
 git diff "origin/${BASE}...HEAD" > /tmp/pre-pr-diff.patch
 ```
 
-Read every touched file AND every authority doc (`docs/target_architecture/*.md`, `docs/adr/*.md`, `CLAUDE.md`, `CONTEXT.md`) before writing any finding.
+Read every touched file AND every authority doc (`docs/MV target architecture/*.md`, `docs/MVVM target architecture/*.md`, `docs/adr/*.md`, `CLAUDE.md`, `CONTEXT.md`) before writing any finding.
 
 For every new external SDK: fetch the SDK's integration guide via Context7 MCP; read the framework headers in DerivedData to confirm property names, init signatures, and threading contracts.
 
@@ -166,7 +166,7 @@ Call `advisor()` once with your touched-file list, authority docs read, and SDK 
 
 **1. Third-party SDK correctness** — required fields populated, property names vs init param names confirmed against headers, unit/encoding correctness, lifecycle ordering, identifier reuse, threading contracts.
 
-**2. Layer/architecture alignment** — no domain protocol returning infrastructure types, no infrastructure importing presentation, mocks `#if DEBUG`-gated, `@Entry` used for environment values, composition root correct, new `@Observable` types `@MainActor`.
+**2. Layer/architecture alignment** — no domain protocol returning infrastructure types, no infrastructure importing presentation, mocks `#if DEBUG`-gated, `@Entry` used for environment values, composition root correct, new `@Observable` types `@MainActor`. The observable layer matches the project's declared architecture: services (MV, per `swift-mv-architect`) or ViewModels + stateless Repositories (MVVM, per `swift-mvvm-architect`); no `ObservableObject`/`@Published`; no ViewModels in `@Environment` (MVVM); no ViewModel-named types (MV).
 
 **3. Concurrency and Sendable** — types crossing isolation boundaries have explicit `Sendable`, mutable shared state actor-isolated or `@MainActor`, `dispatchPrecondition` not called from background Task, strict concurrency compiles clean.
 

@@ -72,8 +72,10 @@ before and omit `covers`/`implements` (those specs run without the spine gates).
    to re-read the prose context, not re-parse)
 2. The path under `target_architecture_doc` if set
 3. Each `context_docs` path
-4. The `swift-engineer` skill body — authoritative MV architecture rules,
-   SwiftUI patterns, state management, navigation, and code style
+4. The `swift-engineer` skill body — authoritative architecture rules,
+   SwiftUI patterns, state management, navigation, and code style. It will
+   resolve the project's declared architecture (MV or MVVM) and load the
+   matching architect skill.
 5. The `swiftui-liquid-glass` skill body — iOS 26+ Liquid Glass API guidelines
    (skip if the feature clearly has no UI component)
 
@@ -213,7 +215,7 @@ depends_on: [<child issue #s — source_type=issue only; omit otherwise>]
 
 | Component | Type | Layer | Responsibility |
 |-----------|------|-------|----------------|
-| {Name} | `@MainActor @Observable final class` | Services | {What it does} |
+| {Name} | {Type per declared architecture — see swift-mv-architect or swift-mvvm-architect} | {Layer} | {What it does} |
 
 ### Modified Components
 
@@ -237,8 +239,8 @@ depends_on: [<child issue #s — source_type=issue only; omit otherwise>]
 
 ## Constraints & Invariants
 
-- Services: `@MainActor @Observable final class`
-- No new `ObservableObject`, `@Published`, ViewModels, Coordinators
+- Conform to the project's declared architecture (see `CLAUDE.md` `architecture:` key; apply `swift-mv-architect` or `swift-mvvm-architect` rules)
+- No new `ObservableObject`, `@Published` (forbidden in both architectures)
 - Swift Testing only — no XCTest for unit tests
 - {Any input-specific constraint}
 

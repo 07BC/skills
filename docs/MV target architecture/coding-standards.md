@@ -1,7 +1,7 @@
 # Coding Standards
 
 > Swift 6.2 · SwiftUI MV · enforced — not suggestions.
-> Source: swift-mv-guardian, swift-engineer, swift-style skills + project SwiftLint config.
+> Source: swift-mv-architect, swift-engineer, swift-style skills + project SwiftLint config.
 
 ---
 
