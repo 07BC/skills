@@ -116,7 +116,41 @@ The full manual path, stage by stage, lives in **[delivery-lifecycle.md](./docs/
 
 ## Set up a project (`CLAUDE.md`)
 
-The skills and agents only route correctly if the consuming **project's** `CLAUDE.md` tells the session two things: **which agent owns which task**, and **which architecture the project uses**. Drop a block like the one below into your project's `CLAUDE.md`.
+The skills and agents only route correctly if the consuming **project's** `CLAUDE.md` tells the session two things: **which agent owns which task**, and **which architecture the project uses**. The agent routing is the same for both architectures — only the `architecture:` key and what it loads differ. Pick the block matching your project and drop it into your `CLAUDE.md`.
+
+#### MV project — `@Observable` services, no ViewModel layer
+
+```markdown
+## Session Setup — Agent Routing
+
+This project uses specialist agents. The main session **orchestrates only** — it does not
+write Swift code, tests, or PR content directly. Delegate every task below to the right agent.
+
+| Task                                         | Agent                    |
+|----------------------------------------------|--------------------------|
+| Writing or refactoring any Swift code        | `swift-developer`        |
+| Writing any unit tests (Swift Testing)       | `swift-test-writer`      |
+| Writing any UI tests (XCUITest)              | `swift-uitest-writer`    |
+| Debugging any UI-test failure                | `swift-uitest-debugger`  |
+| Planning a feature or breaking down a ticket | `swift-pm`               |
+| Code audit or quality review                 | `swift-code-auditor`     |
+| Architecture documentation                   | `swift-architect`        |
+| Raising or reviewing a pull request          | `swift-pr-reviewer`      |
+
+Agents live at `~/.claude/agents/` and carry their own Swift conventions — do not replicate or
+override them here. This is an **iOS** target: there is no tvOS override
+(`swift-tvos-developer` is not used in this project).
+
+### Architecture declaration
+
+architecture: MV
+
+Architecture-aware skills and agents read this key to pick a ruleset. `MV` means
+`@Observable` services with **no ViewModel layer** — views read state from services via
+`@Environment`. They load the `swift-mv-architecture` rules; never introduce a ViewModel.
+```
+
+#### MVVM project — `@Observable` ViewModels + stateless Repositories
 
 ```markdown
 ## Session Setup — Agent Routing
@@ -143,10 +177,12 @@ override them here. This is an **iOS** target: there is no tvOS override
 
 architecture: MVVM
 
-Architecture-aware skills and agents read this key to pick a ruleset. `MVVM` here means
-modern `@Observable` MVVM + injected services — they load the `swift-mvvm-architecture`
-rules, not MV.
+Architecture-aware skills and agents read this key to pick a ruleset. `MVVM` means modern
+`@Observable` ViewModels + injected **stateless Repositories** — views own their ViewModel
+via `@State`. They load the `swift-mvvm-architecture` rules, not MV.
 ```
+
+> Keep the routing table to the rows your project actually uses (e.g. drop `swift-tvos-developer` on an iOS-only target). The `architecture:` line is the only part that must match your codebase.
 
 ### Routing reference — agent ↔ skill
 
@@ -174,8 +210,6 @@ Each routing row has both an **agent** (what the orchestrating session delegates
 
 - **`architecture: MV | MVVM`** — every architecture-aware skill and agent reads this to pick its ruleset. `MV` = `@Observable` services, no ViewModel layer; `MVVM` = modern `@Observable` ViewModels + stateless Repositories. Architecture **documentation** routes to `swift-architect` / `/architecture-doc`; architecture **scaffolding / adherence audit** routes to the matching `/swift-mv-architecture` or `/swift-mvvm-architecture` skill.
 - **`discovery:`** — a YAML block declaring the planning backend (`jira` subtasks / `github` sub-issues / `local` docs) that `/discovery` materialises work items into. See [delivery-lifecycle.md](./docs/delivery-lifecycle.md#choosing-an-orchestrator).
-
-Add only the routing rows your project actually uses (e.g. drop `swift-tvos-developer` on an iOS-only target), and declare the `architecture:` that matches the codebase.
 
 ---
 
