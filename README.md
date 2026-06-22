@@ -73,13 +73,13 @@ make install
 
 The core build/review skills work with Claude Code alone. Others depend on external services — without them, those skills degrade or stop rather than failing silently. Wire up the ones whose skills you intend to use.
 
-| Dependency | Owner | Skills that need it | If absent |
-|---|---|---|---|
-| **Atlassian MCP** | Atlassian (connected in Claude Code) | `story-to-spec`, `discovery-jira`, `jira-bulk`, `/workflow`, `/spec-pipeline` (Jira input) | Jira input/lifecycle steps stop; use spec/prompt input instead |
-| **GitHub `gh` CLI** | GitHub (authenticated locally) | `git-pr`, `/discovery`, `/workflow` (architecture-drift tracking) | PR creation and issue tracking stop |
-| **Obsidian CLI + a vault** | local (`obsidian` CLI, `$OBSIDIAN_VAULT`) | `daily-notes`, `obsidian-*`, and all `PLANS_DIR` artefacts | vault skills stop; plans/discovery notes have nowhere to land |
-| **XcodeBuildMCP** | local MCP server | `xcodebuildmcp-cli`, build/test phases when Xcode isn't open | falls back to raw `xcodebuild` |
-| **Context7 MCP** | local MCP server | library-docs lookups inside several skills | skills proceed on training data, which may be stale |
+| Dependency                 | Owner                                     | Skills that need it                                                                        | If absent                                                      |
+| -------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| **Atlassian MCP**          | Atlassian (connected in Claude Code)      | `story-to-spec`, `discovery-jira`, `jira-bulk`, `/workflow`, `/spec-pipeline` (Jira input) | Jira input/lifecycle steps stop; use spec/prompt input instead |
+| **GitHub `gh` CLI**        | GitHub (authenticated locally)            | `git-pr`, `/discovery`, `/workflow` (architecture-drift tracking)                          | PR creation and issue tracking stop                            |
+| **Obsidian CLI + a vault** | local (`obsidian` CLI, `$OBSIDIAN_VAULT`) | `daily-notes`, `obsidian-*`, and all `PLANS_DIR` artefacts                                 | vault skills stop; plans/discovery notes have nowhere to land  |
+| **XcodeBuildMCP**          | local MCP server                          | `xcodebuildmcp-cli`, build/test phases when Xcode isn't open                               | falls back to raw `xcodebuild`                                 |
+| **Context7 MCP**           | local MCP server                          | library-docs lookups inside several skills                                                 | skills proceed on training data, which may be stale            |
 
 ---
 
@@ -87,11 +87,11 @@ The core build/review skills work with Claude Code alone. Others depend on exter
 
 Every skill here is a **phase** in one delivery lifecycle: shape → architect → discover → build → test → clean → review → ship. The only question is how much of that lifecycle you hand to Claude at once. There are three altitudes, and they share the same underlying skills:
 
-| Altitude | You run | What happens | When to use |
-|---|---|---|---|
-| **Full-auto** | `/spec-decomposition TICKET` then `/spec-pipeline --from-issue #` | `/spec-decomposition` decomposes a story into a GitHub master issue + sequential child sub-issues; `/spec-pipeline` ships each child → PR, in-place, autonomously (unattended; ~60–90 min per child — an estimate, not a guarantee). | A well-specified story you want decomposed, tracked, and built end-to-end without babysitting. |
-| **Orchestrated** | `/workflow SUBTASK` | One subtask → PR, with the orchestrator (Opus) deciding and subagents (Sonnet) executing each phase, plus GitHub architecture-drift tracking across the story. | A single scoped subtask where you want control points and architecture tracking. |
-| **Manual** | the skills one at a time | You drive each phase yourself: `/implementation-brief`, `/swift-engineering`, `/swift-testing`, `/swift-code-review`, `/git-pr`. | Exploratory work, learning, or anything where you want to see each step. |
+| Altitude         | You run                                                           | What happens                                                                                                                                                                                                                         | When to use                                                                                    |
+| ---------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| **Full-auto**    | `/spec-decomposition TICKET` then `/spec-pipeline --from-issue #` | `/spec-decomposition` decomposes a story into a GitHub master issue + sequential child sub-issues; `/spec-pipeline` ships each child → PR, in-place, autonomously (unattended; ~60–90 min per child — an estimate, not a guarantee). | A well-specified story you want decomposed, tracked, and built end-to-end without babysitting. |
+| **Orchestrated** | `/workflow SUBTASK`                                               | One subtask → PR, with the orchestrator (Opus) deciding and subagents (Sonnet) executing each phase, plus GitHub architecture-drift tracking across the story.                                                                       | A single scoped subtask where you want control points and architecture tracking.               |
+| **Manual**       | the skills one at a time                                          | You drive each phase yourself: `/implementation-brief`, `/swift-engineering`, `/swift-testing`, `/swift-code-review`, `/git-pr`.                                                                                                     | Exploratory work, learning, or anything where you want to see each step.                       |
 
 The key idea: **the orchestrators are just the manual pipeline automated.** `/workflow` and `/spec-pipeline` call the same `implementation-brief` → `swift-engineering` → `swift-testing` → `swift-code-review` skills you'd run by hand. Learn the manual skills and you understand what the orchestrators do; reach for an orchestrator when you want the whole chain run for you.
 
@@ -126,18 +126,18 @@ The skills and agents only route correctly if the consuming **project's** `CLAUD
 This project uses specialist agents. The main session **orchestrates only** — it does not
 write Swift code, tests, or PR content directly. Delegate every task below to the right agent.
 
-| Task                                         | Agent                    |
-|----------------------------------------------|--------------------------|
-| Writing or refactoring any Swift code        | `swift-developer`        |
-| Writing any unit tests (Swift Testing)       | `swift-test-writer`      |
-| Writing any UI tests (XCUITest)              | `swift-uitest-writer`    |
-| Debugging a UI-test failure (XCUITest)       | `swift-uitest-debugger`  |
-| Debugging a unit-test failure (Swift Testing)| `swift-test-writer`      |
-| Debugging a runtime crash / simulator issue  | `swift-debugger-agent`   |
-| Planning a feature or breaking down a ticket | `swift-pm`               |
-| Code audit or quality review                 | `swift-code-auditor`     |
-| Architecture documentation                   | `swift-architect`        |
-| Raising or reviewing a pull request          | `swift-pr-reviewer`      |
+| Task                                          | Agent                   |
+| --------------------------------------------- | ----------------------- |
+| Writing or refactoring any Swift code         | `swift-developer`       |
+| Writing any unit tests (Swift Testing)        | `swift-test-writer`     |
+| Writing any UI tests (XCUITest)               | `swift-uitest-writer`   |
+| Debugging a UI-test failure (XCUITest)        | `swift-uitest-debugger` |
+| Debugging a unit-test failure (Swift Testing) | `swift-test-writer`     |
+| Debugging a runtime crash / simulator issue   | `swift-debugger-agent`  |
+| Planning a feature or breaking down a ticket  | `swift-pm`              |
+| Code audit or quality review                  | `swift-code-auditor`    |
+| Architecture documentation                    | `swift-architect`       |
+| Raising or reviewing a pull request           | `swift-pr-reviewer`     |
 
 Agents live at `~/.claude/agents/` and carry their own Swift conventions — do not replicate or
 override them here. This is an **iOS** target: there is no tvOS override
@@ -160,18 +160,18 @@ Architecture-aware skills and agents read this key to pick a ruleset. `MV` means
 This project uses specialist agents. The main session **orchestrates only** — it does not
 write Swift code, tests, or PR content directly. Delegate every task below to the right agent.
 
-| Task                                         | Agent                    |
-|----------------------------------------------|--------------------------|
-| Writing or refactoring any Swift code        | `swift-developer`        |
-| Writing any unit tests (Swift Testing)       | `swift-test-writer`      |
-| Writing any UI tests (XCUITest)              | `swift-uitest-writer`    |
-| Debugging a UI-test failure (XCUITest)       | `swift-uitest-debugger`  |
-| Debugging a unit-test failure (Swift Testing)| `swift-test-writer`      |
-| Debugging a runtime crash / simulator issue  | `swift-debugger-agent`   |
-| Planning a feature or breaking down a ticket | `swift-pm`               |
-| Code audit or quality review                 | `swift-code-auditor`     |
-| Architecture documentation                   | `swift-architect`        |
-| Raising or reviewing a pull request          | `swift-pr-reviewer`      |
+| Task                                          | Agent                   |
+| --------------------------------------------- | ----------------------- |
+| Writing or refactoring any Swift code         | `swift-developer`       |
+| Writing any unit tests (Swift Testing)        | `swift-test-writer`     |
+| Writing any UI tests (XCUITest)               | `swift-uitest-writer`   |
+| Debugging a UI-test failure (XCUITest)        | `swift-uitest-debugger` |
+| Debugging a unit-test failure (Swift Testing) | `swift-test-writer`     |
+| Debugging a runtime crash / simulator issue   | `swift-debugger-agent`  |
+| Planning a feature or breaking down a ticket  | `swift-pm`              |
+| Code audit or quality review                  | `swift-code-auditor`    |
+| Architecture documentation                    | `swift-architect`       |
+| Raising or reviewing a pull request           | `swift-pr-reviewer`     |
 
 Agents live at `~/.claude/agents/` and carry their own Swift conventions — do not replicate or
 override them here. This is an **iOS** target: there is no tvOS override
@@ -184,6 +184,16 @@ architecture: MVVM
 Architecture-aware skills and agents read this key to pick a ruleset. `MVVM` means modern
 `@Observable` ViewModels + injected **stateless Repositories** — views own their ViewModel
 via `@State`. They load the `swift-mvvm-architecture` rules, not MV.
+
+## Read Before You Act
+
+| Before you…                             | Read                                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------- |
+| write or edit any Swift code            | `docs/architecture.md` + `docs/coding-standards.md`                                |
+| build a new screen, feature, or service | `docs/target_architecture/architecture.md` + `docs/target_architecture/templates/` |
+| write unit or UI tests                  | `docs/target_architecture/testing.md` + `docs/ui-test-architecture.md`             |
+| touch any layout (focus engine)         | `docs/ui-test-architecture.md` **first**                                           |
+| check non-negotiable invariants         | `docs/target_architecture/README.md`                                               |
 ```
 
 > Keep the routing table to the rows your project actually uses (e.g. drop `swift-tvos-developer` on an iOS-only target). The `architecture:` line is the only part that must match your codebase.
@@ -192,23 +202,33 @@ via `@State`. They load the `swift-mvvm-architecture` rules, not MV.
 
 Each routing row has both an **agent** (what the orchestrating session delegates to) and an equivalent **skill** (what you invoke by hand). Use whichever altitude you're working at — they share the same conventions.
 
-| Task | Agent | Skill |
-|---|---|---|
-| Writing or refactoring Swift production code | `swift-developer` | `/swift-engineering` |
-| Writing unit tests (Swift Testing) | `swift-test-writer` | `/swift-testing` |
-| Writing UI tests (XCUITest) | `swift-uitest-writer` | `/swift-uitest` |
-| Debugging a UI-test failure | `swift-uitest-debugger` | `/swift-uitest-debug` |
-| tvOS focus / navigation bugs | `swift-tvos-developer` | `/swift-tvos` |
-| Planning a feature / breaking down a ticket | `swift-pm` | `/product-planning` |
-| Code audit or quality review | `swift-code-auditor` | `/swift-code-review` · `/audit` |
-| Architecture documentation | `swift-architect` | `/architecture-doc` |
-| Architecture scaffold / adherence audit | — | `/swift-mv-architecture` · `/swift-mvvm-architecture` |
-| Raising or reviewing a PR | `swift-pr-reviewer` | `/git-pr` · `/swift-pr-gate` |
-| Build / test run (read-only) | `xcode-build-test-runner` | `/swift-test-all` · `/build-status` |
-| Runtime profiling / memory leaks | `ios-runtime-profiler` | `/ios-ettrace-performance` · `/ios-memgraph-leaks` |
-| Simulator build / launch / debug | `swift-debugger-agent` | `/xcodebuildmcp-cli` |
-| Git operations (commit / branch / PR) | `git-workflow-manager` | `/git-commit` · `/git-push` · `/git-pr` |
-| Creating / editing Jira tickets | `jira-ticket-manager` | `/discovery-jira` · `/jira-bulk` |
+| Task                                         | Agent                     | Skill                                                 |
+| -------------------------------------------- | ------------------------- | ----------------------------------------------------- |
+| Writing or refactoring Swift production code | `swift-developer`         | `/swift-engineering`                                  |
+| Writing unit tests (Swift Testing)           | `swift-test-writer`       | `/swift-testing`                                      |
+| Writing UI tests (XCUITest)                  | `swift-uitest-writer`     | `/swift-uitest`                                       |
+| Debugging a UI-test failure                  | `swift-uitest-debugger`   | `/swift-uitest-debug`                                 |
+| tvOS focus / navigation bugs                 | `swift-tvos-developer`    | `/swift-tvos`                                         |
+| Planning a feature / breaking down a ticket  | `swift-pm`                | `/product-planning`                                   |
+| Code audit or quality review                 | `swift-code-auditor`      | `/swift-code-review` · `/audit`                       |
+| Architecture documentation                   | `swift-architect`         | `/architecture-doc`                                   |
+| Architecture scaffold / adherence audit      | —                         | `/swift-mv-architecture` · `/swift-mvvm-architecture` |
+| Raising or reviewing a PR                    | `swift-pr-reviewer`       | `/git-pr` · `/swift-pr-gate`                          |
+| Build / test run (read-only)                 | `xcode-build-test-runner` | `/swift-test-all` · `/build-status`                   |
+| Runtime profiling / memory leaks             | `ios-runtime-profiler`    | `/ios-ettrace-performance` · `/ios-memgraph-leaks`    |
+| Simulator build / launch / debug             | `swift-debugger-agent`    | `/xcodebuildmcp-cli`                                  |
+| Git operations (commit / branch / PR)        | `git-workflow-manager`    | `/git-commit` · `/git-push` · `/git-pr`               |
+| Creating / editing Jira tickets              | `jira-ticket-manager`     | `/discovery-jira` · `/jira-bulk`                      |
+
+## Read Before You Act
+
+| Before you…                             | Read                                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------- |
+| write or edit any Swift code            | `docs/architecture.md` + `docs/coding-standards.md`                                |
+| build a new screen, feature, or service | `docs/target_architecture/architecture.md` + `docs/target_architecture/templates/` |
+| write unit or UI tests                  | `docs/target_architecture/testing.md` + `docs/ui-test-architecture.md`             |
+| touch any layout (focus engine)         | `docs/ui-test-architecture.md` **first**                                           |
+| check non-negotiable invariants         | `docs/target_architecture/README.md`                                               |
 
 ### The two keys that change behaviour
 
@@ -219,14 +239,14 @@ Each routing row has both an **agent** (what the orchestrating session delegates
 
 ## Documentation
 
-| Doc | What's in it |
-|---|---|
-| [docs/skill-catalogue.md](./docs/skill-catalogue.md) | Every shipped skill, grouped by lifecycle stage, with model · flow tags. |
-| [docs/delivery-lifecycle.md](./docs/delivery-lifecycle.md) | The manual path stage by stage, the commands/orchestrators, choosing an orchestrator, and what happens when a run fails. |
-| [docs/conventions.md](./docs/conventions.md) | Architecture & conventions, repo layout, and how to add a skill or command. |
-| [docs/orchestrator-contract.md](./docs/orchestrator-contract.md) | The shared orchestrator structure + state-placement convention. |
-| [docs/adr/](./docs/adr/) | Architecture decision records for the library. |
-| [CLAUDE.md](./CLAUDE.md) | Bucket convention, skill-species taxonomy, and the `in-progress` / `deprecated` lifecycle. |
+| Doc                                                              | What's in it                                                                                                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| [docs/skill-catalogue.md](./docs/skill-catalogue.md)             | Every shipped skill, grouped by lifecycle stage, with model · flow tags.                                                 |
+| [docs/delivery-lifecycle.md](./docs/delivery-lifecycle.md)       | The manual path stage by stage, the commands/orchestrators, choosing an orchestrator, and what happens when a run fails. |
+| [docs/conventions.md](./docs/conventions.md)                     | Architecture & conventions, repo layout, and how to add a skill or command.                                              |
+| [docs/orchestrator-contract.md](./docs/orchestrator-contract.md) | The shared orchestrator structure + state-placement convention.                                                          |
+| [docs/adr/](./docs/adr/)                                         | Architecture decision records for the library.                                                                           |
+| [CLAUDE.md](./CLAUDE.md)                                         | Bucket convention, skill-species taxonomy, and the `in-progress` / `deprecated` lifecycle.                               |
 
 ---
 
