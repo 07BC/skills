@@ -1,5 +1,6 @@
 ---
 name: swift-test-writer
+model: sonnet
 description: |
   Writes unit tests using Apple's Swift Testing framework (@Test, @Suite, #expect).
   Use when asked to write unit tests, add test coverage, or test Swift code.

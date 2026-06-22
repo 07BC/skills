@@ -1,5 +1,6 @@
 ---
 name: swift-debugger-agent
+model: sonnet
 description: Build, run, and debug iOS apps on Simulator with XcodeBuildMCP. Use when launching an app, inspecting simulator UI or logs, or diagnosing runtime behaviour.
 ---
 
