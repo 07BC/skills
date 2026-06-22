@@ -79,12 +79,23 @@ A file in the diff that is in no task's scope is **always** a BLOCKER.
 
 ### Architecture uniformity (across the diff)
 
+Read the project `CLAUDE.md` for `architecture: MV | MVVM`. Apply the matching
+architect skill uniformly across the entire diff.
+
+Common to both:
 - [ ] No new `ObservableObject` / `@Published` / `@StateObject` / `@ObservedObject`
-- [ ] No new ViewModel / Coordinator / *Manager catch-all types
-- [ ] All new services are `@MainActor @Observable final class`
 - [ ] No new `.shared` singletons in business logic
 - [ ] No new `fatalError`, no new force unwraps (`!`)
 - [ ] No new `@unchecked Sendable` without a documented invariant comment
+
+MV-specific (if architecture is MV):
+- [ ] All new services are `@MainActor @Observable final class`
+- [ ] No new ViewModel / Coordinator / *Manager catch-all types
+
+MVVM-specific (if architecture is MVVM):
+- [ ] All new ViewModels are `@MainActor @Observable final class`
+- [ ] All new Repositories are stateless `Sendable` (no `@Observable`, no `@MainActor`)
+- [ ] No ViewModels in `@Environment` or `AppDependencies` across any task
 
 ### Concurrency aggregate
 

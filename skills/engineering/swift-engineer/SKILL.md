@@ -2,10 +2,10 @@
 name: swift-engineer
 description: >
   THE entry point for writing, editing, or rewriting Swift/SwiftUI in an MV
-  (Model-View) app — new Swift 6.2 code, SwiftUI views, services, async work,
+  or MVVM app — new Swift 6.2 code, SwiftUI views, services, async work,
   AND behaviour-preserving rewrites: cleaning up messy code, refactoring for
   readability, and migrating a legacy ObservableObject/@Published type to the
-  @Observable MV form ("convert to @Observable", "clean this up", "refactor",
+  @Observable form ("convert to @Observable", "clean this up", "refactor",
   "make this readable"). Also fixes concrete Swift 6 concurrency errors, data
   races, actor-isolation warnings, and Sendable gaps in existing code. This is
   the single "Engineer" — writing any Swift 6 + SwiftUI is one job. You never
@@ -13,8 +13,9 @@ description: >
   swift-concurrency (async / actor / Sendable work) and swiftui-liquid-glass
   (iOS 26+ Liquid Glass UI) automatically as the task needs them. Triggers on
   .swift files, Xcode projects, SwiftUI components, or any request to
-  write/change Swift. For setting up a NEW app or auditing MV adherence, use
-  swift-mv-guardian. To REVIEW code without changing it, use swift-code-review.
+  write/change Swift. For setting up a NEW app or auditing architecture
+  adherence, use swift-mv-architect (MV projects) or swift-mvvm-architect
+  (MVVM projects). To REVIEW code without changing it, use swift-code-review.
   To write tests, use swift-testing.
 ---
 
@@ -22,23 +23,41 @@ description: >
 
 Main skill for building features in a Swift/SwiftUI app. Use this skill to
 write new Swift 6.2 code, SwiftUI views, services, tests, and async work
-**within the MV (Model-View) architecture** the project is built on.
+**within the architecture the project is built on**.
 
-> The architectural law for these projects: **MV, not MVVM.** Services are
-> `@MainActor @Observable` and views observe them directly via
-> `@Environment` / `@Bindable`. No `ObservableObject`, no `@Published`,
-> no `*ViewModel` types. For app setup or MV-adherence audits, hand off to
-> `swift-mv-guardian`.
+## Architecture selection (read before writing any code)
+
+The project's active architecture is declared in its `CLAUDE.md` (or the
+architecture authority doc it points to). Determine it before generating code:
+
+1. Read the project `CLAUDE.md`. Look for an explicit `architecture:` line
+   (`MV`, `MVVM`) or a link to `docs/MV target architecture/` or
+   `docs/MVVM target architecture/`.
+2. If it declares **MV** → load skill `swift-mv-architect` and apply its rules.
+3. If it declares **MVVM** → load skill `swift-mvvm-architect` and apply its rules
+   (`@Observable @MainActor` ViewModels + stateless `Sendable` Repositories).
+4. If it declares **mixed / migrating**, no declaration can be found, or the
+   codebase shows both shapes → **STOP. Do not guess.** Ask the user via
+   `AskUserQuestion` which architecture this work targets:
+   - Option A: MV (Model-View — `@Observable` services + `@Environment`)
+   - Option B: MVVM (`@Observable @MainActor` ViewModels + stateless Repository)
+   - Option C: Inspect first — run the `architecture-doc` detection scripts.
+   Only proceed once the user picks.
+
+The chosen architect skill is a **part of the Engineer** for this project — load
+it yourself; the user does not invoke it separately.
+
+**Common to both architectures (always forbidden):**
+`ObservableObject` conformance · `@Published` · logic or networking in `View.body`
 
 ## Required Companion Skills
 
-Before writing any Swift code, load this skill:
+Before writing any Swift code, load these:
 
 - Read skill `swift-style` — code style, quality rules, and Swift 6
   language essentials (Sendable, isolation, typed throws). Apply every
   rule in that skill when generating new code.
-- Read skill `swift-mv-guardian` -- MV architecture rules and anti-patterns. Apply every rule when
-  generating new code.
+- Load the matching architect skill per the Architecture selection section above.
 - Load `swift-testing` when writing tests, `swift-concurrency` when
   adding async / actor / Sendable work, and `swiftui-liquid-glass` when
   building or adopting iOS 26+ Liquid Glass UI.
@@ -99,10 +118,11 @@ alone. Re-verify with the build before declaring the task done.
    parameters must be broken down into smaller functions with single
    responsibilities. If a function is doing too much, extract named private
    helpers, each one under 20 lines.
-3. **MV pattern only** — `@MainActor @Observable` services own state; views
-   observe them via `@Environment`. No ViewModel layer, no `ObservableObject`,
-   no `@Published`. Heavy work lives behind a private `actor` composed into
-   the service.
+3. **Follow the declared architecture** — apply the rules loaded from the
+   matching architect skill (see Architecture selection above). In both
+   architectures: the observable layer is `@MainActor @Observable`; heavy
+   work lives behind a private `actor` (MV) or flows through a stateless
+   `Sendable` Repository (MVVM); no `ObservableObject`, no `@Published`.
 4. **Strict concurrency by default** — all new code must compile with
    `SWIFT_STRICT_CONCURRENCY=complete`.
 5. **Value semantics first** — prefer structs; use classes only for identity,
@@ -129,11 +149,45 @@ alone. Re-verify with the build before declaring the task done.
 
 ## SwiftUI Patterns
 
-### View Architecture (MV)
+### View Architecture
 
-Views **observe** an `@Observable` service via `@Environment`. They never
-own a `ViewModel`. The service holds state; the view renders it and dispatches
-intent back into the service.
+The view structure depends on the declared architecture. See the matching
+architect skill for canonical examples and the full wiring walkthrough.
+
+**MV** — Views observe an `@Observable` service via `@Environment`. No ViewModel.
+The service holds state; the view dispatches intent back into the service.
+
+**MVVM** — Views own their ViewModel via `@State`. A thin Screen wrapper reads
+the Repository from `@Environment` and passes it into the View's `init(repository:)`.
+
+Quick reference:
+
+```swift
+// MV: view reads service from environment, no ViewModel
+struct UserListView: View {
+    @Environment(\.userListService) private var service
+    var body: some View {
+        List(service.users) { user in UserRow(user: user) }
+            .task { await service.load() }
+    }
+}
+
+// MVVM: screen passes repo → view owns ViewModel
+struct UserListScreen: View {
+    @Environment(\.userRepository) private var repository
+    var body: some View { UserListView(repository: repository) }
+}
+struct UserListView: View {
+    @State private var viewModel: UserListViewModel
+    init(repository: any UserRepositoryProtocol) {
+        _viewModel = State(initialValue: UserListViewModel(repository: repository))
+    }
+    var body: some View {
+        List(viewModel.users) { user in UserRow(user: user) }
+            .task { viewModel.load() }
+    }
+}
+```
 
 ```swift
 // ✅ Small, focused views — one view per file
@@ -176,23 +230,29 @@ struct UserRow: View {
 }
 ```
 
-### State Management (MV pattern)
+### State Management
 
 | Wrapper                       | Use Case                                                                                                            |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `@State`                      | View-local value types only (e.g. `isPresented: Bool`, search text)                                                 |
+| `@State`                      | View-local value types (e.g. `isPresented: Bool`, search text) **or** a ViewModel owned by the view (MVVM)        |
 | `@Binding`                    | Two-way connection to parent value state                                                                            |
-| `@Observable`                 | Applied to **services** (reference types). Never to ViewModels — there are no ViewModels                            |
-| `@Environment(\.someService)` | How views read services. This is the default injection mechanism                                                    |
-| `@Bindable`                   | Bridge to write into an `@Observable` service from a view (only at the view boundary, never the property of choice) |
+| `@Observable`                 | Applied to **services** (MV) or **ViewModels** (MVVM). Never to Repositories.                                      |
+| `@Environment(\.someService)` | How views read services (MV). How screens pass repositories to views (MVVM).                                       |
+| `@Bindable`                   | Bridge to write into an `@Observable` type from a view (only at the view boundary)                                 |
 | `@AppStorage`                 | UserDefaults-backed persistence **in SwiftUI views only** — never inside an `@Observable` class                     |
 
-**Forbidden in this codebase:**
+**Forbidden in both architectures:**
 
 - `ObservableObject` conformance
 - `@Published`
-- Any type named `*ViewModel`
 - Business logic inside `View.body`
+
+**Forbidden in MV only** (see `swift-mv-architect`):
+- Any type named `*ViewModel`
+
+**Forbidden in MVVM only** (see `swift-mvvm-architect`):
+- `@Observable` on a Repository
+- ViewModels in `@Environment` or `AppDependencies`
 
 ### Environment Values
 
@@ -607,7 +667,9 @@ Use this mode when asked to: "rewrite this", "clean this up", "this is hard to r
 
 ### Migrating `ObservableObject` to `@Observable`
 
-The MV architecture forbids `ObservableObject` and `@Published`. Converting a legacy type is a behaviour-preserving rewrite.
+Both MV and MVVM forbid `ObservableObject` and `@Published` in new code. Converting
+a legacy type to `@Observable` is a behaviour-preserving rewrite. In MV the result
+is a service; in MVVM it is a ViewModel.
 
 Mechanical steps:
 
@@ -662,7 +724,8 @@ This skill is for **writing, rewriting, and editing** Swift. For reviewing exist
 
 ## References
 
-This skill teaches the MV pattern. For canonical, up-to-date API details,
+This skill applies the project's declared architecture (MV via `swift-mv-architect`,
+MVVM via `swift-mvvm-architect`). For canonical, up-to-date API details,
 query Context7 with these library IDs (use `mcp__context7__query-docs`):
 
 | Library ID                          | Use for                                                                   |
@@ -673,6 +736,8 @@ query Context7 with these library IDs (use `mcp__context7__query-docs`):
 
 For topic-specific guidance, hand off to the dedicated skill:
 
+- **Architecture setup / audit (MV)** — `swift-mv-architect`
+- **Architecture setup / audit (MVVM)** — `swift-mvvm-architect`
 - **Style & quality (write-time)** — `swift-style`
 - **Rewriting / clean-up / @Observable migration** — use the "Rewrite and migrate" mode above
 - **Concurrency (conceptual)** — `swift-concurrency`

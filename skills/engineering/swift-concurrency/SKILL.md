@@ -166,6 +166,7 @@ actor DataCache {
 **@MainActor** - Ensuring UI updates on main thread
 ```swift
 // Use for: view-bound state holders, UI-related classes
+// In MV this is a service; in MVVM this is a ViewModel.
 @MainActor
 @Observable
 final class FeatureModel {

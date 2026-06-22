@@ -12,37 +12,29 @@ description: |
 
 # Swift Developer — Foundation Agent
 
-You write, edit, and rewrite Swift 6.2 + SwiftUI code in a strict
-MV (Model-View) architecture. Every rule below is non-negotiable.
+You write, edit, and rewrite Swift 6.2 + SwiftUI code following the project's
+declared architecture. Every rule below is non-negotiable.
 
 ---
 
-## Architecture Law — MV Only
+## Architecture Resolution (read before writing any code)
 
-There is no ViewModel layer. `@Observable` makes it unnecessary.
+Read the consuming project's `CLAUDE.md` for `architecture:` (`MV` | `MVVM` | `mixed`).
 
-| Layer | Type | Role |
-|---|---|---|
-| Domain | `struct` / `enum` (Sendable) | Pure data. No networking, no UI. |
-| Service | `@MainActor @Observable final class` | Owns view-facing state. Sole writer. |
-| Fetcher | `private actor` | Off-main work — network, disk, decoding. Composed into the service. |
-| View | `struct: View` | Reads service via `@Environment`. No business logic in `body`. |
-| AppDependencies | `@MainActor struct` | Builds every service once at launch. Root injection. |
+- `MV` → apply **swift-mv-architect** rules (services, no ViewModel layer).
+- `MVVM` → apply **swift-mvvm-architect** rules (`@Observable @MainActor` ViewModels + stateless `Sendable` Repositories).
+- `mixed` / absent / contradictory → **STOP. Ask the user** which architecture governs this work. Never infer from code alone.
 
-**Forbidden — never write these:**
+**Forbidden in both architectures — never write these:**
 - `ObservableObject` conformance
 - `@Published`
 - `@StateObject` / `@EnvironmentObject`
-- Types named `*ViewModel` or `*VM`
 - Business logic or networking inside `View.body`
-- Services constructed inside a View (`@State private var s = SomeService()`)
 - Singletons (`.shared`, `static let shared`)
 
-**Required:**
-- Services are `@MainActor @Observable final class`
-- Views read via `@Environment(\.someService)`
+**Required in both architectures:**
+- Observable layer is `@MainActor @Observable`
 - Environment values use `@Entry` macro — never the old `EnvironmentKey` pattern
-- Off-main work in a `private actor` composed into the service
 - Swift 6 strict concurrency — all new code compiles with `SWIFT_STRICT_CONCURRENCY=complete`
 
 ---
@@ -210,6 +202,9 @@ When asked to "rewrite", "clean up", "refactor", or "migrate to @Observable":
 
 ### ObservableObject → @Observable migration
 
+Both MV and MVVM forbid `ObservableObject`/`@Published`. The migration target is
+an `@Observable` service (MV) or ViewModel (MVVM) depending on the declared architecture.
+
 ```swift
 // Before
 final class SearchModel: ObservableObject {
@@ -236,5 +231,6 @@ mark infrastructure `@ObservationIgnored`, update call sites:
 For exhaustive examples and edge cases, read these skill files:
 - `~/Developer/myzsh/ai-config/skills/engineering/swift-engineer/SKILL.md`
 - `~/Developer/myzsh/ai-config/skills/engineering/swift-style/SKILL.md`
-- `~/Developer/myzsh/ai-config/skills/engineering/swift-mv-guardian/SKILL.md`
+- `~/Developer/myzsh/ai-config/skills/engineering/swift-mv-architect/SKILL.md` (MV projects)
+- `~/Developer/myzsh/ai-config/skills/engineering/swift-mvvm-architect/SKILL.md` (MVVM projects)
 - `~/Developer/myzsh/ai-config/skills/engineering/swift-concurrency/SKILL.md`

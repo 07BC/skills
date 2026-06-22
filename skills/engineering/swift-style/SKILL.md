@@ -64,7 +64,7 @@ actor CacheManager {
 ### Isolation Boundaries
 
 ```swift
-// MainActor @Observable service owns view-facing state
+// MainActor @Observable type owns view-facing state (a service in MV, or a ViewModel in MVVM)
 @MainActor
 @Observable
 final class FeatureService {
@@ -94,7 +94,7 @@ actor DataStore {
 
 ### Task Isolation Inheritance — Anti-Pattern
 
-A `Task { }` created inside a `@MainActor` type (e.g. a `@MainActor @Observable` service)
+A `Task { }` created inside a `@MainActor` type (e.g. a `@MainActor @Observable` service in MV, or a ViewModel in MVVM)
 inherits `@MainActor` isolation automatically. Do NOT use `MainActor.run` inside it.
 
 ```swift

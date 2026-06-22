@@ -36,14 +36,23 @@ A finding may match multiple categories — grade at the highest severity.
 - [ ] No `fatalError` in production code
 - [ ] Async operations handle cancellation in long loops
 
-### MV Architecture (BLOCKER)
+### Architecture (BLOCKER)
+
+Read the project `CLAUDE.md` for `architecture: MV | MVVM`. Apply the matching
+architect skill (`swift-mv-architect` or `swift-mvvm-architect`). Flag all
+violations of the declared architecture as BLOCKERs. Common to both:
 - [ ] No `ObservableObject` in new code
 - [ ] No `@Published` in new code
-- [ ] No `*ViewModel` types in new code
 - [ ] No business logic in `View.body`
-- [ ] No services constructed inside views
 - [ ] `@Entry` used for environment values (not old `EnvironmentKey`)
-- [ ] Services not registered in `@Environment` directly (repositories/services only)
+
+MV-specific (if architecture is MV):
+- [ ] No `*ViewModel` types in new code
+- [ ] No services constructed inside views
+
+MVVM-specific (if architecture is MVVM):
+- [ ] No `@Observable` on a Repository
+- [ ] No ViewModels registered in `@Environment` or built in `AppDependencies`
 
 ### Concurrency (BLOCKER)
 - [ ] Compiles with `SWIFT_STRICT_CONCURRENCY=complete`
@@ -193,4 +202,5 @@ Every finding cites file + line range. Severity reflects production impact, not 
 ## Detailed Reference
 
 `~/Developer/myzsh/ai-config/skills/engineering/swift-code-review/SKILL.md`
-`~/Developer/myzsh/ai-config/skills/engineering/swift-mv-guardian/SKILL.md`
+`~/Developer/myzsh/ai-config/skills/engineering/swift-mv-architect/SKILL.md` (MV projects)
+`~/Developer/myzsh/ai-config/skills/engineering/swift-mvvm-architect/SKILL.md` (MVVM projects)

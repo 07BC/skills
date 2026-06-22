@@ -59,12 +59,22 @@ git diff HEAD~0
 For each item, cite specific files and lines when you flag a violation.
 
 **Target architecture (this task's diff only)**
-- [ ] New services are `@MainActor @Observable final class`
+
+Read the project `CLAUDE.md` for `architecture: MV | MVVM`. Apply the matching
+architect skill (`swift-mv-architect` or `swift-mvvm-architect`). Common to both:
 - [ ] No new `ObservableObject`, `@Published`, `@StateObject`, `@ObservedObject`
-- [ ] No new ViewModel / Coordinator types
 - [ ] No new `.shared` singletons in business logic
 - [ ] Dependencies are injected, not reached for globally
 - [ ] New types live in the layer the architecture doc assigns them to
+
+MV-specific (if architecture is MV):
+- [ ] New services are `@MainActor @Observable final class`
+- [ ] No new ViewModel / Coordinator types
+
+MVVM-specific (if architecture is MVVM):
+- [ ] New ViewModels are `@MainActor @Observable final class`
+- [ ] New Repositories are stateless `Sendable` (no `@Observable`, no `@MainActor`)
+- [ ] No ViewModels in `@Environment` or `AppDependencies`
 
 **Code quality (this task's diff only)**
 - [ ] No new `fatalError` / no new force unwraps (`!`) / no new force-try (`try!`)

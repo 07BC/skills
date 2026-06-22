@@ -36,7 +36,7 @@ This repo is the source of truth. It installs via `make install`, which symlinks
 What this library deliberately does **not** cover:
 
 - **Non-Apple platforms.** Swift / SwiftUI / Xcode only — no Android, web, or backend.
-- **UIKit and MVVM.** The skills assume SwiftUI and the MV (Model-View) pattern; `swift-mv-guardian` actively flags MVVM as drift.
+- **UIKit.** Skills assume SwiftUI only — no UIKit unless the platform requires it. Both MV and MVVM are supported; `swift-mv-architect` audits MV projects and `swift-mvvm-architect` audits MVVM projects, selected by the project's `CLAUDE.md` `architecture:` key.
 - **A general-purpose agent framework.** These are my opinionated workflows, not a reusable toolkit — see the note at the top.
 - **A zero-setup install.** Several skills require external services (see [External dependencies](#external-dependencies)); without them, those skills degrade or stop.
 
@@ -106,7 +106,7 @@ The boundaries that matter most, because they used to blur: **`/pm` decomposes**
 
 ### 2. Establish the architecture — once per project, or before a big feature
 
-`/swift-mv-guardian` scaffolds a new MV (Model-View) app skeleton, or audits an existing app for MVVM drift — keeping the pattern honest as the app grows. `/architecture-doc` reads the whole codebase and produces a living architecture document — the authority every downstream skill reads. Get this right and discovery + engineering have a source of truth to follow.
+`/swift-mv-architect` scaffolds a new MV app skeleton or audits for drift; `/swift-mvvm-architect` does the same for modern `@Observable` MVVM. Declare which architecture the project uses in its `CLAUDE.md` (`architecture: MV` or `architecture: MVVM`) — all engineering skills pick it up automatically. `/architecture-doc` reads the whole codebase and produces a living architecture document — the authority every downstream skill reads. Get this right and discovery + engineering have a source of truth to follow.
 
 ### 3. Scope the subtask — before touching code
 
@@ -200,7 +200,8 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/swift-mv-guardian](./skills/engineering/swift-mv-guardian/SKILL.md) | MV architecture guardian — scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
+| [/swift-mv-architect](./skills/engineering/swift-mv-architect/SKILL.md) | MV architecture guardian — scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
+| [/swift-mvvm-architect](./skills/engineering/swift-mvvm-architect/SKILL.md) | Modern `@Observable` MVVM architecture guardian — scaffolds a new MVVM app (Repository + ViewModel + View triad), or audits an existing app for legacy drift. | Opus · Plan → Execute |
 | [/architecture-doc](./skills/documentation/architecture-doc/SKILL.md) | Produces a thorough, living architecture document for an iOS/macOS Swift codebase — the downstream authority. | Opus · Plan → Execute |
 
 ### Discover

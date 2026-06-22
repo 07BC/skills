@@ -63,9 +63,9 @@ Walk through the plan task-by-task. For each task, verify:
 - [ ] Every type the plan references as "existing" is found in the codebase
       via `git grep -n 'class TypeName\|struct TypeName\|actor TypeName\|enum TypeName'`
 - [ ] Every protocol the plan implies extending is found
-- [ ] Architecture: new services declared as `@MainActor @Observable final class`,
-      not `ObservableObject`; no new ViewModels; matches the
-      `target_architecture_doc`
+- [ ] Architecture: new types conform to the project's declared architecture
+      (read `CLAUDE.md` `architecture:` key; apply `swift-mv-architect` or
+      `swift-mvvm-architect` rules); matches the `target_architecture_doc`
 
 ### Acceptance criteria coverage
 
