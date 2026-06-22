@@ -48,6 +48,7 @@ Choose the path that matches the request:
 - Use `.glassEffect(.regular.tint(...).interactive(), in: .rect(cornerRadius: ...))` as needed.
 - Use `.buttonStyle(.glass)` / `.buttonStyle(.glassProminent)` for actions.
 - Add morphing transitions with `glassEffectID` when hierarchy changes.
+- Merge sibling shapes that should read as one capsule with `glassEffectUnion(id:namespace:)` — combines the geometries of several glass views (even statically, or when they sit outside a standard layout container) into a single Liquid Glass shape. Views sharing an `id` + namespace and the same glass variant fuse into one.
 - Provide fallback materials and visuals for earlier iOS versions.
 
 ## Quick Snippets

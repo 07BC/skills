@@ -634,9 +634,28 @@ When a view file exceeds ~300 lines, split aggressively. Extract meaningful sect
 | Shared app service                     | `@Environment(Type.self)`                               |
 | Legacy (iOS 16 and earlier)            | `@StateObject` at root, `@ObservedObject` when injected |
 
-### Sheets
+### Sheets and routing
 
 Prefer `.sheet(item:)` over `.sheet(isPresented:)` when state represents a selected model. Avoid `if let` inside a sheet body. Sheets should own their actions and call `dismiss()` internally.
+
+Drive sheets and pushes from a **single enum of destinations** rather than a scatter of `Bool` flags — `@State private var route: Route?` with `.sheet(item: $route)` keeps presentation state in one place, makes "which screens can this view open" answerable from the type, and avoids two flags being true at once. Use `NavigationStack(path:)` + `navigationDestination(for:)` for the push stack (see the Navigation section above).
+
+### Async state lifecycle
+
+Model load state as an explicit enum (`loading` / `loaded` / `error`), not a tangle of `isLoading: Bool` + optional data — it makes every UI state representable and exhaustively switchable in `body`.
+
+- Use `.task(id:)` for work that must **restart** when an input changes: when the id changes SwiftUI cancels the running task and starts a fresh one, so input-driven reloads (search, filters) need no manual cancellation.
+- For user-typed input, debounce inside the task (`try await Task.sleep` *then* check `Task.isCancelled`) so a fast typer doesn't fire a request per keystroke — the `.task(id:)` cancellation makes the sleep self-cancelling.
+- Long-running loops must check `Task.isCancelled` and bail; a `.task` is cancelled automatically when the view disappears.
+
+```swift
+.task(id: query) {
+    guard !query.isEmpty else { state = .loaded([]); return }
+    try? await Task.sleep(for: .milliseconds(300))   // debounce
+    if Task.isCancelled { return }
+    await search(query)
+}
+```
 
 ## Swift Testing
 
