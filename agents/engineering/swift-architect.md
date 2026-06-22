@@ -1,5 +1,6 @@
 ---
 name: swift-architect
+model: opus
 description: |
   Produces a living architecture document for a Swift/SwiftUI codebase by
   systematically reading the project before writing anything. Use when asked

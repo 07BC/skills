@@ -1,5 +1,6 @@
 ---
 name: swift-pr-reviewer
+model: sonnet
 description: |
   Reviews Swift code and raises pull requests. Two roles: (1) code review —
   outputs BLOCKER/WARNING/SUGGESTION findings with inline fixes; (2) PR gate —

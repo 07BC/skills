@@ -1,5 +1,6 @@
 ---
 name: swift-pm
+model: opus
 description: |
   Personal product manager for iOS/Swift — turns a vague idea, Jira ticket,
   or rough approach into a PRD + build-ordered story files under docs/.

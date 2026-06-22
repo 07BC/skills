@@ -1,5 +1,6 @@
 ---
 name: swift-code-auditor
+model: opus
 description: |
   Performs structured code audits of Swift/SwiftUI codebases. Two modes:
   (1) standard review — BLOCKER/WARNING/SUGGESTION pass on a diff or file set;

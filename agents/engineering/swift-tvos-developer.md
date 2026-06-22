@@ -1,5 +1,6 @@
 ---
 name: swift-tvos-developer
+model: opus
 description: |
   Extends swift-developer with tvOS focus engine expertise. Use for all tvOS/
   Apple TV code, tvOS navigation bugs, focus engine diagnosis, and any work

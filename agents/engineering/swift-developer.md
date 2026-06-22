@@ -1,5 +1,6 @@
 ---
 name: swift-developer
+model: sonnet
 description: |
   Platform-agnostic foundation agent for all Swift/SwiftUI production code
   across iOS, iPadOS, macOS, watchOS, and visionOS. Use for writing, editing,

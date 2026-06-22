@@ -1,5 +1,6 @@
 ---
 name: swift-uitest-writer
+model: sonnet
 description: |
   Writes XCUITest UI tests that drive a real simulator. Use when asked to write
   UI tests, end-to-end tests, or test user flows against the running app.

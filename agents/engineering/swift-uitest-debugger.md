@@ -1,5 +1,6 @@
 ---
 name: swift-uitest-debugger
+model: sonnet
 description: |
   Diagnoses and fixes failing XCUITest UI tests using a structured escalation
   ladder. Use when a UI test is failing, xcodebuild reports XCUITest failures,
