@@ -136,8 +136,11 @@ alone. Re-verify with the build before declaring the task done.
    unless in mocks.
 8. **SwiftUI for UI** — use SwiftUI for all new UI work; no new UIKit unless
    the platform requires it.
-9. **One view per file** — keep views small and focused; one view per file
-   is the standard convention.
+9. **One type per file — hard rule.** Every `View`, `struct`, `class`, `enum`,
+   and `actor` lives in its own file. No `private struct Foo: View` nested inside
+   another file. No view-builder helpers defined as private types in the same file.
+   Every `View` file **must** end with a `#Preview` block. These rules are not
+   negotiable — do not generate code that violates them.
 10. **No global functions.** Static functions must be inside an enum or
     struct. Top-level code is forbidden.
 11. **No god objects.** Services over 400 lines or with more than 10
@@ -579,15 +582,29 @@ Enforce this ordering in every view file:
 4. Computed `var` (non-view)
 5. `init`
 6. `body`
-7. Computed view builders and other view helpers
-8. Helper/async functions
+7. Helper/async functions
 
-### Prefer dedicated subview types over computed helpers
+### Extract subviews into their own files
 
-Extract dedicated `View` types for non-trivial sections (body > ~50 lines or body with multiple logical sections). Keep computed `some View` helpers rare and small. Pass explicit, minimal inputs into extracted subviews — not the entire parent state.
+When `body` grows beyond a trivial size, extract logical sections into **separate
+`View` types in their own files** — never as `private struct Foo: View` in the
+parent file. Pass explicit, minimal inputs — not the entire parent state. Every
+extracted view gets its own `#Preview`.
+
+Do **not** use `@ViewBuilder` computed properties or private view-builder helpers
+as a substitute for extracting a real type. They hide complexity without creating
+a reviewable, testable unit.
 
 ```swift
-// Prefer this
+// ✅ HeaderSection.swift — its own file, with a #Preview
+struct HeaderSection: View {
+    let title: String
+    var body: some View { Text(title) }
+}
+
+#Preview { HeaderSection(title: "Hello") }
+
+// ✅ ContentView.swift — references the extracted type
 struct ContentView: View {
     var body: some View {
         List {
@@ -597,18 +614,12 @@ struct ContentView: View {
     }
 }
 
-private struct HeaderSection: View {
-    let title: String
-    var body: some View { Text(title) }
-}
+#Preview { ContentView() }
 
-// Avoid this
-var body: some View {
-    List {
-        header
-        results
-    }
-}
+// ❌ Never — private View type inside another file
+private struct HeaderSection: View { … }
+
+// ❌ Never — @ViewBuilder computed helper as a substitute for extraction
 private var header: some View { Text(title) }
 ```
 
@@ -622,7 +633,10 @@ Do not keep non-trivial button actions or business logic inline in `body`. Move 
 
 ### Large-view handling
 
-When a view file exceeds ~300 lines, split aggressively. Extract meaningful sections into dedicated `View` types. Use `private` extensions with `// MARK: -` for actions and helpers but do not use extensions as a substitute for breaking a giant screen into smaller view types.
+When a view file exceeds ~150 lines, split it — each extracted section becomes
+its own file with its own `#Preview`. Use `private` extensions with `// MARK: -`
+only for non-view helpers (actions, async functions); never for view-producing
+code.
 
 ### State ownership (quick reference)
 
