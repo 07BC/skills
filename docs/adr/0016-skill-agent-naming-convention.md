@@ -33,7 +33,7 @@ Skills: `swift-engineer`→`swift-engineering`, `swift-mv-architect`→
 `pm`→`product-planning`, `engineer-brief`→`implementation-brief`,
 `spec-master`→`spec-decomposition`.
 
-Agents: `senior-swift-engineer`→`senior-swift-developer`,
+Agents: `senior-swift-engineer`→`senior-swift-developer` (**`senior-swift-developer` subsequently deprecated in favour of `swift-developer` / `swift-tvos-developer` — see ADR 0017**),
 `ios-runtime-diagnostics`→`ios-runtime-profiler`, and the spec-pipeline set into
 the `spec-` namespace — `engineer`→`spec-engineer`, `planner`→`spec-planner`,
 `test-writer`→`spec-test-writer`, `quality-reviewer`→`spec-quality-reviewer`,
@@ -51,4 +51,6 @@ the `spec-` namespace — `engineer`→`spec-engineer`, `planner`→`spec-planne
   were left untouched — they record what was true when written.
 - Flagged but out of scope (function decides, not naming): `swift-debugger` vs
   `ios-runtime-profiler` overlap; `swift-developer` vs `senior-swift-developer`
-  overlap. Both are consolidation candidates.
+  overlap. Both were consolidation candidates. **Superseded: `senior-swift-developer`
+  has since been deprecated and moved to `agents/deprecated/` (see ADR 0017);
+  `swift-debugger` was renamed `swift-debugger-agent` to match its `name:` frontmatter.**
