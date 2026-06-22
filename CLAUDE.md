@@ -48,7 +48,7 @@ This repo is installed locally via `make install`.
 
 Skills are auto-discovered from the `skills/` directory — no manual enumeration needed.
 
-Every shipped skill must be referenced in `README.md` using the `/<name>` prefix.
+Every shipped skill must be referenced in `docs/skill-catalogue.md` using the `/<name>` prefix.
 
 ## Skill species
 
@@ -72,13 +72,14 @@ user action (e.g. `swift-concurrency`) take `user-invocable: false` alone.
 ## Adding a new skill
 
 1. Create `skills/<bucket>/<name>/SKILL.md` (frontmatter: `name`, `description`).
-2. Add a row to the table in `README.md` with `/<name>` as the skill label.
+2. Add a row to the relevant table in `docs/skill-catalogue.md` with `/<name>` as the skill label.
 3. Run `make link` to expose it locally.
 
 ## Adding a new command
 
 1. Create `commands/<bucket>/<name>.md` with command definition.
-2. Run `make commands` to expose it locally.
+2. Add a row to the Commands table in `docs/delivery-lifecycle.md`.
+3. Run `make commands` to expose it locally.
 
 ## Adding a new orchestrator
 
@@ -91,5 +92,5 @@ contract.
 
 ## Removing or deprecating
 
-- Move the dir to `skills/deprecated/<name>/` and remove from `README.md`.
+- Move the dir to `skills/deprecated/<name>/` and remove from `docs/skill-catalogue.md`.
 - `link-skills.sh` already skips `deprecated/`, so it won't be symlinked or auto-discovered.
