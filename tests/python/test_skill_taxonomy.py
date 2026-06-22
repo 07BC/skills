@@ -36,6 +36,7 @@ DEPENDENCY_SKILLS = [
 NO_AUTOFIRE_ORCHESTRATOR_SKILLS = [
     "skills/engineering/spec-pipeline/SKILL.md",
     "skills/engineering/spec-decomposition/SKILL.md",
+    "skills/engineering/spec-loop/SKILL.md",
 ]
 
 

@@ -29,6 +29,7 @@ and runs under `make test`.
 | `commands/Mr Will/solve.md` | yes | phase-gated, fans out solver + verifier subagents |
 | `skills/engineering/spec-pipeline/SKILL.md` | yes | phase-gated, dispatches leaf agents |
 | `skills/engineering/spec-decomposition/SKILL.md` | yes | phase-gated; decomposes a story and dispatches spec-scope-guardian |
+| `skills/engineering/spec-loop/SKILL.md` | yes | phase-gated; drives a whole master, dispatching the spec-* chain per child |
 | `commands/Mr Will/discovery.md` | yes | phase-gated three-amigos panel; fans out amigo + devil's-advocate subagents |
 
 When adding a new orchestrator, add its path to the `ORCHESTRATORS` list in the

@@ -24,6 +24,7 @@ ORCHESTRATORS = [
     "commands/Mr Will/discovery.md",
     "skills/engineering/spec-pipeline/SKILL.md",
     "skills/engineering/spec-decomposition/SKILL.md",
+    "skills/engineering/spec-loop/SKILL.md",
 ]
 
 
