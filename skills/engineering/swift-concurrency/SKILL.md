@@ -1,6 +1,6 @@
 ---
 name: swift-concurrency
-description: 'Conceptual guidance and reference for Swift Concurrency patterns — use for questions, explanations, and learning. For hands-on review and fixing of concrete concurrency bugs or compiler errors in existing code, use swift-engineer (fix concurrency mode) instead. Triggers when developers ask about: (1) async/await, actors, or tasks, (2) "how does Swift Concurrency work", (3) migrating to Swift 6, (4) data races or thread safety concepts, (5) @MainActor, Sendable, or actor isolation explained, (6) concurrent code architecture or performance.'
+description: 'Conceptual guidance and reference for Swift Concurrency patterns — use for questions, explanations, and learning. For hands-on review and fixing of concrete concurrency bugs or compiler errors in existing code, use swift-engineering (fix concurrency mode) instead. Triggers when developers ask about: (1) async/await, actors, or tasks, (2) "how does Swift Concurrency work", (3) migrating to Swift 6, (4) data races or thread safety concepts, (5) @MainActor, Sendable, or actor isolation explained, (6) concurrent code architecture or performance.'
 user-invocable: false
 ---
 # Swift Concurrency
@@ -9,26 +9,26 @@ user-invocable: false
 
 This skill provides expert guidance on Swift Concurrency, covering modern async/await patterns, actors, tasks, Sendable conformance, and migration to Swift 6. Use this skill to help developers write safe, performant concurrent code and navigate the complexities of Swift's structured concurrency model.
 
-## When to use this skill vs `swift-engineer`
+## When to use this skill vs `swift-engineering`
 
 This skill is **read-only conceptual reference**. It explains patterns,
 answers questions, and helps developers reason about isolation, Sendable,
 and structured concurrency. It does not modify code.
 
-Hand off to `swift-engineer` (fix concurrency mode) when the task is to **fix** code:
+Hand off to `swift-engineering` (fix concurrency mode) when the task is to **fix** code:
 
 | Trigger | Skill to use |
 | --- | --- |
 | "How does @MainActor work?" / "what is Sendable?" | `swift-concurrency` |
 | "Explain the difference between Task and Task.detached" | `swift-concurrency` |
-| "Migrate this file to Swift 6 strict concurrency" | `swift-engineer` |
-| "Fix this isolation error: Main actor-isolated property X cannot be referenced" | `swift-engineer` |
-| "Resolve the Sendable conformance warning on type Y" | `swift-engineer` |
-| "Convert this completion handler to async/await" | `swift-engineer` |
+| "Migrate this file to Swift 6 strict concurrency" | `swift-engineering` |
+| "Fix this isolation error: Main actor-isolated property X cannot be referenced" | `swift-engineering` |
+| "Resolve the Sendable conformance warning on type Y" | `swift-engineering` |
+| "Convert this completion handler to async/await" | `swift-engineering` |
 
 Rule of thumb: if the request names a specific compiler error, file, or
 diff and expects code changes back, it belongs to
-`swift-engineer` (fix concurrency mode). If it asks "what should I do here?" without
+`swift-engineering` (fix concurrency mode). If it asks "what should I do here?" without
 demanding a code change in this conversation, it stays here.
 
 ## Agent Behavior Contract (Follow These Rules)

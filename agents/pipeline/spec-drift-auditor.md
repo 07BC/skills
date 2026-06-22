@@ -1,5 +1,5 @@
 ---
-name: drift-auditor
+name: spec-drift-auditor
 description: >
   Semantic drift gate between a master technical spec and one child spec. The
   deterministic matrix check (check-traceability.sh) proves the IDs line up; this
@@ -7,8 +7,8 @@ description: >
   actually implements that master AC's intent, not just its ID, and that the
   child has not quietly redefined, narrowed, or contradicted the master. Returns
   PASS or BLOCKED with a findings table. Invoked by the spec-pipeline SKILL before
-  Phase 1 and by spec-master during decomposition; never invoked directly. Invoke
-  as: "drift-auditor: check child <child-spec-id> against master <master ref>".
+  Phase 1 and by spec-decomposition during decomposition; never invoked directly. Invoke
+  as: "spec-drift-auditor: check child <child-spec-id> against master <master ref>".
 model: sonnet
 ---
 

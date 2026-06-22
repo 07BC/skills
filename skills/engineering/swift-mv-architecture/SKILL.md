@@ -1,12 +1,12 @@
 ---
-name: swift-mv-architect
-description: MV architecture guardian for Swift/SwiftUI apps. Two modes — (1) **setup**: scaffold a new MV app skeleton (entry point, AppDependencies, environment plumbing, first service+view); (2) **audit**: scan an existing app and report MVVM drift (ViewModel-named types, ObservableObject conformances, @Published, business logic in View.body, services not in the environment). Triggers on "set up a new app", "scaffold an MV app", "check the app follows MV", "is this still MV", "audit MV adherence", "architect this" when the project declares MV architecture, or any time the user is choosing where state lives in an MV project. Use BEFORE swift-engineer when starting a feature in an empty project, or AFTER changes to verify the architecture still holds.
+name: swift-mv-architecture
+description: MV architecture guardian for Swift/SwiftUI apps. Two modes — (1) **setup**: scaffold a new MV app skeleton (entry point, AppDependencies, environment plumbing, first service+view); (2) **audit**: scan an existing app and report MVVM drift (ViewModel-named types, ObservableObject conformances, @Published, business logic in View.body, services not in the environment). Triggers on "set up a new app", "scaffold an MV app", "check the app follows MV", "is this still MV", "audit MV adherence", "architect this" when the project declares MV architecture, or any time the user is choosing where state lives in an MV project. Use BEFORE swift-engineering when starting a feature in an empty project, or AFTER changes to verify the architecture still holds.
 ---
 
 # Swift MV Architect
 
 You are the architecture guardian for a Swift/SwiftUI **MV (Model-View)** app.
-This skill does NOT write feature code — that's `swift-engineer`. This skill
+This skill does NOT write feature code — that's `swift-engineering`. This skill
 sets the structure up correctly and verifies it stays that way.
 
 ---
@@ -68,7 +68,7 @@ If the deployment target is below the minimum, ask the user via
 - **Option B: Can't bump — keep iOS 16- support.** MV (which requires
   `@Observable`) is not viable on this project. This skill halts —
   scaffolding MV code that won't compile is worse than nothing. Use
-  `swift-mvvm-architect` instead (modern `@Observable` MVVM also requires
+  `swift-mvvm-architecture` instead (modern `@Observable` MVVM also requires
   iOS 17, but the MVVM docs cover legacy `ObservableObject` fallback), and
   note the constraint in a one-line comment at the top of the resulting
   composition root so future readers know why MVVM was chosen over MV.
@@ -318,7 +318,7 @@ Files scanned: N
 - <list of services missing from AppDependencies or environment>
 ```
 
-Do not propose fixes inline — that's `swift-engineer`. The architect identifies;
+Do not propose fixes inline — that's `swift-engineering`. The architect identifies;
 the engineer remediates.
 
 ---
@@ -327,14 +327,14 @@ the engineer remediates.
 
 | Situation | Use |
 |---|---|
-| About to write a feature inside an MV-shaped project | `swift-engineer` |
-| Need to clean up an existing file without changing behaviour | `swift-engineer` (rewrite mode) |
+| About to write a feature inside an MV-shaped project | `swift-engineering` |
+| Need to clean up an existing file without changing behaviour | `swift-engineering` (rewrite mode) |
 | Pre-commit / PR review including the live Xcode navigator check | `swift-code-review` |
 | Deep audit beyond MV adherence (testability, layering, concurrency depth) | `/audit` |
 
 ## References
 
-- For a per-subtask scoped brief, hand off to `engineer-brief` — that
+- For a per-subtask scoped brief, hand off to `implementation-brief` — that
   skill produces the engineer's brief, this one defines the architecture
   the engineer must conform to.
 - See the in-repo `app:new-service` skill for the project-specific service +
@@ -343,4 +343,4 @@ the engineer remediates.
 - See the in-repo `app:new-screen` skill for the project-specific screen +
   navigation wiring command.
 - For deeper concurrency questions inside services and fetchers, see
-  `swift-concurrency` (conceptual) or `swift-engineer` (fix concurrency mode — action).
+  `swift-concurrency` (conceptual) or `swift-engineering` (fix concurrency mode — action).

@@ -45,5 +45,5 @@ upsert() {
 # git-commit-reminder: fires on every Bash PostToolUse, filters git commit internally
 upsert "PostToolUse" '{"matcher":"Bash","hooks":[{"type":"command","command":"bash $HOME/.claude/hooks/git-commit-reminder.sh","statusMessage":"Checking for git commit handover..."}]}'
 
-# swift-engineer-loader: fires on PreToolUse file edits, filters .swift internally
-upsert "PreToolUse" '{"matcher":"Edit|Write|MultiEdit|mcp__xcode__XcodeWrite|mcp__xcode__XcodeUpdate","hooks":[{"type":"command","command":"bash $HOME/.claude/hooks/swift-engineer-loader.sh","statusMessage":"Loading Swift engineering chain..."}]}'
+# swift-engineering-loader: fires on PreToolUse file edits, filters .swift internally
+upsert "PreToolUse" '{"matcher":"Edit|Write|MultiEdit|mcp__xcode__XcodeWrite|mcp__xcode__XcodeUpdate","hooks":[{"type":"command","command":"bash $HOME/.claude/hooks/swift-engineering-loader.sh","statusMessage":"Loading Swift engineering chain..."}]}'

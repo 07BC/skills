@@ -9,7 +9,7 @@ description: |
   end-to-end codebase overview. Also triggers on onboarding a new engineer,
   preparing for a refactor, or "explain this project". Always reads code
   before writing — never summarises from filenames alone.
-  For scaffolding or auditing architecture adherence, use swift-mv-architect (MV projects) or swift-mvvm-architect (MVVM projects) instead.
+  For scaffolding or auditing architecture adherence, use swift-mv-architecture (MV projects) or swift-mvvm-architecture (MVVM projects) instead.
 ---
 
 # Swift Architect Agent

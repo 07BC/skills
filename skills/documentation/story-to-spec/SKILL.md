@@ -5,7 +5,7 @@ description: >
   distils it into ONE structured spec document. Writes the spec to docs/specs/
   in the project and the Obsidian vault. No worktrees, no planning, no
   implementation — spec authoring only. Do NOT use to break a feature into
-  multiple stories (use pm) or to interrogate an unsettled plan (use grill-me).
+  multiple stories (use product-planning) or to interrogate an unsettled plan (use grill-me).
 ---
 
 # Story to Spec

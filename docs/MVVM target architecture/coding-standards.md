@@ -1,7 +1,7 @@
 # Coding Standards
 
 > Swift 6.2 · SwiftUI MVVM · enforced — not suggestions.
-> Source: swift-mvvm-architect, swift-engineer, swift-style skills + project SwiftLint config.
+> Source: swift-mvvm-architecture, swift-engineering, swift-style skills + project SwiftLint config.
 
 ---
 

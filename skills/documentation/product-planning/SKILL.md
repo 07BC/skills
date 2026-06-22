@@ -1,5 +1,5 @@
 ---
-name: pm
+name: product-planning
 description: >
   Personal product manager for iOS/Swift — turns a vague idea, a Jira ticket,
   or a rough technical approach into a PRD plus a set of build-ordered, PR-sized

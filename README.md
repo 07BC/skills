@@ -27,7 +27,7 @@ A library of Claude Code **skills** and **commands** for shipping Swift / SwiftU
 
 Claude Code's skill system lets you encode domain expertise into focused `SKILL.md` files rather than burying everything in a monolithic `CLAUDE.md`. Each skill is a self-contained module that tells Claude exactly how to approach a specific class of task — what to check, what to avoid, which model to reach for, and what a good outcome looks like.
 
-Without skills, Claude pattern-matches on its training data. That works for generic tasks but falls apart for domain-specific ones. `swift-tvos` exists because — in my experience — tvOS focus-engine bugs are a case where Claude pattern-matches the symptom, shuffles code around, and declares the bug fixed when nothing changed; the skill enforces the diagnostic discipline that prevents it. `swift-engineer` locks in the MV (Model-View) pattern rather than defaulting to MVVM. `swift-code-review` knows to check Swift 6 concurrency, actor isolation, and `@unchecked Sendable` — not just style.
+Without skills, Claude pattern-matches on its training data. That works for generic tasks but falls apart for domain-specific ones. `swift-tvos` exists because — in my experience — tvOS focus-engine bugs are a case where Claude pattern-matches the symptom, shuffles code around, and declares the bug fixed when nothing changed; the skill enforces the diagnostic discipline that prevents it. `swift-engineering` locks in the MV (Model-View) pattern rather than defaulting to MVVM. `swift-code-review` knows to check Swift 6 concurrency, actor isolation, and `@unchecked Sendable` — not just style.
 
 This repo is the source of truth. It installs via `make install`, which symlinks skills into `~/.claude/skills/` and commands into `~/.claude/commands/`.
 
@@ -36,7 +36,7 @@ This repo is the source of truth. It installs via `make install`, which symlinks
 What this library deliberately does **not** cover:
 
 - **Non-Apple platforms.** Swift / SwiftUI / Xcode only — no Android, web, or backend.
-- **UIKit.** Skills assume SwiftUI only — no UIKit unless the platform requires it. Both MV and MVVM are supported; `swift-mv-architect` audits MV projects and `swift-mvvm-architect` audits MVVM projects, selected by the project's `CLAUDE.md` `architecture:` key.
+- **UIKit.** Skills assume SwiftUI only — no UIKit unless the platform requires it. Both MV and MVVM are supported; `swift-mv-architecture` audits MV projects and `swift-mvvm-architecture` audits MVVM projects, selected by the project's `CLAUDE.md` `architecture:` key.
 - **A general-purpose agent framework.** These are my opinionated workflows, not a reusable toolkit — see the note at the top.
 - **A zero-setup install.** Several skills require external services (see [External dependencies](#external-dependencies)); without them, those skills degrade or stop.
 
@@ -48,22 +48,23 @@ Every skill here is a **phase** in one delivery lifecycle: shape → architect �
 
 | Altitude | You run | What happens | When to use |
 |---|---|---|---|
-| **Full-auto** | `/spec-master TICKET` then `/spec-pipeline --from-issue #` | `/spec-master` decomposes a story into a GitHub master issue + sequential child sub-issues; `/spec-pipeline` ships each child → PR, in-place, autonomously (unattended; ~60–90 min per child — an estimate, not a guarantee). | A well-specified story you want decomposed, tracked, and built end-to-end without babysitting. |
+| **Full-auto** | `/spec-decomposition TICKET` then `/spec-pipeline --from-issue #` | `/spec-decomposition` decomposes a story into a GitHub master issue + sequential child sub-issues; `/spec-pipeline` ships each child → PR, in-place, autonomously (unattended; ~60–90 min per child — an estimate, not a guarantee). | A well-specified story you want decomposed, tracked, and built end-to-end without babysitting. |
 | **Orchestrated** | `/workflow SUBTASK` | One subtask → PR, with the orchestrator (Opus) deciding and subagents (Sonnet) executing each phase, plus GitHub architecture-drift tracking across the story. | A single scoped subtask where you want control points and architecture tracking. |
-| **Manual** | the skills below, one at a time | You drive each phase yourself: `/engineer-brief`, `/swift-engineer`, `/swift-testing`, `/swift-code-review`, `/git-pr`. | Exploratory work, learning, or anything where you want to see each step. |
+| **Manual** | the skills below, one at a time | You drive each phase yourself: `/implementation-brief`, `/swift-engineering`, `/swift-testing`, `/swift-code-review`, `/git-pr`. | Exploratory work, learning, or anything where you want to see each step. |
 
-The key idea: **the orchestrators are just the manual pipeline automated.** `/workflow` and `/spec-pipeline` call the same `engineer-brief` → `swift-engineer` → `swift-testing` → `swift-code-review` skills you'd run by hand. Learn the manual skills and you understand what the orchestrators do; reach for an orchestrator when you want the whole chain run for you.
+The key idea: **the orchestrators are just the manual pipeline automated.** `/workflow` and `/spec-pipeline` call the same `implementation-brief` → `swift-engineering` → `swift-testing` → `swift-code-review` skills you'd run by hand. Learn the manual skills and you understand what the orchestrators do; reach for an orchestrator when you want the whole chain run for you.
 
 ```
 shape ─► architect ─► discover ─► build/clean ─► test ─► review ─► ship
- │           │           │             │           │        │         │
-pm        swift-mv-  engineer-    swift-        swift-   swift-    swift-pr-gate
-grill-me  guardian   brief        engineer      testing  code-     git-pr
-story-to- architec-  (per         (new code,    swift-   review
- spec     ture-doc    subtask)    rewrites,     uitest   (std or
-mr-j                              migrations,            deep mode)
-                                  concurrency
-                                  fixes)
+
+shape        product-planning · grill-me · story-to-spec · mr-j
+architect    swift-mv-architecture · swift-mvvm-architecture · architecture-doc
+discover     implementation-brief (per subtask)
+build/clean  swift-engineering (new code, rewrites, migrations, concurrency fixes)
+test         swift-testing · swift-uitest
+review       swift-code-review (std or deep mode)
+ship         git-pr · swift-pr-gate
+
         └──────────────  /workflow  (one subtask, orchestrated)  ──────────────┘
         └──────────────  /spec-pipeline  (whole ticket, autonomous)  ──────────┘
 ```
@@ -94,29 +95,29 @@ Pin down *what* you're building before any code. These skills each produce a **d
 |---|---|---|
 | A vague idea | to think it through, no artefact yet | `/grill-me` |
 | A plan to pressure-test | the same, **+ `CONTEXT.md`/ADRs updated** as decisions settle | `/grill-with-docs` |
-| A ticket / raw idea / rough approach | a **PRD + build-ordered, PR-sized story files** (decompose) | `/pm` |
+| A ticket / raw idea / rough approach | a **PRD + build-ordered, PR-sized story files** (decompose) | `/product-planning` |
 | One story / ticket / prompt | **one structured spec doc** | `/story-to-spec` |
 | A whole codebase | a living **architecture document** | `/architecture-doc` |
-| One subtask, about to code | a scoped **engineer brief** | `/engineer-brief` |
+| One subtask, about to code | a scoped **engineer brief** | `/implementation-brief` |
 | A finished plan/spec | a **Jira ticket** | `/discovery-jira` |
 | A spec exists (`docs/specs/*.md`) | a device **QA test plan** | `/spec-test-plan` |
 | Any doc, before senior review | it **reframed to review standard** | `/mr-j` |
 
-The boundaries that matter most, because they used to blur: **`/pm` decomposes** an idea into many stories; **`/story-to-spec` distils** one ticket into one spec; **`/grill-me` interrogates** a plan you already have. `/mr-j` frames a spec, ticket, or PR description so it survives senior review — every claim explains why the work exists, the root cause, rejected alternatives, the simplest version, and how failure recovers. `/jira-bulk` does fix-version and status changes across many tickets at once.
+The boundaries that matter most, because they used to blur: **`/product-planning` decomposes** an idea into many stories; **`/story-to-spec` distils** one ticket into one spec; **`/grill-me` interrogates** a plan you already have. `/mr-j` frames a spec, ticket, or PR description so it survives senior review — every claim explains why the work exists, the root cause, rejected alternatives, the simplest version, and how failure recovers. `/jira-bulk` does fix-version and status changes across many tickets at once.
 
 ### 2. Establish the architecture — once per project, or before a big feature
 
-`/swift-mv-architect` scaffolds a new MV app skeleton or audits for drift; `/swift-mvvm-architect` does the same for modern `@Observable` MVVM. Declare which architecture the project uses in its `CLAUDE.md` (`architecture: MV` or `architecture: MVVM`) — all engineering skills pick it up automatically. `/architecture-doc` reads the whole codebase and produces a living architecture document — the authority every downstream skill reads. Get this right and discovery + engineering have a source of truth to follow.
+`/swift-mv-architecture` scaffolds a new MV app skeleton or audits for drift; `/swift-mvvm-architecture` does the same for modern `@Observable` MVVM. Declare which architecture the project uses in its `CLAUDE.md` (`architecture: MV` or `architecture: MVVM`) — all engineering skills pick it up automatically. `/architecture-doc` reads the whole codebase and produces a living architecture document — the authority every downstream skill reads. Get this right and discovery + engineering have a source of truth to follow.
 
 ### 3. Scope the subtask — before touching code
 
-`/engineer-brief` produces a scoped brief for one subtask: which types to touch, which to create, edge cases, patterns to follow, and — crucially — what **not** to touch. It is the engineer's primary input. For multi-subtask stories, `/discovery` (and its `discovery-init` / `discovery-check` / `discovery-audit` skills) maintain a branch-independent architecture-drift store in GitHub issues so the architecture stays coherent across the whole story.
+`/implementation-brief` produces a scoped brief for one subtask: which types to touch, which to create, edge cases, patterns to follow, and — crucially — what **not** to touch. It is the engineer's primary input. For multi-subtask stories, `/discovery` (and its `discovery-init` / `discovery-check` / `discovery-audit` skills) maintain a branch-independent architecture-drift store in GitHub issues so the architecture stays coherent across the whole story.
 
 ### 4. Build & clean
 
-`/swift-engineer` is **the single entry point for all Swift writing and editing** — think of it as the **Engineer**. Writing any Swift 6 + SwiftUI is one job: new code, SwiftUI views, services, async work, behaviour-preserving rewrites and clean-ups, `@Observable` migrations from `ObservableObject`/`@Published`, and fixing concrete Swift 6 concurrency errors. There is no separate "clean" or "refactor" skill — those all route here.
+`/swift-engineering` is **the single entry point for all Swift writing and editing** — think of it as the **Engineer**. Writing any Swift 6 + SwiftUI is one job: new code, SwiftUI views, services, async work, behaviour-preserving rewrites and clean-ups, `@Observable` migrations from `ObservableObject`/`@Published`, and fixing concrete Swift 6 concurrency errors. There is no separate "clean" or "refactor" skill — those all route here.
 
-> **You don't pick a sub-skill when writing Swift.** `/swift-engineer` auto-applies `/swift-style` (style and Swift 6 rules) and pulls in `/swift-concurrency` (async / actor / Sendable work) and `/swiftui-liquid-glass` (iOS 26+ Liquid Glass UI) automatically as the task needs them. Those three are **parts of the Engineer**, not separate skills you invoke — they appear as their own catalogue rows below only because each is independently useful as a reference (e.g. asking `/swift-concurrency` to *explain* actor isolation without writing code).
+> **You don't pick a sub-skill when writing Swift.** `/swift-engineering` auto-applies `/swift-style` (style and Swift 6 rules) and pulls in `/swift-concurrency` (async / actor / Sendable work) and `/swiftui-liquid-glass` (iOS 26+ Liquid Glass UI) automatically as the task needs them. Those three are **parts of the Engineer**, not separate skills you invoke — they appear as their own catalogue rows below only because each is independently useful as a reference (e.g. asking `/swift-concurrency` to *explain* actor isolation without writing code).
 
 `/swift-tvos` diagnoses Apple TV focus-engine and navigation bugs — always use it rather than guessing.
 
@@ -169,7 +170,7 @@ cd skills
 make install
 ```
 
-Skills are then available as `/<skill-name>` — e.g. `/swift-engineer`, `/swift-tvos`. Commands are available as `/workflow`, `/spec-pipeline`, etc.
+Skills are then available as `/<skill-name>` — e.g. `/swift-engineering`, `/swift-tvos`. Commands are available as `/workflow`, `/spec-pipeline`, etc.
 
 ### Keeping up to date
 
@@ -190,7 +191,7 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 |---|---|---|
 | [/grill-me](./skills/engineering/grill-me/SKILL.md) | Interviews you relentlessly about a plan until reaching shared understanding — one question at a time. | Opus · Direct |
 | [/grill-with-docs](./skills/engineering/grill-with-docs/SKILL.md) | Same as grill-me, plus updates `CONTEXT.md` and ADRs inline as decisions crystallise. | Opus · Direct |
-| [/pm](./skills/documentation/pm/SKILL.md) | **Decomposes** an idea/ticket into a PRD + build-ordered, PR-sized story files under `docs/`. One round of clarifying questions first. | Opus · Direct |
+| [/product-planning](./skills/documentation/product-planning/SKILL.md) | **Decomposes** an idea/ticket into a PRD + build-ordered, PR-sized story files under `docs/`. One round of clarifying questions first. | Opus · Direct |
 | [/story-to-spec](./skills/documentation/story-to-spec/SKILL.md) | **Distils** one Jira story, file, or prompt into one structured spec doc. Spec authoring only — no code, no story breakdown. | Opus · Direct |
 | [/mr-j](./skills/productivity/mr-j/SKILL.md) | Frames a PR, ticket, or spec to senior-review standard — why it exists, root cause, rejected alternatives, simplest version, failure recovery. | Opus · Direct |
 | [/discovery-jira](./skills/discovery/discovery-jira/SKILL.md) | Converts a plan or spec into a structured Jira ticket. Asks for confirmation before creating. | Sonnet · Direct |
@@ -200,15 +201,15 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/swift-mv-architect](./skills/engineering/swift-mv-architect/SKILL.md) | MV architecture guardian — scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
-| [/swift-mvvm-architect](./skills/engineering/swift-mvvm-architect/SKILL.md) | Modern `@Observable` MVVM architecture guardian — scaffolds a new MVVM app (Repository + ViewModel + View triad), or audits an existing app for legacy drift. | Opus · Plan → Execute |
+| [/swift-mv-architecture](./skills/engineering/swift-mv-architecture/SKILL.md) | MV architecture guardian — scaffolds a new MV app skeleton, or audits an existing app for MVVM drift. | Opus · Plan → Execute |
+| [/swift-mvvm-architecture](./skills/engineering/swift-mvvm-architecture/SKILL.md) | Modern `@Observable` MVVM architecture guardian — scaffolds a new MVVM app (Repository + ViewModel + View triad), or audits an existing app for legacy drift. | Opus · Plan → Execute |
 | [/architecture-doc](./skills/documentation/architecture-doc/SKILL.md) | Produces a thorough, living architecture document for an iOS/macOS Swift codebase — the downstream authority. | Opus · Plan → Execute |
 
 ### Discover
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/engineer-brief](./skills/documentation/engineer-brief/SKILL.md) | Produces a scoped brief for a single subtask. The engineer's primary input — written before any code is touched. | Opus · Direct |
+| [/implementation-brief](./skills/documentation/implementation-brief/SKILL.md) | Produces a scoped brief for a single subtask. The engineer's primary input — written before any code is touched. | Opus · Direct |
 | [/discovery-init](./skills/discovery/discovery-init/SKILL.md) | Creates the GitHub architecture master issue and per-subtask sub-issues for a story. Runs once per story. | Opus · Orchestrated |
 | [/discovery-check](./skills/discovery/discovery-check/SKILL.md) | Reconciles completed subtask work and checks the current subtask against the master architecture; updates both on drift. | Opus+Sonnet · Orchestrated |
 | [/discovery-audit](./skills/discovery/discovery-audit/SKILL.md) | Audits the finished story against its master architecture. Runs after the final subtask completes. | Opus · Orchestrated |
@@ -217,11 +218,11 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/swift-engineer](./skills/engineering/swift-engineer/SKILL.md) | **THE entry point for all Swift writing and editing** — new Swift 6.2 code, SwiftUI views, services, async work, behaviour-preserving rewrites, `@Observable` migrations, and fixing concrete Swift 6 concurrency errors. Loads `swift-style` automatically. | Sonnet · Direct |
-| [/swift-style](./skills/engineering/swift-style/SKILL.md) | **A part of the Engineer** — code style, quality rules, and Swift 6 essentials. Auto-applied by `/swift-engineer`; never invoked directly. | Sonnet · Orchestrated |
-| [/swiftui-liquid-glass](./skills/engineering/swiftui-liquid-glass/SKILL.md) | **A part of the Engineer** — implement, review, or improve SwiftUI features with the iOS 26+ Liquid Glass API. `/swift-engineer` loads it automatically for Liquid Glass work. | Sonnet · Direct |
+| [/swift-engineering](./skills/engineering/swift-engineering/SKILL.md) | **THE entry point for all Swift writing and editing** — new Swift 6.2 code, SwiftUI views, services, async work, behaviour-preserving rewrites, `@Observable` migrations, and fixing concrete Swift 6 concurrency errors. Loads `swift-style` automatically. | Sonnet · Direct |
+| [/swift-style](./skills/engineering/swift-style/SKILL.md) | **A part of the Engineer** — code style, quality rules, and Swift 6 essentials. Auto-applied by `/swift-engineering`; never invoked directly. | Sonnet · Orchestrated |
+| [/swiftui-liquid-glass](./skills/engineering/swiftui-liquid-glass/SKILL.md) | **A part of the Engineer** — implement, review, or improve SwiftUI features with the iOS 26+ Liquid Glass API. `/swift-engineering` loads it automatically for Liquid Glass work. | Sonnet · Direct |
 | [/swift-tvos](./skills/engineering/swift-tvos/SKILL.md) | Diagnoses tvOS navigation and focus-engine bugs. Always use this — do not attempt tvOS focus diagnosis ad hoc. | Sonnet · Direct |
-| [/swift-concurrency](./skills/engineering/swift-concurrency/SKILL.md) | **A part of the Engineer** — async/await, actors, Sendable, Swift 6 migration. Auto-loaded by `/swift-engineer` for async work; invoke directly only to *learn or explain* concepts (not to write or fix code). | Sonnet · Direct |
+| [/swift-concurrency](./skills/engineering/swift-concurrency/SKILL.md) | **A part of the Engineer** — async/await, actors, Sendable, Swift 6 migration. Auto-loaded by `/swift-engineering` for async work; invoke directly only to *learn or explain* concepts (not to write or fix code). | Sonnet · Direct |
 | [/swiftui-performance-audit](./skills/engineering/swiftui-performance-audit/SKILL.md) | Audit SwiftUI runtime performance from code first — slow rendering, janky scrolling, expensive updates, profiling. | Sonnet · Direct |
 | [/proxyman-scripting](./skills/engineering/proxyman-scripting/SKILL.md) | Write and edit Proxyman JS scripts to intercept and modify HTTP/HTTPS traffic — mock APIs, inject headers/tokens, map remote→local, rewrite status/body, use built-in addons (Base64/JWT/AES/GZip). | Sonnet · Direct |
 
@@ -238,11 +239,11 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 
 ### Clean & review
 
-Behaviour-preserving rewrites and refactors are part of `/swift-engineer` (rewrite mode) — not a separate skill. `/swift-code-review` is for reviewing code without changing it.
+Behaviour-preserving rewrites and refactors are part of `/swift-engineering` (rewrite mode) — not a separate skill. `/swift-code-review` is for reviewing code without changing it.
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/swift-code-review](./skills/engineering/swift-code-review/SKILL.md) | Reviews existing code — BLOCKER / WARNING / SUGGESTION with inline fixes. Two modes: (1) standard diff review before commit/PR; (2) adversarial deep mode for high-stakes branches (new SDK, infra, lifecycle). Do not use for writing or rewriting — use `/swift-engineer`. | Opus · Direct |
+| [/swift-code-review](./skills/engineering/swift-code-review/SKILL.md) | Reviews existing code — BLOCKER / WARNING / SUGGESTION with inline fixes. Two modes: (1) standard diff review before commit/PR; (2) adversarial deep mode for high-stakes branches (new SDK, infra, lifecycle). Do not use for writing or rewriting — use `/swift-engineering`. | Opus · Direct |
 
 ### Ship — git, gate & CI
 
@@ -268,8 +269,8 @@ Behaviour-preserving rewrites and refactors are part of `/swift-engineer` (rewri
 
 | Skill | What it does | Model · Flow |
 |---|---|---|
-| [/spec-master](./skills/engineering/spec-master/SKILL.md) | Decomposition front door — turns a Jira story into a GitHub master issue + sequential child sub-issues (native, via `gh api graphql`), freezing a stable AC ID per criterion and building the traceability matrix. Does not implement. | Opus · Orchestrated |
-| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | Implements one child spec → PR, in-place on a fresh branch (no worktree), driving engineer → test-writer → test gate → concurrency-auditor → two diverse-lens reviewers (both must PASS) per task, then reconciling the child + master issues. Hard-stops until its `depends_on` children are merged. Run `--from-issue <#>` per child from `/spec-master`. | Opus+Sonnet · Orchestrated |
+| [/spec-decomposition](./skills/engineering/spec-decomposition/SKILL.md) | Decomposition front door — turns a Jira story into a GitHub master issue + sequential child sub-issues (native, via `gh api graphql`), freezing a stable AC ID per criterion and building the traceability matrix. Does not implement. | Opus · Orchestrated |
+| [/spec-pipeline](./skills/engineering/spec-pipeline/SKILL.md) | Implements one child spec → PR, in-place on a fresh branch (no worktree), driving engineer → spec-test-writer → test gate → spec-concurrency-auditor → two diverse-lens reviewers (both must PASS) per task, then reconciling the child + master issues. Hard-stops until its `depends_on` children are merged. Run `--from-issue <#>` per child from `/spec-decomposition`. | Opus+Sonnet · Orchestrated |
 | [/spec-validation](./skills/pipelines/spec-validation/SKILL.md) | Validates drafted specs against the live codebase with a multi-lens agent panel, then reconciles findings back into the spec — run after a fix is designed (e.g. by `/solve`), before implementation. Confirms every file/line/symbol and proposed diff is real. | Opus · Direct |
 | [/pipeline-preflight](./skills/pipelines/pipeline-preflight/SKILL.md) | Pre-flight checks before any pipeline starts — progress-doc drift, out-of-scope stories, dirty working tree. Cited by orchestrators; does not auto-fire. | Sonnet · Orchestrated |
 | [/subagent-reliability](./skills/pipelines/subagent-reliability/SKILL.md) | Recovery procedure for dropped or crashed subagents — recover-in-place, resume, or re-spawn. Cited by orchestrators; does not auto-fire. | Sonnet · Orchestrated |
@@ -360,7 +361,7 @@ docs/orchestrator-contract.md   — the shared orchestrator structure + state-pl
 docs/adr/                       — architecture decision records for the library
 tests/python/                   — conformance + script tests (make test)
 skills/discovery/               — architecture master-issue tracking (init, check, audit, jira)
-skills/documentation/           — spec, PRD/stories (pm), engineer-brief, DocC, architecture-doc, and skills-ADR authoring
+skills/documentation/           — spec, PRD/stories (product-planning), implementation-brief, DocC, architecture-doc, and skills-ADR authoring
 skills/engineering/             — Swift / iOS / Xcode / CI / concurrency skills + spec-pipeline
 skills/git/                     — generic git workflow skills
 skills/obsidian/                — Obsidian vault management skills

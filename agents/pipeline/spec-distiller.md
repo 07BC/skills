@@ -72,7 +72,7 @@ before and omit `covers`/`implements` (those specs run without the spine gates).
    to re-read the prose context, not re-parse)
 2. The path under `target_architecture_doc` if set
 3. Each `context_docs` path
-4. The `swift-engineer` skill body — authoritative architecture rules,
+4. The `swift-engineering` skill body — authoritative architecture rules,
    SwiftUI patterns, state management, navigation, and code style. It will
    resolve the project's declared architecture (MV or MVVM) and load the
    matching architect skill.
@@ -110,7 +110,7 @@ conflicting items. A conflict is any of:
 For each conflict found, ask the user to resolve it via `AskUserQuestion`.
 Ask **one conflict per call**. Quote the conflicting items verbatim in the
 question body. Provide a recommended resolution as the first option, grounded
-in the patterns in the `swift-engineer` skill you read in Step 0.
+in the patterns in the `swift-engineering` skill you read in Step 0.
 
 Incorporate all answers into `raw_text` as an appended "Resolved conflicts"
 section before continuing.
@@ -135,7 +135,7 @@ If UI is involved, interview the user about every open UI design decision,
 **one question at a time** via `AskUserQuestion`, until all decisions are
 resolved. For each question, provide a recommended answer drawn from:
 - Patterns already in the codebase (discovered in Step 2)
-- The `swift-engineer` skill's SwiftUI section (navigation, state, overlays)
+- The `swift-engineering` skill's SwiftUI section (navigation, state, overlays)
 - The `swiftui-liquid-glass` skill if the feature targets iOS 26+
 
 Ask in dependency order:
@@ -215,7 +215,7 @@ depends_on: [<child issue #s — source_type=issue only; omit otherwise>]
 
 | Component | Type | Layer | Responsibility |
 |-----------|------|-------|----------------|
-| {Name} | {Type per declared architecture — see swift-mv-architect or swift-mvvm-architect} | {Layer} | {What it does} |
+| {Name} | {Type per declared architecture — see swift-mv-architecture or swift-mvvm-architecture} | {Layer} | {What it does} |
 
 ### Modified Components
 
@@ -239,7 +239,7 @@ depends_on: [<child issue #s — source_type=issue only; omit otherwise>]
 
 ## Constraints & Invariants
 
-- Conform to the project's declared architecture (see `CLAUDE.md` `architecture:` key; apply `swift-mv-architect` or `swift-mvvm-architect` rules)
+- Conform to the project's declared architecture (see `CLAUDE.md` `architecture:` key; apply `swift-mv-architecture` or `swift-mvvm-architecture` rules)
 - No new `ObservableObject`, `@Published` (forbidden in both architectures)
 - Swift Testing only — no XCTest for unit tests
 - {Any input-specific constraint}

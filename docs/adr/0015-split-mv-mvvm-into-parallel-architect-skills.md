@@ -1,5 +1,10 @@
 # Split architecture rules into two parallel architect skills
 
+> **Naming note (ADR 0016):** the skills introduced here were renamed
+> `swift-mv-architect` → `swift-mv-architecture` and `swift-mvvm-architect` →
+> `swift-mvvm-architecture` to comply with the part-of-speech naming convention.
+> The decision below stands; only the slugs changed.
+
 Architecture rules were previously hardcoded inline across ~13 agents and ~8 skills,
 all assuming MV (Model-View). To support both MV and MVVM, we extracted the rules
 into two parallel, dedicated skills — `swift-mv-architect` (renamed from

@@ -73,8 +73,8 @@ user chooses Proceed anyway.
 
 Read the following before doing anything:
 
-1. Apply the matching architect skill (`swift-mv-architect` for MV projects,
-   `swift-mvvm-architect` for MVVM projects — read `CLAUDE.md` to determine
+1. Apply the matching architect skill (`swift-mv-architecture` for MV projects,
+   `swift-mvvm-architecture` for MVVM projects — read `CLAUDE.md` to determine
    which) for the target-architecture summary.
 2. `CLAUDE.md` — follow every linked doc from it.
 3. If `SCOPE=ticket`: the Jira ticket via Atlassian MCP, plus every
@@ -221,7 +221,7 @@ Order batches by dependency and severity:
 3. `WARNING` findings — third.
 4. `SUGGESTION` findings — last.
 
-For each batch, apply skill `engineer-brief` to produce a discovery note
+For each batch, apply skill `implementation-brief` to produce a discovery note
 in the canonical format. This means each batch is ready to be picked up by
 `workflow` as a subtask with zero translation. Write each note to
 `${PLANS_DIR}/[BATCH-KEY]-discovery.md` where `BATCH-KEY` is either the
@@ -326,7 +326,7 @@ Every artefact lives under `${AUDIT_DIR} = ${PLANS_DIR}/audit/${SCOPE_KEY}`.
 
 Once this command completes, run `/workflow <BATCH-KEY>` once per
 remediation batch, in the order specified in the remediation plan. Each
-batch already has a `engineer-brief`-shaped note ready in `${PLANS_DIR}`
+batch already has a `implementation-brief`-shaped note ready in `${PLANS_DIR}`
 — `workflow` Phase 3 picks it up without re-running discovery.
 
 - `SCOPE=ticket`: pass the Jira subtask key directly. `workflow` derives

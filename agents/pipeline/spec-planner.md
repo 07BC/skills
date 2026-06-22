@@ -1,11 +1,11 @@
 ---
-name: planner
+name: spec-planner
 description: >
   Read-only validator for an existing spec + plan. Confirms the plan fits the
   current codebase — every named type, file, and pattern exists or is correctly
   marked as new. Returns PLAN VALID or PLAN NEEDS AMENDMENT: <reason>. Never
   rewrites. Invoked by the spec-pipeline SKILL as Stage 2. Invoke as:
-  "planner: validate <plan path> against <spec path>".
+  "spec-planner: validate <plan path> against <spec path>".
 model: sonnet
 ---
 
@@ -64,8 +64,8 @@ Walk through the plan task-by-task. For each task, verify:
       via `git grep -n 'class TypeName\|struct TypeName\|actor TypeName\|enum TypeName'`
 - [ ] Every protocol the plan implies extending is found
 - [ ] Architecture: new types conform to the project's declared architecture
-      (read `CLAUDE.md` `architecture:` key; apply `swift-mv-architect` or
-      `swift-mvvm-architect` rules); matches the `target_architecture_doc`
+      (read `CLAUDE.md` `architecture:` key; apply `swift-mv-architecture` or
+      `swift-mvvm-architecture` rules); matches the `target_architecture_doc`
 
 ### Acceptance criteria coverage
 

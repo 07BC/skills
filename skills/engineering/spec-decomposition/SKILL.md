@@ -1,5 +1,5 @@
 ---
-name: spec-master
+name: spec-decomposition
 description: >
   Turns a Jira story into a GitHub-backed technical master spec and its
   sequential child specs. Reads the story's acceptance criteria, freezes a stable
@@ -7,15 +7,15 @@ description: >
   spec-scope-guardian, then creates a GitHub master issue plus native child
   sub-issues (gh api graphql) carrying the traceability matrix. Does NOT
   implement — hand each child to /spec-pipeline with --from-issue. Use when the
-  user says "decompose this story", "set up the master spec", "spec-master
-  NAT-1234", or "/spec-master …". Project must declare its spec_pipeline YAML
+  user says "decompose this story", "set up the master spec", "spec-decomposition
+  NAT-1234", or "/spec-decomposition …". Project must declare its spec_pipeline YAML
   block (incl. github.repo) in CLAUDE.md — see ../spec-pipeline/SCHEMA.md.
 disable-model-invocation: true
 ---
 
 # Spec Master
 
-`/spec-master` is the front door to the spec pipeline. It owns **decomposition
+`/spec-decomposition` is the front door to the spec pipeline. It owns **decomposition
 and tracking**: Jira story → GitHub master issue + sequential child sub-issues,
 each linked into a traceability matrix that later gates drift. It does not write
 code and does not create worktrees. Implementation is `/spec-pipeline`'s job, one
@@ -38,12 +38,12 @@ If `$ARGUMENTS` is empty, `--help`, `-h`, or `help`, print the block below
 verbatim and exit — no config read, no MCP call, no `gh` call.
 
 ````
-/spec-master — decompose a Jira story into a GitHub master spec + child sub-issues
+/spec-decomposition — decompose a Jira story into a GitHub master spec + child sub-issues
 
 Usage:
-  /spec-master --from-jira KEY     read the story, freeze AC IDs, decompose, create issues
-  /spec-master KEY                 shorthand when KEY matches ^[A-Z]+-[0-9]+$
-  /spec-master --help              show this message
+  /spec-decomposition --from-jira KEY     read the story, freeze AC IDs, decompose, create issues
+  /spec-decomposition KEY                 shorthand when KEY matches ^[A-Z]+-[0-9]+$
+  /spec-decomposition --help              show this message
 
 What it does:
   0. Preflight (pipeline-preflight + gh/MCP/auth checks)
@@ -80,7 +80,7 @@ SCRIPTS="$HOME/.claude/skills/spec-pipeline/scripts"
 eval "$(bash ${SCRIPTS}/read-pipeline-config.sh)"
 ```
 
-This exports `SPEC_PIPELINE_*`. `/spec-master` additionally needs
+This exports `SPEC_PIPELINE_*`. `/spec-decomposition` additionally needs
 `SPEC_PIPELINE_GITHUB_REPO` (the `github.repo` key, `owner/name`); if unset, fall
 back to the current repo (`gh repo view --json nameWithOwner -q .nameWithOwner`).
 `SPEC_PIPELINE_TICKET_PREFIX` anchors the AC ID namespace.
@@ -111,7 +111,7 @@ back to the current repo (`gh repo view --json nameWithOwner -q .nameWithOwner`)
    inserting a new Jira AC later appends a new ID; it never renumbers existing
    ones. (Phase 4 below records this rule in the issue body.)
 4. Idempotence: if a master issue for this KEY already exists (search
-   `gh issue list --search "<KEY>" --label spec-master`), read its frozen AC IDs
+   `gh issue list --search "<KEY>" --label spec-decomposition`), read its frozen AC IDs
    and reuse them rather than re-freezing. Offer the user Resume / Recreate / Abort.
 
 ## Phase 2 — Decompose
@@ -147,9 +147,9 @@ On Approve, all writes go through `gh` (never curl / REST / octokit).
 1. **Master issue.** Body contains: a link to the Jira story; an
    `## Acceptance Criteria` list, one line per frozen ID
    (`- **<KEY>-AC1** — <text>`); a `## Child specs` task-list (filled in step 3);
-   and the **AC-ID immutability rule** verbatim. Label `spec-master`.
+   and the **AC-ID immutability rule** verbatim. Label `spec-decomposition`.
    ```bash
-   master_num=$(gh issue create --repo "$REPO" --label spec-master \
+   master_num=$(gh issue create --repo "$REPO" --label spec-decomposition \
      --title "[spec] <KEY> — <summary>" --body-file "$body" \
      | grep -oE '[0-9]+$')
    master_id=$(gh issue view "$master_num" --repo "$REPO" --json id -q .id)
@@ -193,5 +193,5 @@ when:
 
 Opus orchestrates in the top-level session and owns every branching decision.
 The single leaf agent (`spec-scope-guardian`, Opus) is dispatched via the Agent
-tool. No worktree, no implementation, no code edits — `/spec-master` only reads
+tool. No worktree, no implementation, no code edits — `/spec-decomposition` only reads
 Jira and writes GitHub.

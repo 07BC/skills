@@ -39,7 +39,7 @@ A finding may match multiple categories — grade at the highest severity.
 ### Architecture (BLOCKER)
 
 Read the project `CLAUDE.md` for `architecture: MV | MVVM`. Apply the matching
-architect skill (`swift-mv-architect` or `swift-mvvm-architect`). Flag all
+architect skill (`swift-mv-architecture` or `swift-mvvm-architecture`). Flag all
 violations of the declared architecture as BLOCKERs. Common to both:
 - [ ] No `ObservableObject` in new code
 - [ ] No `@Published` in new code
@@ -202,5 +202,5 @@ Every finding cites file + line range. Severity reflects production impact, not 
 ## Detailed Reference
 
 `~/Developer/myzsh/ai-config/skills/engineering/swift-code-review/SKILL.md`
-`~/Developer/myzsh/ai-config/skills/engineering/swift-mv-architect/SKILL.md` (MV projects)
-`~/Developer/myzsh/ai-config/skills/engineering/swift-mvvm-architect/SKILL.md` (MVVM projects)
+`~/Developer/myzsh/ai-config/skills/engineering/swift-mv-architecture/SKILL.md` (MV projects)
+`~/Developer/myzsh/ai-config/skills/engineering/swift-mvvm-architecture/SKILL.md` (MVVM projects)

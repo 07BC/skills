@@ -119,10 +119,10 @@ Append to audit log:
 
 ```
 ## Phase 2 — Planner — <timestamp>
-Spawning planner to validate plan fits codebase.
+Spawning spec-planner to validate plan fits codebase.
 ```
 
-Spawn `planner` with `SPEC_PATH` and `PLAN_PATH`. Wait for verdict.
+Spawn `spec-planner` with `SPEC_PATH` and `PLAN_PATH`. Wait for verdict.
 
 Possible outcomes:
 
@@ -134,9 +134,9 @@ Possible outcomes:
 Spawn `spec-distiller` once more, passing:
 
 - The same `spec_id`, `source_type`, `raw_text`
-- Plus an "amendment notes" block containing the planner's reasoning verbatim
+- Plus an "amendment notes" block containing the spec-planner's reasoning verbatim
 
-After the distiller re-writes the plan, spawn the planner again.
+After the distiller re-writes the plan, spawn the spec-planner again.
 
 If the second pass still returns `PLAN NEEDS AMENDMENT:`, escalate:
 
@@ -189,10 +189,10 @@ Append to audit log:
 
 ```
 ## Phase 4 — Spec Review (cycle <cycle>) — <timestamp>
-Spawning swift-spec-review for whole-branch diff.
+Spawning spec-branch-reviewer for whole-branch diff.
 ```
 
-Spawn `swift-spec-review` with `(SPEC_PATH, PLAN_PATH)`. Read the **last line**
+Spawn `spec-branch-reviewer` with `(SPEC_PATH, PLAN_PATH)`. Read the **last line**
 of its output.
 
 ### Decision
@@ -236,7 +236,7 @@ Run the `/git-pr` skill. It handles:
 You do NOT inline `gh pr create` here. The skill is the single source of truth.
 
 If `/git-pr` reports any blockers from its code-review pass that
-`swift-spec-review` missed, halt and surface them — do not bypass.
+`spec-branch-reviewer` missed, halt and surface them — do not bypass.
 
 After the PR is created, append `## Final Outcome`:
 
@@ -274,7 +274,7 @@ Reasons that trigger escalation:
 - Plan remains invalid after one amendment cycle (Phase 2)
 - `swift-spec-implement` halts on ambiguity, build failure, or unresolved
   inner-loop BLOCKED (Phase 3)
-- `swift-spec-review` returns BLOCKED past the cycle budget (Phase 4)
+- `spec-branch-reviewer` returns BLOCKED past the cycle budget (Phase 4)
 - `/git-pr` reports blockers or fails (Phase 5)
 
 ---
@@ -290,4 +290,4 @@ Reasons that trigger escalation:
 - **Never bypass Phase 4** — even on cycle 0 PASS, the whole-diff review must run
 - **Never auto-confirm `/git-pr`** — the human confirms the PR body
 - **Never auto-remove the worktree** — print the reminder, let the user do it
-- **Never write code** — delegate to engineer via swift-spec-implement
+- **Never write code** — delegate to spec-engineer via swift-spec-implement

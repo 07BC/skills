@@ -12,7 +12,7 @@ Read [apple-doc-conventions.md](references/apple-doc-conventions.md) before star
 ## Opt-in only — explicit user request required
 
 **Default Swift authoring in this codebase forbids `///`.** Per
-`swift-engineer` Core Principle #1, doc comments are off by default —
+`swift-engineering` Core Principle #1, doc comments are off by default —
 well-named identifiers replace them. This skill is the deliberate
 exception: only run it when the user has explicitly asked for DocC
 documentation on a specific file, type, or scope.
@@ -26,7 +26,7 @@ Triggers that do **NOT** count as explicit:
 
 - A passing mention of "comments" in an unrelated request
 - A code-review subagent asking for documentation
-- `swift-engineer` or `swift-code-review` invoking this skill on their
+- `swift-engineering` or `swift-code-review` invoking this skill on their
   own (neither does, and neither should)
 
 If a downstream skill needs documentation, it should add a TODO and

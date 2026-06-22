@@ -1,6 +1,6 @@
 ---
-name: swift-mvvm-architect
-description: Modern @Observable MVVM architecture guardian for Swift/SwiftUI apps. Two modes — (1) **setup**: scaffold a new MVVM app skeleton (entry point, AppDependencies of repositories, environment plumbing, first Repository + ViewModel + View triad); (2) **audit**: scan an existing app and report drift from modern @Observable MVVM (legacy ObservableObject/@Published, ViewModels in the environment or AppDependencies, @Observable repositories, business logic in View.body, ViewModel calling API client directly). Triggers on "set up a new MVVM app", "scaffold MVVM", "check the app follows MVVM", "is this still MVVM", "audit MVVM adherence", "architect this" when the project declares MVVM architecture. Use BEFORE swift-engineer when starting a feature in an empty MVVM project, or AFTER changes to verify the architecture holds.
+name: swift-mvvm-architecture
+description: Modern @Observable MVVM architecture guardian for Swift/SwiftUI apps. Two modes — (1) **setup**: scaffold a new MVVM app skeleton (entry point, AppDependencies of repositories, environment plumbing, first Repository + ViewModel + View triad); (2) **audit**: scan an existing app and report drift from modern @Observable MVVM (legacy ObservableObject/@Published, ViewModels in the environment or AppDependencies, @Observable repositories, business logic in View.body, ViewModel calling API client directly). Triggers on "set up a new MVVM app", "scaffold MVVM", "check the app follows MVVM", "is this still MVVM", "audit MVVM adherence", "architect this" when the project declares MVVM architecture. Use BEFORE swift-engineering when starting a feature in an empty MVVM project, or AFTER changes to verify the architecture holds.
 ---
 
 # Swift MVVM Architect
@@ -8,7 +8,7 @@ description: Modern @Observable MVVM architecture guardian for Swift/SwiftUI app
 You are the architecture guardian for a Swift/SwiftUI **modern @Observable MVVM** app.
 This is NOT legacy `ObservableObject`/`@Published` MVVM — it uses `@Observable`
 ViewModels (iOS 17+, Swift 6). This skill does NOT write feature code — that's
-`swift-engineer`. This skill sets the structure up correctly and verifies it stays
+`swift-engineering`. This skill sets the structure up correctly and verifies it stays
 that way.
 
 ---
@@ -376,7 +376,7 @@ Files scanned: N
 - <list of ViewModels found in AppDependencies (should be zero)>
 ```
 
-Do not propose fixes inline — that's `swift-engineer`. The architect identifies;
+Do not propose fixes inline — that's `swift-engineering`. The architect identifies;
 the engineer remediates.
 
 ---
@@ -385,8 +385,8 @@ the engineer remediates.
 
 | Situation | Use |
 |---|---|
-| About to write a feature inside an MVVM-shaped project | `swift-engineer` |
-| Need to clean up an existing file without changing behaviour | `swift-engineer` (rewrite mode) |
+| About to write a feature inside an MVVM-shaped project | `swift-engineering` |
+| Need to clean up an existing file without changing behaviour | `swift-engineering` (rewrite mode) |
 | Pre-commit / PR review including the live Xcode navigator check | `swift-code-review` |
 | Deep audit beyond MVVM adherence (testability, layering, concurrency depth) | `/audit` |
 
@@ -396,5 +396,5 @@ the engineer remediates.
 - Architecture overview: `docs/MVVM target architecture/architecture.md`
 - Coding standards: `docs/MVVM target architecture/coding-standards.md`
 - Testing patterns: `docs/MVVM target architecture/testing.md`
-- For a per-subtask scoped brief, hand off to `engineer-brief` — that skill produces the engineer's brief; this one defines the architecture the engineer must conform to.
-- For deeper concurrency questions inside ViewModels, see `swift-concurrency` (conceptual) or `swift-engineer` (fix concurrency mode — action).
+- For a per-subtask scoped brief, hand off to `implementation-brief` — that skill produces the engineer's brief; this one defines the architecture the engineer must conform to.
+- For deeper concurrency questions inside ViewModels, see `swift-concurrency` (conceptual) or `swift-engineering` (fix concurrency mode — action).

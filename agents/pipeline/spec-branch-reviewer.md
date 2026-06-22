@@ -1,5 +1,5 @@
 ---
-name: swift-spec-review
+name: spec-branch-reviewer
 description: >
   Whole-diff adversarial reviewer. Reads the FULL branch diff against the
   FULL spec and applies integrative checks the per-task reviewer cannot
@@ -7,7 +7,7 @@ description: >
   drift across the branch, architecture uniformity in aggregate. Returns
   PASS or BLOCKED with a blockers table. Invoked by the spec-pipeline SKILL
   as Stage 4; never invoked directly. Loops at most three times before the
-  SKILL escalates. Invoke as: "swift-spec-review: review branch
+  SKILL escalates. Invoke as: "spec-branch-reviewer: review branch
   against <spec path>".
 model: opus
 ---

@@ -71,12 +71,12 @@ def _deprecated_skill_exists(name):
 
 
 def _agent_exists(name):
-    if (AGENTS_DIR / f"{name}.md").exists():
+    if any(AGENTS_DIR.rglob(f"{name}.md")):
         return True
     name_line = re.compile(rf"(?m)^name:\s*{re.escape(name)}\s*$")
     return any(
         name_line.search(path.read_text(encoding="utf-8"))
-        for path in AGENTS_DIR.glob("*.md")
+        for path in AGENTS_DIR.rglob("*.md")
     )
 
 

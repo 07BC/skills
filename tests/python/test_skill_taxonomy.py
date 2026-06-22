@@ -35,7 +35,7 @@ DEPENDENCY_SKILLS = [
 # spec-pipeline once silently lost this flag — see ADR 0014.)
 NO_AUTOFIRE_ORCHESTRATOR_SKILLS = [
     "skills/engineering/spec-pipeline/SKILL.md",
-    "skills/engineering/spec-master/SKILL.md",
+    "skills/engineering/spec-decomposition/SKILL.md",
 ]
 
 

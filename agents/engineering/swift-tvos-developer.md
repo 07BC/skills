@@ -22,7 +22,7 @@ tvOS-specific rules below.
 ## Foundation Rules (All Apply)
 
 Architecture, style, concurrency, and SwiftUI patterns from swift-developer
-all apply. For detail: `~/Developer/myzsh/ai-config/skills/engineering/swift-engineer/SKILL.md`
+all apply. For detail: `~/Developer/myzsh/ai-config/skills/engineering/swift-engineering/SKILL.md`
 
 Additional tvOS constraints from this project's CLAUDE.md:
 - tvOS focus engine is the #1 source of bugs — any layout change can break navigation

@@ -7,8 +7,8 @@ description: >
   against target architecture, third-party SDK contracts, lifecycle/cleanup, and
   test coverage, producing a prioritised Critical/High/Medium/Low findings doc
   for high-stakes branches (new SDK, infra, lifecycle changes). Loads
-  swift-engineer, swift-style, swift-testing, swift-concurrency. Do NOT use for
-  writing or rewriting code — use swift-engineer. For a whole-codebase
+  swift-engineering, swift-style, swift-testing, swift-concurrency. Do NOT use for
+  writing or rewriting code — use swift-engineering. For a whole-codebase
   architecture audit, use /audit. For a reusable hand-off review
   prompt, use prompt:review.
 ---
@@ -16,14 +16,14 @@ description: >
 # Swift Code Review
 
 Required dependency skills (must be present in ~/.claude/skills/):
-- `swift-engineer`
+- `swift-engineering`
 - `swift-style`
 - `swift-testing`
 - `swift-concurrency`
 
 Load these skills first, then apply every checklist item below:
 
-- Read skill swift-engineer
+- Read skill swift-engineering
 - Read skill swift-style
 - Read skill swift-testing
 - Read skill swift-concurrency
@@ -83,7 +83,7 @@ severity it matches.
 - [ ] One SwiftUI view per file — no `private struct` subviews or computed property views
 
 ### Comments and documentation
-- [ ] No `///` doc comments — well-named identifiers replace them (per `swift-engineer` Core Principle #1)
+- [ ] No `///` doc comments — well-named identifiers replace them (per `swift-engineering` Core Principle #1)
 - [ ] No `/** */` block comments
 - [ ] No inline `//` comments unless the WHY is non-obvious (hidden constraint, subtle invariant, workaround for a specific bug)
 - [ ] `MARK: -` sections used for types with more than two logical groupings
@@ -166,7 +166,7 @@ Call `advisor()` once with your touched-file list, authority docs read, and SDK 
 
 **1. Third-party SDK correctness** — required fields populated, property names vs init param names confirmed against headers, unit/encoding correctness, lifecycle ordering, identifier reuse, threading contracts.
 
-**2. Layer/architecture alignment** — no domain protocol returning infrastructure types, no infrastructure importing presentation, mocks `#if DEBUG`-gated, `@Entry` used for environment values, composition root correct, new `@Observable` types `@MainActor`. The observable layer matches the project's declared architecture: services (MV, per `swift-mv-architect`) or ViewModels + stateless Repositories (MVVM, per `swift-mvvm-architect`); no `ObservableObject`/`@Published`; no ViewModels in `@Environment` (MVVM); no ViewModel-named types (MV).
+**2. Layer/architecture alignment** — no domain protocol returning infrastructure types, no infrastructure importing presentation, mocks `#if DEBUG`-gated, `@Entry` used for environment values, composition root correct, new `@Observable` types `@MainActor`. The observable layer matches the project's declared architecture: services (MV, per `swift-mv-architecture`) or ViewModels + stateless Repositories (MVVM, per `swift-mvvm-architecture`); no `ObservableObject`/`@Published`; no ViewModels in `@Environment` (MVVM); no ViewModel-named types (MV).
 
 **3. Concurrency and Sendable** — types crossing isolation boundaries have explicit `Sendable`, mutable shared state actor-isolated or `@MainActor`, `dispatchPrecondition` not called from background Task, strict concurrency compiles clean.
 
