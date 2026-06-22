@@ -136,11 +136,13 @@ alone. Re-verify with the build before declaring the task done.
    unless in mocks.
 8. **SwiftUI for UI** — use SwiftUI for all new UI work; no new UIKit unless
    the platform requires it.
-9. **One type per file — hard rule.** Every `View`, `struct`, `class`, `enum`,
-   and `actor` lives in its own file. No `private struct Foo: View` nested inside
-   another file. No view-builder helpers defined as private types in the same file.
-   Every `View` file **must** end with a `#Preview` block. These rules are not
-   negotiable — do not generate code that violates them.
+9. **One type per file — hard rule.** Every `struct`, `class`, `enum`, and
+   `actor` lives in its own file. The **only** exception is `extension` — a file
+   may contain extensions on the file's primary type (e.g. `// MARK: - Fixtures`,
+   `// MARK: - Formatting`). No secondary named types of any kind: no
+   `private struct`, no nested `enum`, no supporting `struct` alongside the
+   primary type. Every `View` file **must** end with a `#Preview` block. These
+   rules are not negotiable — do not generate code that violates them.
 10. **No global functions.** Static functions must be inside an enum or
     struct. Top-level code is forbidden.
 11. **No god objects.** Services over 400 lines or with more than 10
