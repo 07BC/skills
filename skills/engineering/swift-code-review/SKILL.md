@@ -80,7 +80,9 @@ severity it matches.
 - [ ] Trailing commas on all multi-line array/dictionary/argument literals
 - [ ] Explicit access control: `private` for everything not satisfying a protocol
 - [ ] No inline type definitions inside function bodies
-- [ ] One SwiftUI view per file — no `private struct` subviews or computed property views
+- [ ] One type per file — every `struct`, `class`, `enum`, `actor` in its own file; `extension` on the primary type is the only exception. Flag any file with more than one named type.
+- [ ] Every `View` file ends with a `#Preview` block
+- [ ] No `private struct` subviews or `@ViewBuilder` computed properties inside a view file
 
 ### Comments and documentation
 - [ ] No `///` doc comments — well-named identifiers replace them (per `swift-engineering` Core Principle #1)
