@@ -501,6 +501,13 @@ func emailValidation(email: String, expected: Bool) async throws {
 }
 ```
 
+**Pair inputs with a tuple, not `zip`.** Two `arguments:` collections produce the **Cartesian product** (every combination), which is usually what you want for a matrix. To pair element-by-element instead, pass **one** collection of tuples (as above) — do **not** reach for `zip(a, b)`:
+
+- `zip` **silently truncates** to the shorter collection, so a typo that drops a case quietly shrinks coverage with no failure.
+- `zip(Enum.allCases, expected)` is **order-fragile** — reordering the enum re-pairs every case against the wrong expectation.
+
+If you genuinely need the product of two axes, pass both collections (`arguments: rows, columns`) and let Swift Testing form the pairs — it is clearer than a nested loop and each pair is an independently-reported, independently-retryable case.
+
 ### Regression-guard: prove the fix is load-bearing
 
 When you write a test for a bug fix or a tolerance/workaround, prove the test would actually catch the regression: assert the **raw/unfixed input fails** *and* the **fixed path succeeds**. A test that only checks the fixed path can't tell you the fix is doing anything.
@@ -537,6 +544,74 @@ func maturalGateCurrentBehaviour() async throws {
 ```
 
 Do not invent the "right" policy — lock in the observed one and flag it for the owner if it looks wrong.
+
+## Swift 6.2 additions
+
+Reach for these when they fit — verify the exact signature against Context7 (`/swiftlang/swift-testing`) if unsure, the APIs are recent.
+
+### Exit tests — cover `precondition` / `fatalError` / `exit` paths
+
+A trap or process exit cannot be caught by `#expect(throws:)` — it kills the test process. `#expect(processExitsWith:)` runs the closure in a **child process** and asserts how it terminates, so a deliberate `precondition` failure becomes testable instead of un-coverable:
+
+```swift
+@Test func rejectsNegativeBalance() async {
+    await #expect(processExitsWith: .failure) {
+        _ = Account(balance: -1)   // hits a precondition
+    }
+}
+```
+
+Use sparingly — a trap path that *should* be a thrown error is a production bug; only pin genuine programmer-error preconditions this way.
+
+### Range-based confirmations — events that fire an unknown number of times
+
+`confirmation` already takes a fixed `expectedCount:`. For push-driven sources where the exact count is non-deterministic, pass a **range** instead of fixing a brittle number:
+
+```swift
+await confirmation(expectedCount: 1...) { handled in        // at least once
+    subject.onEvent = { _ in handled() }
+    await subject.run()
+}
+```
+
+Any range works (`0..<1000`, `2...5`). This is the deterministic alternative to "fire some events then `Task.sleep`".
+
+### `#expect(throws:)` returns the error — assert on its payload
+
+The thrown error is returned, so a second assertion can inspect it instead of a bare type check:
+
+```swift
+let error = #expect(throws: ValidationError.self) { try sut.validate("") }
+#expect(error?.field == .email)
+```
+
+(Returns `nil` if nothing — or the wrong error — was thrown.) Prefer this over the older two-closure form.
+
+### Attachments — capture diagnostics on failure
+
+Attach a value (conforming to `Attachable`) to the test record so a CI failure carries the offending payload, not just a line number:
+
+```swift
+Attachment.record(decodedResponse, named: "response.json")
+```
+
+### Custom scoping traits over shared `init()`
+
+When several suites need the same per-test setup (a `@TaskLocal` clock, a temp directory), a custom trait conforming to `TestScoping` wraps each test in `provideScope(for:testCase:performing:)` — cleaner and more reusable than copying `init()` across suites. Verify the protocol shape against current docs before writing one.
+
+### Raw identifiers for readable names (optional)
+
+Swift 6.2 allows backtick-delimited function names, which can replace the `@Test("…")` display string:
+
+```swift
+@Test func `rejects an empty username`() async throws { … }
+```
+
+Suggest it where it reads better; do not mass-rewrite existing `@Test("…")` tests for it.
+
+## Where test doubles live
+
+A double used by **one** suite stays in that test file. A double shared across targets (e.g. a `MockRepository` several feature test targets need) belongs in a dedicated test-support target or an `…-Interface` module behind `#if DEBUG`, so every test target links the same definition instead of re-declaring drifting copies. Do not expose doubles from the production target's release build.
 
 ## Workflow: Writing Tests for a File
 

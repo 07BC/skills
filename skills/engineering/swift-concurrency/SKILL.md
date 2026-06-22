@@ -97,6 +97,9 @@ When a developer needs concurrency guidance, follow this decision tree:
 7. **Memory issues with tasks?**
    - Read `references/memory-management.md` for retain cycle prevention
 
+8. **Reviewing existing concurrency code for bugs?**
+   - Run the grep checklist in `references/hotspots.md`, then match symptoms against `references/bug-patterns.md`
+
 ## Triage-First Playbook (Common Errors -> Next Best Move)
 
 - SwiftLint concurrency-related warnings
@@ -217,6 +220,43 @@ Key changes in Swift 6:
 
 For detailed migration steps, see `references/migration.md`.
 
+## Swift 6.2 behaviour snapshot
+
+Two shifts change how you reason about isolation. Confirm the module's build settings
+(see "Project Settings Intake") before applying — both are gated on upcoming features.
+
+- **Caller-stays-on-actor by default (`NonisolatedNonsendingByDefault`).** A `nonisolated`
+  `async` function now runs on the **caller's** executor, not the global pool. It no
+  longer silently hops off the main actor. To force offloading, mark it `@concurrent`;
+  to be explicit about the new default, write `nonisolated(nonsending)`.
+
+  ```swift
+  struct S: Sendable {
+      func performAsync() async {}        // runs on the caller's executor (the default)
+      @concurrent func offload() async {} // switches to the global generic executor
+  }
+  ```
+
+  Consequence: code written assuming "`async` ⇒ background thread" is now wrong. Heavy
+  work that must leave the main actor needs `@concurrent` — don't assume the hop happens.
+
+- **Isolated protocol conformances.** A conformance can be pinned to a global actor, so
+  the compiler guarantees it's only used there:
+
+  ```swift
+  @MainActor struct MyData: @MainActor P {
+      func f() { }   // only callable on the main actor
+  }
+  ```
+
+  Use this instead of making the whole type `nonisolated` or duplicating it just to
+  satisfy a protocol from main-actor code.
+
+**Do not default to `Task.detached(priority:).value` to offload work.** It drops caller
+isolation *and* task-local values and is rarely what you want — prefer a `@concurrent`
+function (or a plain `Task {}` that inherits isolation) and reserve `Task.detached` for
+the rare case with a documented reason. See `references/hotspots.md`.
+
 ## Reference Files
 
 Load these files as needed for specific topics:
@@ -233,6 +273,8 @@ Load these files as needed for specific topics:
 - **`performance.md`** - Profiling with Instruments, reducing suspension points, execution strategies
 - **`testing.md`** - XCTest async patterns, Swift Testing, concurrency testing utilities
 - **`migration.md`** - Swift 6 migration strategy, closure-to-async conversion, @preconcurrency, FRP migration
+- **`hotspots.md`** - grep checklist for reviewing a diff: where data races and isolation bugs cluster and the question to ask at each
+- **`bug-patterns.md`** - failure catalogue: actor reentrancy, continuation resumed zero/twice, unbounded AsyncStream, swallowed Task errors, blocking the main actor
 
 ### Context7 References (Authoritative Sources)
 

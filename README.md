@@ -224,6 +224,9 @@ Every shipped skill, grouped by the lifecycle stage it serves. Skills auto-trigg
 | [/swift-tvos](./skills/engineering/swift-tvos/SKILL.md) | Diagnoses tvOS navigation and focus-engine bugs. Always use this — do not attempt tvOS focus diagnosis ad hoc. | Sonnet · Direct |
 | [/swift-concurrency](./skills/engineering/swift-concurrency/SKILL.md) | **A part of the Engineer** — async/await, actors, Sendable, Swift 6 migration. Auto-loaded by `/swift-engineering` for async work; invoke directly only to *learn or explain* concepts (not to write or fix code). | Sonnet · Direct |
 | [/swiftui-performance-audit](./skills/engineering/swiftui-performance-audit/SKILL.md) | Audit SwiftUI runtime performance from code first — slow rendering, janky scrolling, expensive updates, profiling. | Sonnet · Direct |
+| [/swift-security](./skills/engineering/swift-security/SKILL.md) | Client-side security reference — Keychain/`SecItem`, CryptoKit, Secure Enclave, biometrics/`LAContext`, data protection, getting secrets off `UserDefaults`. Surfaces on security questions. | Sonnet · Direct |
+| [/swift-format-style](./skills/engineering/swift-format-style/SKILL.md) | `FormatStyle` reference — format dates, numbers, currency, measurements, durations and lists with `.formatted()`; replace legacy `DateFormatter`/`NumberFormatter`. | Sonnet · Direct |
+| [/swiftui-design-principles](./skills/engineering/swiftui-design-principles/SKILL.md) | Visual design system reference — spacing grid, typography scale, colour discipline, card/row conventions, WidgetKit visuals. | Sonnet · Direct |
 | [/proxyman-scripting](./skills/engineering/proxyman-scripting/SKILL.md) | Write and edit Proxyman JS scripts to intercept and modify HTTP/HTTPS traffic — mock APIs, inject headers/tokens, map remote→local, rewrite status/body, use built-in addons (Base64/JWT/AES/GZip). | Sonnet · Direct |
 
 ### Test
