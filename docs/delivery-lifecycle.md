@@ -77,6 +77,8 @@ Commands are markdown files under `commands/<bucket>/<name>.md` that Claude Code
 
 ## Choosing an orchestrator
 
+> For copy-paste journeys that chain these commands end to end — ticket → PR, idea → PR — see [recipes/](./recipes/README.md).
+
 Both `/workflow` and `/spec-pipeline` take a Jira ticket, spec, or prompt to a PR, but they are deliberately distinct tools (see [ADR 0003](./adr/0003-workflow-and-spec-pipeline-are-distinct-aligned-tools.md)):
 
 - **`/workflow`** — drives **one subtask** in-place on a branch, wired into GitHub architecture-drift tracking (`/discovery-init` · `/discovery-check` · `/discovery-audit`) and the JIRA subtask lifecycle. Reach for it when implementing a single scoped subtask and you want architecture tracking across the story.

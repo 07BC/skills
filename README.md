@@ -241,6 +241,7 @@ Each routing row has both an **agent** (what the orchestrating session delegates
 
 | Doc                                                              | What's in it                                                                                                             |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| [docs/recipes/](./docs/recipes/)                                 | End-to-end walkthroughs chaining commands for common journeys — ticket → PR, idea → PR. Start here if you want a copy-paste path. |
 | [docs/skill-catalogue.md](./docs/skill-catalogue.md)             | Every shipped skill, grouped by lifecycle stage, with model · flow tags.                                                 |
 | [docs/delivery-lifecycle.md](./docs/delivery-lifecycle.md)       | The manual path stage by stage, the commands/orchestrators, choosing an orchestrator, and what happens when a run fails. |
 | [docs/conventions.md](./docs/conventions.md)                     | Architecture & conventions, repo layout, and how to add a skill or command.                                              |
