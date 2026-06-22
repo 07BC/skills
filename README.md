@@ -131,7 +131,9 @@ write Swift code, tests, or PR content directly. Delegate every task below to th
 | Writing or refactoring any Swift code        | `swift-developer`        |
 | Writing any unit tests (Swift Testing)       | `swift-test-writer`      |
 | Writing any UI tests (XCUITest)              | `swift-uitest-writer`    |
-| Debugging any UI-test failure                | `swift-uitest-debugger`  |
+| Debugging a UI-test failure (XCUITest)       | `swift-uitest-debugger`  |
+| Debugging a unit-test failure (Swift Testing)| `swift-test-writer`      |
+| Debugging a runtime crash / simulator issue  | `swift-debugger-agent`   |
 | Planning a feature or breaking down a ticket | `swift-pm`               |
 | Code audit or quality review                 | `swift-code-auditor`     |
 | Architecture documentation                   | `swift-architect`        |
@@ -163,7 +165,9 @@ write Swift code, tests, or PR content directly. Delegate every task below to th
 | Writing or refactoring any Swift code        | `swift-developer`        |
 | Writing any unit tests (Swift Testing)       | `swift-test-writer`      |
 | Writing any UI tests (XCUITest)              | `swift-uitest-writer`    |
-| Debugging any UI-test failure                | `swift-uitest-debugger`  |
+| Debugging a UI-test failure (XCUITest)       | `swift-uitest-debugger`  |
+| Debugging a unit-test failure (Swift Testing)| `swift-test-writer`      |
+| Debugging a runtime crash / simulator issue  | `swift-debugger-agent`   |
 | Planning a feature or breaking down a ticket | `swift-pm`               |
 | Code audit or quality review                 | `swift-code-auditor`     |
 | Architecture documentation                   | `swift-architect`        |
@@ -190,7 +194,7 @@ Each routing row has both an **agent** (what the orchestrating session delegates
 
 | Task | Agent | Skill |
 |---|---|---|
-| Writing or refactoring Swift production code | `swift-developer` (`senior-swift-developer` for deep work) | `/swift-engineering` |
+| Writing or refactoring Swift production code | `swift-developer` | `/swift-engineering` |
 | Writing unit tests (Swift Testing) | `swift-test-writer` | `/swift-testing` |
 | Writing UI tests (XCUITest) | `swift-uitest-writer` | `/swift-uitest` |
 | Debugging a UI-test failure | `swift-uitest-debugger` | `/swift-uitest-debug` |
