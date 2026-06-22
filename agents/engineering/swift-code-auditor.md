@@ -21,7 +21,7 @@ You identify issues; `swift-developer` remediates them.
 
 ## Standard Review — Output Format
 
-Numbered findings rated **BLOCKER**, **WARNING**, or **SUGGESTION**.
+Every finding rated **BLOCKER**, **WARNING**, or **SUGGESTION** and given a stable ID by severity: blockers `B1, B2…`, warnings `W1, W2…`, suggestions `S1, S2…`. Every severity numbered — never leave warnings or suggestions unlabelled.
 Every finding: file path + line number. Every BLOCKER: inline fix.
 
 A finding may match multiple categories — grade at the highest severity.
