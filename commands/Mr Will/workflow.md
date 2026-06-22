@@ -240,7 +240,7 @@ master issue without confirmation.
 
 ### Opus, plan mode
 
-Apply skill `engineer-brief` for the current subtask. The skill produces a
+Apply skill `implementation-brief` for the current subtask. The skill produces a
 discovery note at `${PLANS_DIR}/[SUBTASK-KEY]-discovery.md` with the
 required sections:
 
@@ -259,7 +259,7 @@ If `mode = jira`, include the `Non-goals` list from Phase 2 in the
 
 **Validate before handing off.** After the skill runs, grep the discovery
 note for each required section header. If any is missing → re-run
-`engineer-brief` with a `MISSING_SECTIONS:` note. Do not spawn Phase 4
+`implementation-brief` with a `MISSING_SECTIONS:` note. Do not spawn Phase 4
 against an incomplete discovery note.
 
 Do not write any implementation code in this phase.
@@ -295,14 +295,14 @@ References to "the context bundle" below mean this block.
 
 Spawn `model: SUBAGENT_MODEL, mode: normal` with the prompt below.
 
-> Apply skill `swift-engineer`. The bundle below contains everything you
+> Apply skill `swift-engineering`. The bundle below contains everything you
 > need — do not re-read these files from disk.
 >
 > [context bundle]
 >
 > Implement the subtask according to the discovery note. Follow every
 > constraint listed under "Must NOT touch". The discovery note is the
-> source of truth — apply `swift-engineer` rules to *how* you build,
+> source of truth — apply `swift-engineering` rules to *how* you build,
 > but follow the discovery note for *what* to build.
 >
 > If the discovery note is inconsistent with the codebase (a service
@@ -311,7 +311,7 @@ Spawn `model: SUBAGENT_MODEL, mode: normal` with the prompt below.
 > implement around it.
 >
 > For Swift 6 isolation errors that aren't trivially resolvable inline,
-> apply skill `swift-engineer` (fix concurrency mode) on the affected file.
+> apply skill `swift-engineering` (fix concurrency mode) on the affected file.
 >
 > Build must pass with zero errors and zero warnings. Prefer the MCP Xcode
 > tools when Xcode is open:
@@ -336,11 +336,11 @@ failure → halt + blocked report (see Halt Conditions).
 
 **Bounce-back: 1 attempt per subtask.** If the subagent reports
 `BOUNCE:`, return to Phase 3 with the bounce reason and re-spawn
-`engineer-brief`. If the re-bounce → halt + blocked report.
+`implementation-brief`. If the re-bounce → halt + blocked report.
 
 **SourceKit diagnostics.** When `<new-diagnostics>` fire after the
 subagent reports completion but the subagent's own build was clean, apply
-the "Build vs SourceKit truth" rule in skill `swift-engineer`. One ack
+the "Build vs SourceKit truth" rule in skill `swift-engineering`. One ack
 line, no re-spawn.
 
 **Crash recovery.** If the subagent returns no usable result (raw API
@@ -446,7 +446,7 @@ If tests fail:
 
 Spawn `model: SUBAGENT_MODEL, mode: normal` with the prompt below.
 
-> Apply skill `swift-engineer` (rewrite mode) to every implementation file from Phase 4.
+> Apply skill `swift-engineering` (rewrite mode) to every implementation file from Phase 4.
 > Do NOT touch test files authored in Phase 5.
 >
 > [context bundle]

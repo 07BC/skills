@@ -1,5 +1,5 @@
 ---
-name: ios-runtime-diagnostics
+name: ios-runtime-profiler
 description: Use this agent for any task that needs a live iOS Simulator — building, launching, and driving an app; inspecting UI, logs, or runtime behaviour; capturing an ETTrace performance profile; or capturing and proving a memory leak from a running process or a .memgraph. Invoke when the work is a self-contained simulator session whose output (logs, UI dumps, flamegraph JSON, memgraphs) should stay out of the main conversation. Delegate plain code reasoning to skills instead.
 model: opus
 ---

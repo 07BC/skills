@@ -1,7 +1,7 @@
 > **Playbook reference only — not a registered agent.**
 >
 > The `/spec-pipeline` SKILL inlines this per-task chain
-> (engineer → test-writer → concurrency-auditor → task-reviewer) directly,
+> (spec-engineer → spec-test-writer → spec-concurrency-auditor → spec-task-reviewer) directly,
 > because in this Claude Code build the `Agent` tool is gated to top-level
 > sessions only — subagents cannot dispatch further subagents. To
 > re-promote this file to a registered agent (if that gating is ever
@@ -24,7 +24,7 @@ On start, output: `🚦 SPEC-IMPLEMENT — task [N]`
 - Absolute path to the spec file
 - Task number (e.g. `1`, `2`)
 - (Optional) Blockers table from a previous Phase 4 cycle to fold into the
-  engineer's brief — see "BLOCKED-cycle invocation" below
+  spec-engineer's brief — see "BLOCKED-cycle invocation" below
 
 ## Step 0 — Validate
 
@@ -39,7 +39,7 @@ Exit cleanly. The caller decides whether to proceed to the next task.
 
 ## Step 1 — Engineer
 
-Spawn the `engineer` agent via the Agent tool (subagent_type: `engineer`). Pass:
+Spawn the `spec-engineer` agent via the Agent tool (subagent_type: `spec-engineer`). Pass:
 
 - Plan file path
 - Spec file path
@@ -47,7 +47,7 @@ Spawn the `engineer` agent via the Agent tool (subagent_type: `engineer`). Pass:
 - (If a blockers table was provided to this invocation, also pass it — see
   "BLOCKED-cycle invocation" below)
 
-Wait for the engineer's report.
+Wait for the spec-engineer's report.
 
 ### Failure modes
 
@@ -59,27 +59,27 @@ Wait for the engineer's report.
 
 ## Step 2 — Test Writer
 
-Spawn `test-writer` via the Agent tool (subagent_type: `test-writer`) with
-engineer's file list (modified + created). Wait for the report.
+Spawn `spec-test-writer` via the Agent tool (subagent_type: `spec-test-writer`) with
+spec-engineer's file list (modified + created). Wait for the report.
 
 ### Possible outputs
 
 - `✅ TEST-WRITER — task [N] verified` → continue to Step 3.
 - `⏭️  TEST-WRITER — task [N] skipped (UI-test task)` → continue to Step 3.
-  Treat this as a success. The engineer's XCUITest diff is the coverage for
-  the task's UI-test ACs; task-reviewer is aware of this and will accept an
+  Treat this as a success. The spec-engineer's XCUITest diff is the coverage for
+  the task's UI-test ACs; spec-task-reviewer is aware of this and will accept an
   XCUITest method as AC coverage.
 - `⛔️ TEST-WRITER — STOP: task [N] mixes UI test code with non-UI-test ACs.`
   → halt, escalate. The task is malformed and the plan must be amended.
 
 ### Failure modes
 
-- Test failure the test-writer cannot fix → halt, escalate with failing test
+- Test failure the spec-test-writer cannot fix → halt, escalate with failing test
   output.
 
 ## Step 3 — Concurrency Auditor
 
-Spawn `concurrency-auditor` via the Agent tool (subagent_type: `concurrency-auditor`). Wait for the verdict.
+Spawn `spec-concurrency-auditor` via the Agent tool (subagent_type: `spec-concurrency-auditor`). Wait for the verdict.
 
 Possible outputs:
 
@@ -89,20 +89,20 @@ Possible outputs:
 
 ### Inner retry — concurrency
 
-If BLOCKED, spawn `engineer` again with:
+If BLOCKED, spawn `spec-engineer` again with:
 
 - The original task brief
 - The blockers table from the auditor
 - An instruction to apply each row's "Required fix" exactly
 
-After the engineer reports clean, spawn `concurrency-auditor` once more.
+After the spec-engineer reports clean, spawn `spec-concurrency-auditor` once more.
 
 **Max one concurrency retry.** If still BLOCKED, halt and escalate to
 orchestrator with the auditor's blockers table.
 
 ## Step 4 — Task Reviewer
 
-Spawn `task-reviewer` via the Agent tool (subagent_type: `task-reviewer`). Wait for the verdict.
+Spawn `spec-task-reviewer` via the Agent tool (subagent_type: `spec-task-reviewer`). Wait for the verdict.
 
 Possible outputs:
 
@@ -111,11 +111,11 @@ Possible outputs:
 
 ### Inner retry — task review
 
-If BLOCKED, spawn `engineer` with the blockers table + "Required fix" instructions,
+If BLOCKED, spawn `spec-engineer` with the blockers table + "Required fix" instructions,
 exactly as in Step 3's inner retry.
 
-After the engineer reports clean, **re-run the full chain from Step 2** (test-writer
-then concurrency-auditor then task-reviewer) — fixes can introduce new test
+After the spec-engineer reports clean, **re-run the full chain from Step 2** (spec-test-writer
+then spec-concurrency-auditor then spec-task-reviewer) — fixes can introduce new test
 failures or concurrency issues.
 
 **Max one task-review retry.** If still BLOCKED, halt and escalate.
@@ -139,7 +139,7 @@ else
 fi
 ```
 
-Stage the files engineer + test-writer touched, by name only:
+Stage the files spec-engineer + spec-test-writer touched, by name only:
 
 ```bash
 git add <each file>
@@ -185,7 +185,7 @@ spec's row.
 ✅ SPEC-IMPLEMENT — task [N] done
 Commit: <hash>
 Files: <count>
-Ready for: next task | swift-spec-review
+Ready for: next task | spec-branch-reviewer
 ```
 
 ---
@@ -197,7 +197,7 @@ prompt will contain an additional blockers table from the whole-diff reviewer.
 In that case:
 
 1. Skip Step 0 (the task is already marked ✅ — that's fine; we're patching it).
-2. In Step 1, pass the blockers table to the engineer with: *"Apply each
+2. In Step 1, pass the blockers table to the spec-engineer with: *"Apply each
    Required fix in the table exactly. Do not expand scope. Re-build before
    reporting."*
 3. Otherwise proceed normally through Steps 2–5.
@@ -208,11 +208,11 @@ In that case:
 
 ## Hard rules
 
-- **One task at a time** — never run engineer and test-writer in parallel
-- **Halt on ambiguity** — never let the engineer guess
-- **Max one inner retry per gate** — concurrency-auditor and task-reviewer each
+- **One task at a time** — never run spec-engineer and spec-test-writer in parallel
+- **Halt on ambiguity** — never let the spec-engineer guess
+- **Max one inner retry per gate** — spec-concurrency-auditor and spec-task-reviewer each
   get at most one fix-and-retry cycle before escalation
 - **Never commit with `--no-verify`** — fix the hook failure first
 - **Never amend** — always a new commit
 - **Never mark a task `✅` in the plan before the commit succeeds**
-- **Never write code yourself** — delegate to engineer
+- **Never write code yourself** — delegate to spec-engineer

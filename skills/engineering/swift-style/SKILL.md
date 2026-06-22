@@ -3,14 +3,14 @@ name: swift-style
 description: >
   Code style, quality rules, and Swift 6 language essentials for writing
   clean Swift and SwiftUI from the first line. Loaded automatically by
-  swift-engineer whenever new code is being generated, and by
+  swift-engineering whenever new code is being generated, and by
   swift-code-review during review. Covers: method length, parameter count,
   naming conventions, guard / early-return patterns, switch over if-else
   chains, overlay over nested stacks, one-view-per-file, UserDefaults in
   @Observable (access / withMutation), didSet side effects, Sendable
   conformance, typed throws, and data race safety. For auditing or
-  rewriting existing messy code, use swift-engineer (rewrite mode) instead.
-  NOT a standalone skill — loaded as a dependency by swift-engineer and
+  rewriting existing messy code, use swift-engineering (rewrite mode) instead.
+  NOT a standalone skill — loaded as a dependency by swift-engineering and
   swift-code-review. Do not invoke directly.
 user-invocable: false
 disable-model-invocation: true
@@ -18,9 +18,9 @@ disable-model-invocation: true
 
 # Swift Style
 
-Write-time rules companion to `swift-engineer`. Every rule here applies
+Write-time rules companion to `swift-engineering`. Every rule here applies
 to **new** Swift and SwiftUI code as it is being generated. For rewriting
-existing messy code in place, use `swift-engineer` (rewrite mode). For reviewing code
+existing messy code in place, use `swift-engineering` (rewrite mode). For reviewing code
 before commit or PR, use `swift-code-review`.
 
 ## File Header
@@ -253,7 +253,7 @@ func appending(_ item: Item) -> [Item]
 ### Documentation Comments
 
 Default: **no `///` doc comments.** Well-named identifiers and types
-replace them. This matches `swift-engineer` Core Principle #1 and
+replace them. This matches `swift-engineering` Core Principle #1 and
 `swift-code-review`'s expectation.
 
 Inline `//` comments are reserved for the non-obvious WHY: a hidden
@@ -644,7 +644,7 @@ struct AboutView: View {
 
 | Skill | Purpose |
 |---|---|
-| `swift-engineer` | Main feature-building, rewriting, and editing skill (loads this one as a companion) |
+| `swift-engineering` | Main feature-building, rewriting, and editing skill (loads this one as a companion) |
 | `swift-code-review` | BLOCKER / WARNING / SUGGESTION review pass |
 | `swift-concurrency` | Concurrency concepts and patterns |
 | `swift-testing` | Unit-test authoring |

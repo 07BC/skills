@@ -23,7 +23,7 @@ ORCHESTRATORS = [
     "commands/Mr Will/solve.md",
     "commands/Mr Will/discovery.md",
     "skills/engineering/spec-pipeline/SKILL.md",
-    "skills/engineering/spec-master/SKILL.md",
+    "skills/engineering/spec-decomposition/SKILL.md",
 ]
 
 

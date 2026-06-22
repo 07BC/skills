@@ -3,8 +3,8 @@ name: spec-pipeline
 description: >
   Runs the full spec-to-PR pipeline: distil a spec from a Jira ticket, an
   existing markdown spec, or a free-form prompt; validate the plan fits the
-  codebase; implement task-by-task through the engineer → test-writer →
-  concurrency-auditor → dual-reviewer inner loop; whole-diff review; then
+  codebase; implement task-by-task through the spec-engineer → spec-test-writer →
+  spec-concurrency-auditor → dual-reviewer inner loop; whole-diff review; then
   open a PR via /git-pr. Runs in-place on a fresh branch (no worktree).
   Inputs are passed as flags. Use when the user says "ship this ticket",
   "run the pipeline", "spec-pipeline PROJ-123", "build this spec", or
@@ -19,11 +19,11 @@ disable-model-invocation: true
 creates a fresh branch on the current checkout (in-place — no worktree), then
 drives Phases 1–5 inline by dispatching one leaf specialist agent at a time.
 
-Decomposition and the master-spec tree are `/spec-master`'s job; this skill ships
+Decomposition and the master-spec tree are `/spec-decomposition`'s job; this skill ships
 one unit. It creates branches and commits. **Never auto-invoke.** Always an
 explicit user trigger.
 
-> **Related:** `/spec-master` decomposes a Jira story into a GitHub master issue +
+> **Related:** `/spec-decomposition` decomposes a Jira story into a GitHub master issue +
 > child sub-issues; run `/spec-pipeline --from-issue <#>` per child, in dependency
 > order. The two are aligned — see the ADR on the master-spec layer (which
 > supersedes the worktree-isolation distinction in
@@ -62,14 +62,14 @@ What it does:
   2. (--from-issue) Sequencing gate: hard-stops until every depends_on child is
      merged to main. Then creates a fresh branch IN-PLACE (no worktree).
   3. Distils the input into docs/specs/ and docs/plans/ (gitignored)
-  4. (--from-issue) Drift gate: traceability + drift-auditor vs the master spec
-  5. Drives engineer → test-writer → test gate → concurrency-auditor →
+  4. (--from-issue) Drift gate: traceability + spec-drift-auditor vs the master spec
+  5. Drives spec-engineer → spec-test-writer → test gate → spec-concurrency-auditor →
      two diverse-lens reviewers (both must PASS) per task
-  6. Whole-diff swift-spec-review (up to 3 cycles before escalation)
+  6. Whole-diff spec-branch-reviewer (up to 3 cycles before escalation)
   7. Opens a PR via /git-pr; reconciles the child sub-issue + master issue
 
-Scope decomposition lives in /spec-master, not here. If a --from-jira/-spec/
--prompt input is too big for one PR, run /spec-master --from-jira KEY first.
+Scope decomposition lives in /spec-decomposition, not here. If a --from-jira/-spec/
+-prompt input is too big for one PR, run /spec-decomposition --from-jira KEY first.
 
 One-time project setup:
   - Add a spec_pipeline YAML block to the project's CLAUDE.md, including
@@ -88,7 +88,7 @@ has unresolved questions:
   - Before Phase 1 (Jira only): scope-split confirmation if the ticket is too
     big — may be zero questions
   - During Phase 1: one question per conflict or open UI decision (may be zero)
-  - During Phase 3: one question per spec ambiguity the engineer cannot infer
+  - During Phase 3: one question per spec ambiguity the spec-engineer cannot infer
     from the codebase (may be zero)
   - Before Phase 5: PR body confirmation
 Otherwise the pipeline interrupts only on hard failure (spec ambiguity,
@@ -136,7 +136,7 @@ Then use `$SCRIPTS/read-pipeline-config.sh` etc. throughout.
 Exactly one source flag is required:
 
 - `--from-issue <GH#>` — resolves a child spec from a GitHub sub-issue created by
-  `/spec-master` (the intended path; carries the traceability spine and sequencing)
+  `/spec-decomposition` (the intended path; carries the traceability spine and sequencing)
 - `--from-jira <KEY>` — fetches the ticket via the Atlassian MCP
 - `--from-spec <PATH>` — reads an existing markdown spec (re-distilled into the
   canonical format by default)
@@ -204,8 +204,8 @@ fi
 If the file is missing, ask the user via `AskUserQuestion`:
 
 > The architecture doc at `<path>` doesn't exist. The pipeline can run
-> without it, but spec-distiller, planner, and engineer fall back to the
-> `swift-engineer` skill body as the only architecture authority. What would
+> without it, but spec-distiller, spec-planner, and spec-engineer fall back to the
+> `swift-engineering` skill body as the only architecture authority. What would
 > you like to do?
 
 - Option A: **Generate it inline with `architecture-doc`** (Recommended) — apply the `architecture-doc` skill in this session to produce the architecture doc at the configured path, then continue to Step 2.
@@ -366,17 +366,17 @@ Do not proceed without explicit confirmation.
 
 ---
 
-## Step 3.5 — Scope decomposition has moved to `/spec-master`
+## Step 3.5 — Scope decomposition has moved to `/spec-decomposition`
 
 Splitting a large story into sequential specs is no longer done here. That is
-`/spec-master`'s job: it reads the Jira story, freezes AC IDs, and creates a
+`/spec-decomposition`'s job: it reads the Jira story, freezes AC IDs, and creates a
 GitHub master issue + child sub-issues. `/spec-pipeline` implements **one** unit
 of work.
 
-- `--from-issue` — the child was already scoped by `/spec-master`; nothing to do.
+- `--from-issue` — the child was already scoped by `/spec-decomposition`; nothing to do.
 - `--from-jira` / `--from-spec` / `--from-prompt` — treated as a single spec as
   given (no in-pipeline split). If the input is too big to ship as one PR, stop
-  and run `/spec-master --from-jira <KEY>` to decompose it first.
+  and run `/spec-decomposition --from-jira <KEY>` to decompose it first.
 
 ---
 
@@ -580,13 +580,13 @@ Two layers, both must pass before implementation:
    plan's `implements:` tags drifted from the child's `covers:` → escalate via
    Step 10.
 
-2. **Semantic** — dispatch `drift-auditor` (`subagent_type: drift-auditor`) with
+2. **Semantic** — dispatch `spec-drift-auditor` (`subagent_type: spec-drift-auditor`) with
    the `master_issue` reference, `spec_path`, and `covers`. On `VERDICT:
    BLOCKED`, write its findings to the audit log and escalate via Step 10 with
    reason `Drift from master`. (Subagent crash → `subagent-reliability`.)
 
 The master-scope coverage check (every master AC covered by some child) is **not**
-run here — it reads all sibling sub-issues from GitHub and lives in `/spec-master`.
+run here — it reads all sibling sub-issues from GitHub and lives in `/spec-decomposition`.
 
 ---
 
@@ -627,7 +627,7 @@ Dispatch the `spec-distiller` agent via the `Agent` tool
   rewrite or reinterpret it. Produce ONLY the plan and master-plan entry from it.
   If it lacks the structure needed to plan, report and stop — do not invent."*
 - (On Phase 2 amendment re-entry only) an appended `## Amendment notes`
-  block carrying the planner's verbatim reasoning
+  block carrying the spec-planner's verbatim reasoning
 
 Wait for completion. In `distil` mode the distiller writes
 `docs/specs/<spec-id>.md`, `docs/plans/<spec-id>.md`, and updates
@@ -682,13 +682,13 @@ cat <<EOF >> "$audit_path"
 
 ## Phase 2 — Planner — $(date '+%Y-%m-%d %H:%M:%S')
 
-Dispatching planner to validate plan fits codebase.
+Dispatching spec-planner to validate plan fits codebase.
 EOF
 ```
 
-Dispatch the `planner` agent via the `Agent` tool (`subagent_type:
-planner`) with an invocation prompt containing the absolute path to
-`$agents_dir/planner.md`, `spec_path`, `plan_path`, and the full
+Dispatch the `spec-planner` agent via the `Agent` tool (`subagent_type:
+spec-planner`) with an invocation prompt containing the absolute path to
+`$agents_dir/spec-planner.md`, `spec_path`, `plan_path`, and the full
 `SPEC_PIPELINE_*` block.
 
 ### Parse the verdict (last non-empty line)
@@ -709,16 +709,16 @@ planner`) with an invocation prompt containing the absolute path to
 - `PLAN NEEDS AMENDMENT: <reason>` → enter amendment loop:
 
   1. If `amendment_attempted -eq 1` already, escalate via Step 10 with
-     reason `Plan invalid after amendment` — the planner's second-pass
+     reason `Plan invalid after amendment` — the spec-planner's second-pass
      reasoning is appended to the audit log first.
   2. Set `amendment_attempted=1`.
   3. Append the amendment reason verbatim to the audit log under
      `### Phase 2 amendment — <ts>`.
   4. Re-dispatch `spec-distiller` with the original prompt **plus** an
-     `## Amendment notes` block carrying the planner's verbatim
+     `## Amendment notes` block carrying the spec-planner's verbatim
      reasoning. The distiller's idempotence check (its Step 1) rewrites
      the spec/plan in place.
-  5. Re-dispatch `planner`. Goto step 1 of this list.
+  5. Re-dispatch `spec-planner`. Goto step 1 of this list.
 
 `amendment_attempted` is a one-shot guard: at most one distiller rewrite
 per pipeline run.
@@ -730,7 +730,7 @@ per pipeline run.
 **SourceKit diagnostics during this phase:** when `<new-diagnostics>` system
 reminders fire post-edit but the agent's own `xcodebuild build` ran clean,
 apply the "Build vs SourceKit truth" rule in
-`~/.claude/skills/swift-engineer/SKILL.md`. The build is the truth source;
+`~/.claude/skills/swift-engineering/SKILL.md`. The build is the truth source;
 do not re-spawn the agent on the diagnostic alone.
 
 **Subagent crashes during this phase:** if a dispatched agent returns no
@@ -779,9 +779,9 @@ Task-reviewer → commit → mark ✅).
 
 Append `### Task N start — <ts>` to the audit log.
 
-1. **Engineer dispatch** via `Agent` tool with `subagent_type: engineer`.
+1. **Engineer dispatch** via `Agent` tool with `subagent_type: spec-engineer`.
    Pass:
-   - The absolute path to `$agents_dir/engineer.md`
+   - The absolute path to `$agents_dir/spec-engineer.md`
    - `plan_path`, `spec_path`, `task_n`
    - Full `SPEC_PIPELINE_*` block
    - If `-n "$blockers_path"`: additionally pass the path with the
@@ -797,7 +797,7 @@ Append `### Task N start — <ts>` to the audit log.
      blocks into `engineer_files`; continue.
 
 2. **Test-writer dispatch** via `Agent` tool with `subagent_type:
-   test-writer`. Pass `spec_path`, `task_n`, `engineer_files`, full
+   spec-test-writer`. Pass `spec_path`, `task_n`, `engineer_files`, full
    `SPEC_PIPELINE_*` block, and — for **every** source — the `xcresult_path`
    defined in step 4 below, with the instruction to run the targeted suite
    **with coverage** to that bundle (`-enableCodeCoverage YES -resultBundlePath
@@ -810,7 +810,7 @@ Append `### Task N start — <ts>` to the audit log.
    files.
 
 3. **Concurrency-auditor dispatch** via `Agent` tool with `subagent_type:
-   concurrency-auditor`. Pass `task_n`, `impl_files`, full
+   spec-concurrency-auditor`. Pass `task_n`, `impl_files`, full
    `SPEC_PIPELINE_*` block.
 
    Parse the verdict:
@@ -818,16 +818,16 @@ Append `### Task N start — <ts>` to the audit log.
    - `✅ PASS` → continue
    - `VERDICT: BLOCKED` → write the auditor's blockers table to a tmp
      file (`$TMPDIR/spec-pipeline-${spec_id}-concurrency-task${task_n}.md`).
-     Re-dispatch `engineer` with that tmp path as a blockers file and
+     Re-dispatch `spec-engineer` with that tmp path as a blockers file and
      the same "Apply each Required fix exactly" instruction. Then
-     re-dispatch `concurrency-auditor` once. If still BLOCKED → escalate.
+     re-dispatch `spec-concurrency-auditor` once. If still BLOCKED → escalate.
 
 4. **Test gate** — deterministic, before any reviewer sees the task. Common setup
-   (the test-writer in step 2 runs its targeted suite **with coverage** to this
+   (the spec-test-writer in step 2 runs its targeted suite **with coverage** to this
    bundle so the gate can read it):
    ```bash
    xcresult_path="${TMPDIR:-/tmp}/spec-pipeline-${spec_id}-task${task_n}.xcresult"
-   # test-writer runs: xcodebuild test … -enableCodeCoverage YES \
+   # spec-test-writer runs: xcodebuild test … -enableCodeCoverage YES \
    #   -resultBundlePath "$xcresult_path"   (rm -rf it first; xcodebuild won't overwrite)
    tests_dir="${SPEC_PIPELINE_TESTS_DIR:-$(git -C "$worktree_path" ls-files \
      | grep -E '(Tests/|UITests/)' | sed -E 's#/[^/]+$##' | sort -u | head -1)}"
@@ -852,8 +852,8 @@ Append `### Task N start — <ts>` to the audit log.
         $( [[ -f "$exclusions" ]] && printf -- '--exclusions %s' "$exclusions" )
       ```
 
-   On either failure, re-dispatch `test-writer` (missing/insufficient tests) or
-   `engineer` (genuinely untestable code that should be refactored, or an
+   On either failure, re-dispatch `spec-test-writer` (missing/insufficient tests) or
+   `spec-engineer` (genuinely untestable code that should be refactored, or an
    exclusion to record) with the gate output by path. Re-run the gate. If it
    still fails after one fix cycle → escalate via Step 10 with reason
    `Test gate failed`. A genuinely-untestable path is added to the exclusions
@@ -862,8 +862,8 @@ Append `### Task N start — <ts>` to the audit log.
 5. **Dual review — two diverse lenses, in parallel, blind to each other.**
    Dispatch BOTH in a single message (two `Agent` calls) so neither sees the
    other's verdict:
-   - `task-reviewer` (`subagent_type: task-reviewer`) — spec-correctness lens.
-   - `quality-reviewer` (`subagent_type: quality-reviewer`) — architecture &
+   - `spec-task-reviewer` (`subagent_type: spec-task-reviewer`) — spec-correctness lens.
+   - `spec-quality-reviewer` (`subagent_type: spec-quality-reviewer`) — architecture &
      code-quality lens.
    Pass each `plan_path`, `spec_path`, `task_n`, full `SPEC_PIPELINE_*` block.
 
@@ -871,9 +871,9 @@ Append `### Task N start — <ts>` to the audit log.
    returns `VERDICT: BLOCKED`:
    - Write that reviewer's blockers to a tmp file
      (`$TMPDIR/spec-pipeline-${spec_id}-<lens>-task${task_n}.md`). If both
-     blocked, concatenate both files so the engineer fixes them in one pass.
-   - Re-dispatch `engineer` with the blockers path(s). Then re-run the full chain
-     **from test-writer onwards** (test-writer → test gate → concurrency-auditor →
+     blocked, concatenate both files so the spec-engineer fixes them in one pass.
+   - Re-dispatch `spec-engineer` with the blockers path(s). Then re-run the full chain
+     **from spec-test-writer onwards** (spec-test-writer → test gate → spec-concurrency-auditor →
      both reviewers). If either lens is still BLOCKED after the retry → escalate.
 
 6. **Commit** — inline `/git-commit` semantics. Do not dispatch an
@@ -946,7 +946,7 @@ Continue to Step 9.
 ### Known cost: BLOCKED-cycle re-runs every task
 
 In BLOCKED-cycle mode the inner chain re-runs for **every** task in the
-plan, not just tasks the blockers touch. The engineer no-ops on files
+plan, not just tasks the blockers touch. The spec-engineer no-ops on files
 outside its task's scope (relying on existing scope discipline), but the
 dispatch overhead is real. This matches the historical orchestrator
 behaviour exactly.
@@ -962,13 +962,13 @@ cat <<EOF >> "$audit_path"
 
 ## Phase 4 — Spec Review (cycle ${cycle}) — $(date '+%Y-%m-%d %H:%M:%S')
 
-Dispatching swift-spec-review for whole-branch diff.
+Dispatching spec-branch-reviewer for whole-branch diff.
 EOF
 ```
 
-Dispatch `swift-spec-review` via the `Agent` tool (`subagent_type:
-swift-spec-review`). Pass the absolute path to
-`$agents_dir/swift-spec-review.md`, `spec_path`, `plan_path`, branch
+Dispatch `spec-branch-reviewer` via the `Agent` tool (`subagent_type:
+spec-branch-reviewer`). Pass the absolute path to
+`$agents_dir/spec-branch-reviewer.md`, `spec_path`, `plan_path`, branch
 base (default `main`), and the full `SPEC_PIPELINE_*` block.
 
 ### Parse the verdict (last non-empty line)
@@ -1170,8 +1170,8 @@ drives Phases 1–5 inline rather than nesting an orchestrator subagent, because
 the Agent tool is gated to top-level sessions in this Claude Code build —
 subagents cannot dispatch further subagents.
 
-Each leaf agent (`spec-distiller`, `planner`, `engineer`, `test-writer`,
-`concurrency-auditor`, `task-reviewer`, `swift-spec-review`) is dispatched via the
+Each leaf agent (`spec-distiller`, `spec-planner`, `spec-engineer`, `spec-test-writer`,
+`spec-concurrency-auditor`, `spec-task-reviewer`, `spec-branch-reviewer`) is dispatched via the
 Agent tool using its own agent-definition file under `$agents_dir`, which sets
 that agent's model. There is no single `SUBAGENT_MODEL` constant — model choice
 is per-agent by design.

@@ -179,4 +179,4 @@ Do NOT paste PRD or story bodies into chat. The files are the artifact.
 
 ## Detailed Reference
 
-`~/Developer/myzsh/ai-config/skills/documentation/pm/SKILL.md`
+`~/Developer/myzsh/ai-config/skills/documentation/product-planning/SKILL.md`

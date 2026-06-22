@@ -88,7 +88,7 @@ Include file path and line number. Provide an inline fix for every BLOCKER.
 ### Architecture Checklist (BLOCKER)
 
 Read the project `CLAUDE.md` for `architecture: MV | MVVM`. Apply the matching
-architect skill (`swift-mv-architect` or `swift-mvvm-architect`). Common to both:
+architect skill (`swift-mv-architecture` or `swift-mvvm-architecture`). Common to both:
 - [ ] No `ObservableObject` conformance in new code
 - [ ] No `@Published` in new code
 - [ ] No business logic or networking in `View.body`

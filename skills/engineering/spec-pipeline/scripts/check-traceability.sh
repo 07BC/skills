@@ -5,7 +5,7 @@
 # spine: master AC IDs (frozen, declared in the child's `covers:`) → tasks
 # (`implements:`) → tests (`// AC:`). Master-scope coverage (every master AC
 # covered by SOME child) is NOT checked here — that reads GitHub and lives in
-# /spec-master. This gate is local to one child's worktree.
+# /spec-decomposition. This gate is local to one child's worktree.
 #
 # Usage:
 #   check-traceability.sh --spec <child-spec.md> --plan <plan.md> \

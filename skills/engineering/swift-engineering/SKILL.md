@@ -1,5 +1,5 @@
 ---
-name: swift-engineer
+name: swift-engineering
 description: >
   THE entry point for writing, editing, or rewriting Swift/SwiftUI in an MV
   or MVVM app — new Swift 6.2 code, SwiftUI views, services, async work,
@@ -14,7 +14,7 @@ description: >
   (iOS 26+ Liquid Glass UI) automatically as the task needs them. Triggers on
   .swift files, Xcode projects, SwiftUI components, or any request to
   write/change Swift. For setting up a NEW app or auditing architecture
-  adherence, use swift-mv-architect (MV projects) or swift-mvvm-architect
+  adherence, use swift-mv-architecture (MV projects) or swift-mvvm-architecture
   (MVVM projects). To REVIEW code without changing it, use swift-code-review.
   To write tests, use swift-testing.
 ---
@@ -33,8 +33,8 @@ architecture authority doc it points to). Determine it before generating code:
 1. Read the project `CLAUDE.md`. Look for an explicit `architecture:` line
    (`MV`, `MVVM`) or a link to `docs/MV target architecture/` or
    `docs/MVVM target architecture/`.
-2. If it declares **MV** → load skill `swift-mv-architect` and apply its rules.
-3. If it declares **MVVM** → load skill `swift-mvvm-architect` and apply its rules
+2. If it declares **MV** → load skill `swift-mv-architecture` and apply its rules.
+3. If it declares **MVVM** → load skill `swift-mvvm-architecture` and apply its rules
    (`@Observable @MainActor` ViewModels + stateless `Sendable` Repositories).
 4. If it declares **mixed / migrating**, no declaration can be found, or the
    codebase shows both shapes → **STOP. Do not guess.** Ask the user via
@@ -247,10 +247,10 @@ struct UserRow: View {
 - `@Published`
 - Business logic inside `View.body`
 
-**Forbidden in MV only** (see `swift-mv-architect`):
+**Forbidden in MV only** (see `swift-mv-architecture`):
 - Any type named `*ViewModel`
 
-**Forbidden in MVVM only** (see `swift-mvvm-architect`):
+**Forbidden in MVVM only** (see `swift-mvvm-architecture`):
 - `@Observable` on a Repository
 - ViewModels in `@Environment` or `AppDependencies`
 
@@ -724,8 +724,8 @@ This skill is for **writing, rewriting, and editing** Swift. For reviewing exist
 
 ## References
 
-This skill applies the project's declared architecture (MV via `swift-mv-architect`,
-MVVM via `swift-mvvm-architect`). For canonical, up-to-date API details,
+This skill applies the project's declared architecture (MV via `swift-mv-architecture`,
+MVVM via `swift-mvvm-architecture`). For canonical, up-to-date API details,
 query Context7 with these library IDs (use `mcp__context7__query-docs`):
 
 | Library ID                          | Use for                                                                   |
@@ -736,8 +736,8 @@ query Context7 with these library IDs (use `mcp__context7__query-docs`):
 
 For topic-specific guidance, hand off to the dedicated skill:
 
-- **Architecture setup / audit (MV)** — `swift-mv-architect`
-- **Architecture setup / audit (MVVM)** — `swift-mvvm-architect`
+- **Architecture setup / audit (MV)** — `swift-mv-architecture`
+- **Architecture setup / audit (MVVM)** — `swift-mvvm-architecture`
 - **Style & quality (write-time)** — `swift-style`
 - **Rewriting / clean-up / @Observable migration** — use the "Rewrite and migrate" mode above
 - **Concurrency (conceptual)** — `swift-concurrency`

@@ -1,5 +1,5 @@
 ---
-name: engineer-brief
+name: implementation-brief
 description: >
   Reads the existing target architecture docs and produces a scoped brief for a
   single subtask — the engineer's primary input, written before any code is
@@ -8,7 +8,7 @@ description: >
   engineer needs to know exactly which types to touch, which edge cases to
   handle, and which patterns to follow — without re-reading the full architecture
   docs themselves. Do NOT use this skill for full codebase audits or architecture
-  adherence checks (use swift-mv-architect or swift-mvvm-architect) or to author
+  adherence checks (use swift-mv-architecture or swift-mvvm-architecture) or to author
   the architecture document itself (use architecture-doc).
 ---
 

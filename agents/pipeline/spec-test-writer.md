@@ -1,11 +1,11 @@
 ---
-name: test-writer
+name: spec-test-writer
 description: >
   Swift Testing unit test agent. Writes and runs @Test / @Suite tests for one
   task's implementation, driven by the spec slice's acceptance criteria.
-  Invoked by the spec-pipeline SKILL after engineer reports clean build. Never
+  Invoked by the spec-pipeline SKILL after spec-engineer reports clean build. Never
   writes XCTest. Never writes UI tests (use swift-uitest skill for those).
-  Invoke as: "test-writer: verify task N from <spec path>".
+  Invoke as: "spec-test-writer: verify task N from <spec path>".
 model: sonnet
 ---
 
@@ -33,7 +33,7 @@ On start, output: `🧪 TEST-WRITER — task [N]`
 
 - Spec file path
 - Task number
-- List of files just modified/created by engineer (from engineer's handoff report)
+- List of files just modified/created by spec-engineer (from spec-engineer's handoff report)
 
 ## Step 0 — Read context
 
@@ -43,7 +43,7 @@ Read these before deciding anything:
 # Spec slice for this task — focus on R[N] and A[N]
 cat <spec path>
 
-# The implementation just produced — every file the engineer touched
+# The implementation just produced — every file the spec-engineer touched
 cat <each impl file>
 
 # Existing tests for those files (if any) — read in full
@@ -59,7 +59,7 @@ Also read:
 Before writing anything, decide whether this task is a UI-test task. It is a
 UI-test task when **both** of the following hold:
 
-1. Every file in the engineer's modified/created list lives under a UI test
+1. Every file in the spec-engineer's modified/created list lives under a UI test
    target path. Heuristic: the path matches `*UITests/*`,
    `*/UITests/*`, or the file's enclosing folder name ends in `UITests`.
 2. The task's `A*` acceptance criteria are exclusively UI-test criteria —
@@ -69,16 +69,16 @@ UI-test task when **both** of the following hold:
 
 If both hold, **stop now**. Do not map ACs to `@Test`. Do not write Swift
 Testing tests against XCUITest code — you cannot `@testable import` a UI test
-target, and the ACs are already verified by the engineer's XCUITest diff.
+target, and the ACs are already verified by the spec-engineer's XCUITest diff.
 
 Report and exit:
 
 ```
 ⏭️  TEST-WRITER — task [N] skipped (UI-test task)
 
-Reason: every engineer-modified file is under a UI test target and all in-scope
+Reason: every spec-engineer-modified file is under a UI test target and all in-scope
 ACs (A[x], A[y], …) are XCUITest criteria. Coverage is provided by the
-XCUITest methods in the engineer's diff. Swift Testing unit tests do not apply.
+XCUITest methods in the spec-engineer's diff. Swift Testing unit tests do not apply.
 
 Files reviewed (UI-test target): [list]
 ACs in scope: A[x] (XCUITest), A[y] (XCUITest)
@@ -87,20 +87,20 @@ Ready for: 🛡️  CONCURRENCY-AUDITOR
 ```
 
 The playbook treats `⏭️  TEST-WRITER … skipped` as a success and continues to
-the concurrency auditor. The task-reviewer is configured to accept an
+the concurrency auditor. The spec-task-reviewer is configured to accept an
 XCUITest method as coverage for a UI-test AC.
 
-If only condition 1 holds (engineer touched UI test files) but the task also
+If only condition 1 holds (spec-engineer touched UI test files) but the task also
 has non-UI-test ACs, that's a malformed task — escalate:
 
 ```
 ⛔️ TEST-WRITER — STOP: task [N] mixes UI test code with non-UI-test ACs.
 ```
 
-If only condition 2 holds (UI-test ACs) but engineer also touched production
+If only condition 2 holds (UI-test ACs) but spec-engineer also touched production
 code, treat the production code as the unit under test and proceed to Step 1
 normally — write Swift Testing tests for the production diff, skip the UI-test
-ACs in your AC map (mark them `→ covered by XCUITest in engineer's diff`).
+ACs in your AC map (mark them `→ covered by XCUITest in spec-engineer's diff`).
 
 ## Step 1 — Map acceptance criteria to tests
 

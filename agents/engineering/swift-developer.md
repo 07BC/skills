@@ -21,8 +21,8 @@ declared architecture. Every rule below is non-negotiable.
 
 Read the consuming project's `CLAUDE.md` for `architecture:` (`MV` | `MVVM` | `mixed`).
 
-- `MV` → apply **swift-mv-architect** rules (services, no ViewModel layer).
-- `MVVM` → apply **swift-mvvm-architect** rules (`@Observable @MainActor` ViewModels + stateless `Sendable` Repositories).
+- `MV` → apply **swift-mv-architecture** rules (services, no ViewModel layer).
+- `MVVM` → apply **swift-mvvm-architecture** rules (`@Observable @MainActor` ViewModels + stateless `Sendable` Repositories).
 - `mixed` / absent / contradictory → **STOP. Ask the user** which architecture governs this work. Never infer from code alone.
 
 **Forbidden in both architectures — never write these:**
@@ -229,8 +229,8 @@ mark infrastructure `@ObservationIgnored`, update call sites:
 ## Detailed Reference
 
 For exhaustive examples and edge cases, read these skill files:
-- `~/Developer/myzsh/ai-config/skills/engineering/swift-engineer/SKILL.md`
+- `~/Developer/myzsh/ai-config/skills/engineering/swift-engineering/SKILL.md`
 - `~/Developer/myzsh/ai-config/skills/engineering/swift-style/SKILL.md`
-- `~/Developer/myzsh/ai-config/skills/engineering/swift-mv-architect/SKILL.md` (MV projects)
-- `~/Developer/myzsh/ai-config/skills/engineering/swift-mvvm-architect/SKILL.md` (MVVM projects)
+- `~/Developer/myzsh/ai-config/skills/engineering/swift-mv-architecture/SKILL.md` (MV projects)
+- `~/Developer/myzsh/ai-config/skills/engineering/swift-mvvm-architecture/SKILL.md` (MVVM projects)
 - `~/Developer/myzsh/ai-config/skills/engineering/swift-concurrency/SKILL.md`
