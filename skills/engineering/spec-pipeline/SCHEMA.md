@@ -24,6 +24,7 @@ spec_pipeline:
   audit_dir: AI/plans
   cycle_budget: 3
   coverage_floor: 90
+  spec_loop_max_sweeps: 8
 ```
 ````
 
@@ -46,7 +47,8 @@ The parser extracts the first ```` ```yaml ```` block that contains a top-level 
 | `spec_dir` | optional | string | `docs/specs` | Where `spec-distiller` writes specs. |
 | `plan_dir` | optional | string | `docs/plans` | Where `spec-distiller` writes plans. |
 | `audit_dir` | optional | string | `AI/plans` | Sub-path inside `$OBSIDIAN_VAULT` for audit logs. |
-| `cycle_budget` | optional | integer | `3` | Max Phase 4 review cycles before escalating. |
+| `cycle_budget` | optional | integer | `3` | Max Phase 4 review cycles before escalating. (Per-child in `/spec-loop`, reset per child.) |
+| `spec_loop_max_sweeps` | optional | integer | `8` | `/spec-loop` only. Finite shared ceiling on the number of master sweeps (normal + master-review fix sweeps) before the loop escalates. Independent of `cycle_budget`, which bounds each child's own review loop. |
 
 ## Required vs optional
 
