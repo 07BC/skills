@@ -185,9 +185,9 @@ Write a single Markdown file at `docs/architecture.md`:
 
 ## Detailed Reference
 
-`~/Developer/myzsh/ai-config/skills/documentation/architecture-doc/SKILL.md`
-`~/Developer/myzsh/ai-config/skills/documentation/architecture-doc/references/mv-architecture.md`
-`~/Developer/myzsh/ai-config/skills/documentation/architecture-doc/references/concurrency.md`
-`~/Developer/myzsh/ai-config/skills/documentation/architecture-doc/references/testing.md`
-`~/Developer/myzsh/ai-config/skills/documentation/architecture-doc/references/swiftdata.md`
-`~/Developer/myzsh/ai-config/skills/documentation/architecture-doc/references/project-setup.md`
+`~/.claude/skills/documentation/architecture-doc/SKILL.md`
+`~/.claude/skills/documentation/architecture-doc/references/mv-architecture.md`
+`~/.claude/skills/documentation/architecture-doc/references/concurrency.md`
+`~/.claude/skills/documentation/architecture-doc/references/testing.md`
+`~/.claude/skills/documentation/architecture-doc/references/swiftdata.md`
+`~/.claude/skills/documentation/architecture-doc/references/project-setup.md`

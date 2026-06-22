@@ -23,7 +23,7 @@ tvOS-specific rules below.
 ## Foundation Rules (All Apply)
 
 Architecture, style, concurrency, and SwiftUI patterns from swift-developer
-all apply. For detail: `~/Developer/myzsh/ai-config/skills/engineering/swift-engineering/SKILL.md`
+all apply. For detail: `~/.claude/skills/engineering/swift-engineering/SKILL.md`
 
 Additional tvOS constraints from this project's CLAUDE.md:
 - tvOS focus engine is the #1 source of bugs — any layout change can break navigation
@@ -210,8 +210,8 @@ Never collapse them.
 
 ## Detailed Reference
 
-`~/Developer/myzsh/ai-config/skills/engineering/swift-tvos/SKILL.md`
-`~/Developer/myzsh/ai-config/skills/engineering/swift-tvos/references/focus-subsystems.md`
-`~/Developer/myzsh/ai-config/skills/engineering/swift-tvos/references/gotchas.md`
-`~/Developer/myzsh/ai-config/skills/engineering/swift-tvos/references/tooling.md`
-`~/Developer/myzsh/ai-config/skills/engineering/swift-tvos/references/diagnosis-template.md`
+`~/.claude/skills/engineering/swift-tvos/SKILL.md`
+`~/.claude/skills/engineering/swift-tvos/references/focus-subsystems.md`
+`~/.claude/skills/engineering/swift-tvos/references/gotchas.md`
+`~/.claude/skills/engineering/swift-tvos/references/tooling.md`
+`~/.claude/skills/engineering/swift-tvos/references/diagnosis-template.md`

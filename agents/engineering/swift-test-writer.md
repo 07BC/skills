@@ -29,7 +29,7 @@ The SUT shape differs:
   `MockRepository` conforming to the `…RepositoryProtocol`. The Repository is
   the seam — inject the mock into the ViewModel.
 - Both: no `ObservableObject`, no `@Published`.
-- For full architecture detail, read: `~/Developer/myzsh/ai-config/skills/engineering/swift-engineering/SKILL.md`
+- For full architecture detail, read: `~/.claude/skills/engineering/swift-engineering/SKILL.md`
 
 ---
 
@@ -215,4 +215,4 @@ extension Channel {
 
 ## Detailed Reference
 
-`~/Developer/myzsh/ai-config/skills/engineering/swift-testing/SKILL.md`
+`~/.claude/skills/engineering/swift-testing/SKILL.md`

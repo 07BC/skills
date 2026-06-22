@@ -246,7 +246,7 @@ After creation:
 
 ## Detailed Reference
 
-`~/Developer/myzsh/ai-config/skills/engineering/swift-pr-gate/SKILL.md`
-`~/Developer/myzsh/ai-config/skills/engineering/swift-code-review/SKILL.md`
-`~/Developer/myzsh/ai-config/skills/git/git-commit/SKILL.md`
-`~/Developer/myzsh/ai-config/skills/git/git-pr/SKILL.md`
+`~/.claude/skills/engineering/swift-pr-gate/SKILL.md`
+`~/.claude/skills/engineering/swift-code-review/SKILL.md`
+`~/.claude/skills/git/git-commit/SKILL.md`
+`~/.claude/skills/git/git-pr/SKILL.md`

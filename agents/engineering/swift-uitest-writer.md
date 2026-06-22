@@ -242,6 +242,6 @@ Some AC items cannot be automated:
 
 ## Detailed Reference
 
-`~/Developer/myzsh/ai-config/skills/testing/swift-uitest/SKILL.md`
-`~/Developer/myzsh/ai-config/skills/testing/swift-uitest/references/page-objects.md`
-`~/Developer/myzsh/ai-config/skills/testing/swift-uitest/references/accessibility-ids.md`
+`~/.claude/skills/testing/swift-uitest/SKILL.md`
+`~/.claude/skills/testing/swift-uitest/references/page-objects.md`
+`~/.claude/skills/testing/swift-uitest/references/accessibility-ids.md`

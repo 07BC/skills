@@ -82,7 +82,7 @@ You are debugging an XCUITest. You are NOT rewriting the test from scratch.
 You are NOT switching to Swift Testing. Your only job is to make the failing
 test pass without breaking others.
 
-Read ~/Developer/myzsh/ai-config/skills/testing/swift-uitest/SKILL.md first.
+Read ~/.claude/skills/testing/swift-uitest/SKILL.md first.
 
 ## Failure
 [Full failure output — do not truncate]
@@ -196,4 +196,4 @@ For `.xcresult` interpretation or tvOS accessibility tree ambiguity, use **Opus 
 
 ## Detailed Reference
 
-`~/Developer/myzsh/ai-config/skills/testing/swift-uitest-debug/SKILL.md`
+`~/.claude/skills/testing/swift-uitest-debug/SKILL.md`

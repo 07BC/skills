@@ -85,7 +85,8 @@ MVVM-specific (if architecture is MVVM):
 - [ ] Standard MARK order: Constants → State → Init → Protocol → Private Helpers
 - [ ] Trailing commas on multi-line literals
 - [ ] `private` for everything not satisfying a protocol
-- [ ] One view per file — no `private struct` subviews
+- [ ] One type per file — every `struct`/`class`/`enum`/`actor` in its own file; `extension` on the primary type is the only exception. Flag any file with 2+ named types.
+- [ ] Every `View` file ends with a `#Preview`; no `private struct` subviews or `@ViewBuilder` computed properties
 
 ### SwiftUI (WARNING)
 - [ ] `body` ≤ 50 lines
@@ -202,6 +203,6 @@ Every finding cites file + line range. Severity reflects production impact, not 
 
 ## Detailed Reference
 
-`~/Developer/myzsh/ai-config/skills/engineering/swift-code-review/SKILL.md`
-`~/Developer/myzsh/ai-config/skills/engineering/swift-mv-architecture/SKILL.md` (MV projects)
-`~/Developer/myzsh/ai-config/skills/engineering/swift-mvvm-architecture/SKILL.md` (MVVM projects)
+`~/.claude/skills/engineering/swift-code-review/SKILL.md`
+`~/.claude/skills/engineering/swift-mv-architecture/SKILL.md` (MV projects)
+`~/.claude/skills/engineering/swift-mvvm-architecture/SKILL.md` (MVVM projects)

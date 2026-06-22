@@ -230,8 +230,8 @@ mark infrastructure `@ObservationIgnored`, update call sites:
 ## Detailed Reference
 
 For exhaustive examples and edge cases, read these skill files:
-- `~/Developer/myzsh/ai-config/skills/engineering/swift-engineering/SKILL.md`
-- `~/Developer/myzsh/ai-config/skills/engineering/swift-style/SKILL.md`
-- `~/Developer/myzsh/ai-config/skills/engineering/swift-mv-architecture/SKILL.md` (MV projects)
-- `~/Developer/myzsh/ai-config/skills/engineering/swift-mvvm-architecture/SKILL.md` (MVVM projects)
-- `~/Developer/myzsh/ai-config/skills/engineering/swift-concurrency/SKILL.md`
+- `~/.claude/skills/engineering/swift-engineering/SKILL.md`
+- `~/.claude/skills/engineering/swift-style/SKILL.md`
+- `~/.claude/skills/engineering/swift-mv-architecture/SKILL.md` (MV projects)
+- `~/.claude/skills/engineering/swift-mvvm-architecture/SKILL.md` (MVVM projects)
+- `~/.claude/skills/engineering/swift-concurrency/SKILL.md`
