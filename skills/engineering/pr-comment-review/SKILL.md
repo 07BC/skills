@@ -126,6 +126,32 @@ three questions above and the actual call sites before replying. If it turns
 out genuinely correct, reply in kind — confirm it, explain the reasoning, and
 acknowledge the question was fair. If it does not, fix it.
 
+### Second opinion before any WRONG verdict
+
+Dismissals are the dangerous move — they tell a reviewer they were wrong. Never
+finalise a **WRONG** verdict from your own judgement alone. For each WRONG
+candidate, get an independent second opinion via the `swift-pr-reviewer` agent
+(Agent tool), prompted adversarially:
+
+> Here is a code excerpt and a PR review comment on it. I believe the comment
+> is technically mistaken. Argue the strongest case that the **reviewer is
+> right** — find any bug, race, leak, over-engineering, or best-practice issue
+> the comment points at. Cite specific Swift rules. If after a genuine attempt
+> the comment really is wrong, say so plainly.
+>
+> Code: <the relevant code + surrounding context>
+> Comment: <the reviewer's comment, verbatim>
+
+Then reconcile:
+
+- Agent finds real merit → the verdict is **not** WRONG. Reclassify as CORRECT
+  or DEBATABLE and carry the agent's reasoning into the proposal.
+- Agent agrees the comment is mistaken → the WRONG verdict stands; cite the
+  agent's reasoning alongside your own in the reply.
+
+Send only WRONG candidates to the agent. CORRECT and DEBATABLE verdicts are
+handled inline — no agent round-trip.
+
 ---
 
 ## Step 4 — Propose, don't apply
