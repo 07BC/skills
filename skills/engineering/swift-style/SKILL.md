@@ -12,8 +12,6 @@ description: >
   rewriting existing messy code, use swift-engineering (rewrite mode) instead.
   NOT a standalone skill — loaded as a dependency by swift-engineering and
   swift-code-review. Do not invoke directly.
-user-invocable: false
-disable-model-invocation: true
 ---
 
 # Swift Style
@@ -55,7 +53,7 @@ struct UserData: Sendable {
 // Actor for mutable shared state
 actor CacheManager {
     private var cache: [String: Data] = [:]
-    
+
     func get(_ key: String) -> Data? { cache[key] }
     func set(_ key: String, value: Data) { cache[key] = value }
 }
@@ -85,7 +83,7 @@ final class FeatureService {
 actor DataStore {
     nonisolated let identifier: String
     private var data: [String: Any] = [:]
-    
+
     init(identifier: String) {
         self.identifier = identifier
     }
@@ -289,8 +287,8 @@ func fetchArticles(
 `@AppStorage` is a SwiftUI property wrapper. It **cannot** be applied to stored
 properties inside an `@Observable` class — the compiler will reject it with:
 
-> *Property wrapper cannot be applied to a stored property declared in a
-> '@Observable' class*
+> _Property wrapper cannot be applied to a stored property declared in a
+> '@Observable' class_
 
 Instead, back UserDefaults-persisted properties using the two observation
 primitives the `@Observable` macro exposes: `access` and `withMutation`.
@@ -345,10 +343,10 @@ struct AppearanceView: View {
 key will both compile but will not stay in sync — changes through one will not
 update the other. Decide on a single owner and stick to it.
 
-| Scenario | Pattern |
-|---|---|
+| Scenario                                                | Pattern                            |
+| ------------------------------------------------------- | ---------------------------------- |
 | Preference used by multiple views or has business logic | `access`/`withMutation` in service |
-| Simple view-local toggle with no logic | `@AppStorage` in the view |
+| Simple view-local toggle with no logic                  | `@AppStorage` in the view          |
 
 **Keys must always be named constants** — never inline string literals:
 
@@ -397,12 +395,14 @@ final class PlayerService {
 ```
 
 Good candidates for `@ObservationIgnored`:
+
 - `Task` handles (`loadTask`, `retryTask`)
 - `AnyCancellable` / Combine subscriptions
 - Loggers, timers, or other infrastructure objects
 - Identity `let` constants that are never displayed
 
 Bad candidates (leave them tracked):
+
 - Any `var` that a view might display or react to
 - Any `var` that is part of loading / error / selection state
 - `private var` simply because it is private
@@ -457,6 +457,7 @@ struct SettingsView: View {
 ```
 
 **Why avoid didSet side effects:**
+
 - Creates implicit dependencies that are hard to trace
 - `Task { }` in didSet creates detached tasks that can race
 - Difficult to test since side effects happen automatically
@@ -557,6 +558,7 @@ contentView
 ```
 
 **Why prefer overlay:**
+
 - Clearer intent — each layer is explicitly positioned
 - Fewer nested braces and indentation levels
 - Better performance — SwiftUI can optimise layout more efficiently
@@ -564,6 +566,7 @@ contentView
 - `safeAreaInset` properly adjusts scrollable content
 
 **When to use ZStack:**
+
 - Truly stacked content where all children contribute to sizing
 - Complex layering with more than 2-3 overlapping elements
 - When children need to share the same coordinate space for animations
@@ -635,6 +638,7 @@ struct AboutView: View {
 ```
 
 **Why one type per file:**
+
 - Each view has its own `#Preview` for rapid iteration
 - Clearer file organisation and smaller files
 - Easier to locate and modify components
@@ -642,11 +646,66 @@ struct AboutView: View {
 - Forces proper separation of concerns
 - No exceptions — consistency is more valuable than saving a file
 
+### Preview Sample Data
+
+`#Preview` blocks are **not** exempt from the rules above. The 20-line method limit, the parameter-count limit, and one-type-per-file all apply inside a preview. A preview must construct **nothing** inline — every type it renders exposes a small static mock factory, and the preview just injects it.
+
+Concretely:
+
+- No `class Mock…` / `struct Mock…` declared inside a `#Preview` block — that breaks one-type-per-file.
+- No inline data-building helper (`addMockMessages()`, `makeSampleItems()`) — that breaks the 20-line limit.
+- Sample data lives in a static factory on the model type, guarded by `#if DEBUG`, kept under the length limits. Split into several small factories before one large one.
+
+```swift
+// Avoid: mock type + giant builder inlined into the preview
+#Preview {
+    class MockChatViewModel: ChatViewModel {
+        override init() {
+            super.init()
+            addMockMessages()
+        }
+        func addMockMessages() {
+            newMessages.append(.init(type: .chat(.init(id: "1", content: "…", /* 40+ more lines */))))
+            // …builds five messages inline — trips function/closure body-length lint
+        }
+    }
+    return ChatView(viewModel: MockChatViewModel())
+}
+
+// Prefer: static factories on the rendered types; the preview just injects
+#if DEBUG
+extension ChatMessage {
+    static var preview: ChatMessage {
+        .init(type: .chat(.init(id: "1", content: "Hello", sender: .preview)))
+    }
+
+    static var previewFeed: [ChatMessage] {
+        [.preview, .init(type: .kicks(.mocked(id: "2", gift: .hype)))]
+    }
+}
+
+extension ChatViewModel {
+    static var preview: ChatViewModel {
+        let model = ChatViewModel()
+        model.newMessages = .previewFeed
+        return model
+    }
+}
+#endif
+
+#Preview {
+    ChatView(viewModel: .preview)
+        .frame(width: 500)
+}
+```
+
+Each factory stays small and reusable across previews and tests; the preview block stays to a couple of lines.
+
 ## See Also
 
-| Skill | Purpose |
-|---|---|
+| Skill               | Purpose                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------- |
 | `swift-engineering` | Main feature-building, rewriting, and editing skill (loads this one as a companion) |
-| `swift-code-review` | BLOCKER / WARNING / SUGGESTION review pass |
-| `swift-concurrency` | Concurrency concepts and patterns |
-| `swift-testing` | Unit-test authoring |
+| `swift-code-review` | BLOCKER / WARNING / SUGGESTION review pass                                          |
+| `swift-concurrency` | Concurrency concepts and patterns                                                   |
+| `swift-testing`     | Unit-test authoring                                                                 |

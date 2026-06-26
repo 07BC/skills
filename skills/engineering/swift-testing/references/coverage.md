@@ -26,6 +26,17 @@ Line coverage counts every line in the target, **including SwiftUI `View` bodies
 - **Stop climbing a file** when the remaining uncovered lines are view bodies, `Console.*`/logging, or `#Preview`s. Note them and move on — forcing those to "covered" is busywork that doesn't catch regressions.
 - Coverage is usually **bimodal**: newer injectable code (repositories, services with protocol seams) is well-covered; the legacy shell (composition root, navigation, push-driven transports) is dark. The dark legacy is where the regressions hide *and* where the seams are missing — see "Fix the seam first".
 
+## 100% is not the target — name the uncoverable remainder
+
+Line coverage has a ceiling below 100% that no honest test can close. A "get to 100%" mandate pushes you to write exactly the tautological tests this skill bans (`SKILL.md`, "When NOT to write a test") just to light up these lines:
+
+- **Dead / unreachable code** — a branch shadowed by an earlier one (a deeplink case the prior regex always matches first), a `RawRepresentable.init(from:)` the compiler's synthesised `Decodable` always wins over. No test reaches it; only deleting the dead code moves the number.
+- **Synthesised conformances** — `Codable`/`Equatable`/`Hashable` the compiler generated. A test for them tests the compiler.
+- **Memberwise `init`s and pure property storage** — construction *is* the test; building the value and reading back the field you just set is tautological.
+- **Coverage-tool quirks** — e.g. a stored-property default initialiser counted as its own uncovered region.
+
+**Stop at logic coverage; list the uncoverable remainder** (dead code → propose deletion, synthesised → skip, quirks → note) instead of manufacturing tests for it. If the task literally says "100%", report the realistic ceiling and what sits under it rather than padding the number — that padding is the false confidence this file exists to prevent.
+
 ## Prioritise by yield: `uncovered lines × blast radius`
 
 Rank targets, don't sweep alphabetically. For each dark/partial file:
@@ -58,3 +69,11 @@ Never reach for a singleton or a real network call to "make it testable" — tha
 - Not `Task.sleep`/polling to get an async path to "run" (see `SKILL.md` hard-stops).
 
 A coverage number that goes up while the suite's regression-catching power stays flat is worse than no change — it manufactures false confidence. Every new test must answer: *what regression does this catch?*
+
+## Before you declare a coverage task done
+
+A green local suite is necessary but not sufficient. These three traps once shipped a "done, 199 tests passing" claim sitting on top of a package that did not compile in CI — and a source edit that broke the app build:
+
+- **Build the package the way CI builds it.** A suite that passes inside the app workspace can sit on an SPM package that fails to compile *standalone* — the mode CI uses (`xcodebuild -scheme {Package}` with a fresh dependency resolve), which also floats dependency versions independently of the app's pin. Before committing: build the standalone scheme, and if a package CI workflow exists, confirm it is green — don't infer it from the workspace build.
+- **A compile error against a dependency's API is a version smell, not a call site to patch.** If test or source code won't build because a dependency's signature differs (an enum case gained/lost a parameter), do **not** edit the call to match whatever version happened to resolve — that can make the package compile while breaking the app, which pins a different version. Check the resolved version against the app's pin first and align them; don't paper over the divergence at the call site.
+- **Local toolchain ≠ CI toolchain.** A clean local pass can still fail in CI on a different Xcode/Swift build (or a CI `xcode-version: '26'` that silently resolves to an RC). "Clean local build is truth" holds *for that toolchain* — it is not a guarantee for CI's. When CI fails on code that builds locally, suspect the toolchain delta before re-editing the code.
