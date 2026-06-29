@@ -192,29 +192,39 @@ import Observation
 @Observable
 final class FeatureViewModel {
 
+    // Dependencies
+    private let repository: any FeatureRepositoryProtocol
+    private var loadTask: Task<Void, Never>?
+
+    // State
     private(set) var items: [Item] = []
     private(set) var isLoading = false
     private(set) var error: AppError?
 
-    private let repository: any FeatureRepositoryProtocol
-    private var loadTask: Task<Void, Never>?
+    // MARK: - Init
 
     init(repository: any FeatureRepositoryProtocol) {
         self.repository = repository
     }
 
+    // MARK: - Intent
+
     func load() {
         loadTask?.cancel()
         loadTask = Task { [weak self] in
             guard let self else { return }
+
             await performLoad()
         }
     }
+
+    // MARK: - Private
 
     private func performLoad() async {
         isLoading = true
         error = nil
         defer { isLoading = false }
+
         do {
             items = try await repository.fetch(page: 1).data
         } catch {

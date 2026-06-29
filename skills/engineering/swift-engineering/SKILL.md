@@ -576,15 +576,25 @@ if isPresented {
 
 ### View member ordering (top to bottom)
 
+Members are grouped by category with **one blank line between groups** and a
+lightweight `//` header on each property group — see swift-style **"Vertical
+Spacing & Member Grouping"** for the full non-negotiable rule and worked example.
+This grouping applies to **all types**, not only views.
+
 Enforce this ordering in every view file:
 
-1. `@Environment` properties
-2. `private`/`public` `let` stored properties
-3. `@State` and other stored properties
-4. Computed `var` (non-view)
-5. `init`
-6. `body`
-7. Helper/async functions
+1. `// DI` — `@Environment`, injected dependencies
+2. `// Design System` — design-system wrappers (`@DSSpacing`, …)
+3. `// State` — `@State`, `@Binding`, `@FocusState`, …
+4. `// Private` — private stored `let` / `var`
+5. `// Public` — non-private stored properties
+6. computed `var` (non-view)
+7. `init`
+8. `body`
+9. `// MARK: - Helpers` — helper / async functions
+
+`// MARK: -` is for method / section dividers only — never for property groups.
+One blank line before `body`; one blank line before and after every `// MARK: -`.
 
 ### Extract subviews into their own files
 

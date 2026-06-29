@@ -163,15 +163,13 @@ import Observation
 @Observable
 final class FeatureService {
 
-    // MARK: - State (single writer: this service)
+    // Dependencies
+    private let fetcher: FeatureFetcher
 
+    // State (single writer: this service)
     private(set) var items: [Item] = []
     private(set) var isLoading = false
     private(set) var error: FeatureError?
-
-    // MARK: - Dependencies
-
-    private let fetcher: FeatureFetcher
 
     // MARK: - Init
 
@@ -183,6 +181,7 @@ final class FeatureService {
 
     func load() async {
         guard isLoading == false else { return }
+
         isLoading = true
         error = nil
         defer { isLoading = false }

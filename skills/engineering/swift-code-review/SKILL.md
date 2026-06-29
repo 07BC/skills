@@ -75,8 +75,10 @@ severity it matches.
 - [ ] No boolean flag parameters that toggle between two modes
 
 ### Structure and Organisation
-- [ ] `// MARK: - ` sections used for types with more than two logical groupings
-- [ ] Standard MARK order: Constants → State → Init → Protocol conformance → Private Helpers
+- [ ] Members grouped by category with one blank line between groups; lightweight `//` headers on property groups (`// DI`, `// Design System`, `// State`, `// Private`, `// Public`), `// MARK: -` reserved for method / section dividers
+- [ ] Canonical member order: DI → Design System → State → Private stored → Public stored → computed → init → body → `// MARK: - Helpers`
+- [ ] Function bodies not crammed — logical steps separated by blank lines; a blank line follows a `guard` / early-return block before the main work
+- [ ] One blank line before `body`; one blank line before and after every `// MARK: -`
 - [ ] Trailing commas on all multi-line array/dictionary/argument literals
 - [ ] Explicit access control: `private` for everything not satisfying a protocol
 - [ ] No inline type definitions inside function bodies

@@ -12,6 +12,8 @@ description: >
   rewriting existing messy code, use swift-engineering (rewrite mode) instead.
   NOT a standalone skill — loaded as a dependency by swift-engineering and
   swift-code-review. Do not invoke directly.
+user-invocable: false
+disable-model-invocation: true
 ---
 
 # Swift Style
@@ -645,6 +647,104 @@ struct AboutView: View {
 - Better git history and code review
 - Forces proper separation of concerns
 - No exceptions — consistency is more valuable than saving a file
+
+### Vertical Spacing & Member Grouping — non-negotiable
+
+Cramped code is a defect. Every type's members are **grouped by category, with
+exactly one blank line between groups**, so the shape of the type is readable at
+a glance. This is not view-only — it applies to every `struct`, `class`, `enum`,
+and `actor`.
+
+Rules:
+
+- **Group by category; one blank line between groups.** Within a group, related members sit together with no blank line.
+- **Lightweight `//` header on each property group.** Reserve `// MARK: -` for method / section dividers (helpers, intent, conformances) — not for property groups.
+- **Canonical member order:**
+  1. `// DI` — `@Environment`, injected dependencies
+  2. `// Design System` — design-system wrappers (`@DSSpacing`, …)
+  3. `// State` — `@State`, `@Binding`, `@FocusState`, …
+  4. `// Private` — private stored `let` / `var`
+  5. `// Public` — non-private stored properties
+  6. computed `var` (non-view)
+  7. `init`
+  8. `body` (views)
+  9. `// MARK: - Helpers` — helper / async functions
+
+  Non-view types use the same principle with the groups they have, e.g. `// Dependencies`, `// State`, then `// MARK: - Init`, `// MARK: - Intent`.
+- **One blank line before `body`.** One blank line before *and* after every `// MARK: -`.
+- **Function bodies separate logical steps with blank lines.** A `guard` / early-return block is followed by a blank line before the main work. Never cram a multi-step body into one unbroken block. (A leading blank line after `{` is acceptable, not required.)
+
+```swift
+struct MyView: View {
+
+    // DI
+    @Environment(\.theme) private var theme
+    @Environment(FooService.self) private var foo
+
+    // Design System
+    @DSSpacing(._2xs) private var innerGap
+    @DSSpacing(._3xs) private var rowPadding
+
+    // State
+    @State private var isActive = false
+    @State private var isFeatured = true
+
+    // Private
+    private let code: String
+    private let sample: Content
+
+    // Public
+    let title: String
+    let content: CustomObject
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: innerGap) {
+            sample
+            CodeLabel(code)
+        }
+        .padding(.vertical, rowPadding)
+    }
+
+    // MARK: - Helpers
+
+    func helper() -> Object? {
+        guard isFeatured else { return nil }
+
+        return Object(code: code)
+    }
+}
+```
+
+The same grouping on a non-view type:
+
+```swift
+@MainActor
+@Observable
+final class FeatureService {
+
+    // Dependencies
+    private let fetcher: FeatureFetcher
+
+    // State
+    private(set) var items: [Item] = []
+    private(set) var isLoading = false
+
+    // MARK: - Init
+
+    init(fetcher: FeatureFetcher = FeatureFetcher()) {
+        self.fetcher = fetcher
+    }
+
+    // MARK: - Intent
+
+    func load() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        items = (try? await fetcher.fetch()) ?? []
+    }
+}
+```
 
 ### Preview Sample Data
 
