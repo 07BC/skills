@@ -52,8 +52,7 @@ Phase 1 — Plan:         [ ]
 Phase 2 — Execute:      [ ]
 Phase 3 — Debug:        [ ]
 Phase 4a — PR gate:     [ ]
-Phase 4b — Review prompt: [ ]
-Phase 4c — PR desc:     [ ]
+Phase 4b — PR desc:     [ ]
 ```
 
 Use `x` (not a check-mark emoji) when a phase completes.
@@ -417,7 +416,7 @@ Track the attempt log via the shared file above. Do not exceed the
 escalation ceiling. If Opus diagnosis plus the final Sonnet fix still
 fails, the test is **declared unautomatable** — surface this to the
 user, replace the failing test with a manual test plan step in the PR
-description (Phase 4c), and continue. Do not weaken the test or remove
+description (Phase 4b), and continue. Do not weaken the test or remove
 assertions.
 
 When all remaining tests pass, update gate summary, mark Phase 3 done
@@ -446,24 +445,7 @@ If the gate returns READY TO RAISE PR, update gate summary and continue.
 
 ---
 
-## Phase 4b — Review prompt — Opus, plan mode
-
-Apply skill `prompt:review`. Generate the review prompt with:
-
-- PR purpose: "Adding XCUITest coverage for [story summary]".
-- Changed files: UI test target files plus app-side identifier files.
-- Ticket: key from Phase 0.
-- Constraints: Must not break existing UI tests. Must not use Swift
-  Testing.
-
-Save the generated prompt as `${PLANS_DIR}/pr-review-${SLUG}.md` and
-report the path to the user.
-
-Update gate summary. Mark Phase 4b done.
-
----
-
-## Phase 4c — PR description — Opus, plan mode
+## Phase 4b — PR description — Opus, plan mode
 
 `swift-pr-gate` Gate 5 already produced a PR description from the
 template (Summary / Root Cause / Solution / Changes / Tests / Test Plan).
@@ -493,7 +475,7 @@ Save the final PR description (gate body plus this addendum) to
 `${PLANS_DIR}/pr-description-${SLUG}.md`. The PR creation step in
 `swift-pr-gate` uses this file via `--body-file`.
 
-Update gate summary. Mark Phase 4c done.
+Update gate summary. Mark Phase 4b done.
 
 Print the final completed gate summary.
 

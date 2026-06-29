@@ -9,8 +9,7 @@ description: >
   for high-stakes branches (new SDK, infra, lifecycle changes). Loads
   swift-engineering, swift-style, swift-testing, swift-concurrency. Do NOT use for
   writing or rewriting code — use swift-engineering. For a whole-codebase
-  architecture audit, use /audit. For a reusable hand-off review
-  prompt, use prompt:review.
+  architecture audit, use /audit.
 ---
 
 # Swift Code Review

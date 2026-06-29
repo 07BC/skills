@@ -111,20 +111,3 @@ Behaviour-preserving rewrites and refactors are part of `/swift-engineering` (re
 | [/spec-validation](../skills/pipelines/spec-validation/SKILL.md) | Validates drafted specs against the live codebase with a multi-lens agent panel, then reconciles findings back into the spec — run after a fix is designed (e.g. by `/solve`), before implementation. Confirms every file/line/symbol and proposed diff is real. | Opus · Direct |
 | [/pipeline-preflight](../skills/pipelines/pipeline-preflight/SKILL.md) | Pre-flight checks before any pipeline starts — progress-doc drift, out-of-scope stories, dirty working tree. Cited by orchestrators; does not auto-fire. | Sonnet · Orchestrated |
 | [/subagent-reliability](../skills/pipelines/subagent-reliability/SKILL.md) | Recovery procedure for dropped or crashed subagents — recover-in-place, resume, or re-spawn. Cited by orchestrators; does not auto-fire. | Sonnet · Orchestrated |
-
-## Obsidian & knowledge
-
-| Skill | What it does | Model · Flow |
-|---|---|---|
-| [/daily-notes](../skills/obsidian/daily-notes/SKILL.md) | Generates first-person daily work notes from git history, file changes, and Jira. Runs entirely under Claude Code. | Sonnet · Direct |
-| [/obsidian-learn](../skills/obsidian/obsidian-learn/SKILL.md) | Extracts durable knowledge from the current session and appends it to the Obsidian knowledge base. Run at end of session. | Sonnet · Direct |
-| [/obsidian-manage](../skills/obsidian/obsidian-manage/SKILL.md) | Read, create, edit, search, and organise notes in the Obsidian vault. | Sonnet · Direct |
-| [/obsidian-audit](../skills/obsidian/obsidian-audit/SKILL.md) | Vault hygiene sweep — fixes tags, normalises frontmatter, lifts inline fields into YAML. Logs a revertible changelog. | Sonnet · Direct |
-| [/obsidian-rollover](../skills/obsidian/obsidian-rollover/SKILL.md) | Carries incomplete to-do items from recent past daily notes into today's daily note. | Sonnet · Direct |
-
-## Research
-
-| Skill | What it does | Model · Flow |
-|---|---|---|
-| [/yt-research](../skills/productivity/yt-research/SKILL.md) | Downloads transcripts and extracts prompts from a YouTube channel's recent videos, saving each as markdown in the vault. | Sonnet · Direct |
-| [/yt-distill](../skills/productivity/yt-distill/SKILL.md) | Distils a folder of yt-research transcripts into a structured Obsidian reference library — skills, plugins, prompts, techniques, plus a master index. | Sonnet · Direct |

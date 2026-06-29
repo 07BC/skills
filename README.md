@@ -77,7 +77,7 @@ The core build/review skills work with Claude Code alone. Others depend on exter
 | -------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
 | **Atlassian MCP**          | Atlassian (connected in Claude Code)      | `story-to-spec`, `discovery-jira`, `jira-bulk`, `/workflow`, `/spec-pipeline` (Jira input) | Jira input/lifecycle steps stop; use spec/prompt input instead |
 | **GitHub `gh` CLI**        | GitHub (authenticated locally)            | `git-pr`, `/discovery`, `/workflow` (architecture-drift tracking)                          | PR creation and issue tracking stop                            |
-| **Obsidian CLI + a vault** | local (`obsidian` CLI, `$OBSIDIAN_VAULT`) | `daily-notes`, `obsidian-*`, and all `PLANS_DIR` artefacts                                 | vault skills stop; plans/discovery notes have nowhere to land  |
+| **Obsidian CLI + a vault** | local (`obsidian` CLI, `$OBSIDIAN_VAULT`) | all `PLANS_DIR` artefacts                                 | plans/discovery notes have nowhere to land  |
 | **XcodeBuildMCP**          | local MCP server                          | `xcodebuildmcp-cli`, build/test phases when Xcode isn't open                               | falls back to raw `xcodebuild`                                 |
 | **Context7 MCP**           | local MCP server                          | library-docs lookups inside several skills                                                 | skills proceed on training data, which may be stale            |
 

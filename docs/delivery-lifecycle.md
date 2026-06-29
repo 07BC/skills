@@ -54,7 +54,7 @@ The boundaries that matter most, because they used to blur: **`/product-planning
 
 ### 8. Close the loop
 
-`/swift-document` adds DocC `///` comments **only when you ask** (the default is no `///`). `/daily-notes` writes up what you did from git history and Jira; `/obsidian-learn` captures durable session learnings into the knowledge base.
+`/swift-document` adds DocC `///` comments **only when you ask** (the default is no `///`).
 
 ---
 

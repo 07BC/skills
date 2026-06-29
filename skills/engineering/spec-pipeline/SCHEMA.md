@@ -69,8 +69,6 @@ The audit log writes to `$OBSIDIAN_VAULT/$audit_dir/<spec-id>.md`.
 1. The `OBSIDIAN_VAULT` environment variable, if set.
 2. `$HOME/Developer/obsidian` (default).
 
-Matches the override pattern from `vault_preconditions.sh` (audit 2026-05-16).
-
 ## Parsing rules (what `read-pipeline-config.sh` does)
 
 - Locates the first ```` ```yaml ```` fence containing a top-level `spec_pipeline:` key.
