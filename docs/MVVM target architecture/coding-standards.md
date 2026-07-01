@@ -16,6 +16,9 @@ One ViewModel per screen, named `<Feature>ViewModel`. Constructed by the View vi
 **Repositories: `Sendable final class`, stateless.**
 No `@Observable`, no `@MainActor`. Methods return values — they hold no state. One repository per domain responsibility. Constructed once in `AppDependencies`. Injected via `@Environment`. Named `<Feature>Repository`.
 
+**Services: `@MainActor @Observable final class`, app-scoped.**
+Cross-cutting, long-lived state (auth session, preferences, feature flags). Built once in `AppDependencies`, injected via `@Environment`, observed by many screens; views bind into them with `@Bindable`. Persist through `StorageService`. Same shape as a ViewModel, but shared and app-scoped — not a per-screen substitute. Named `<Domain>Service`.
+
 **Domain layer: protocol-injected structs.**
 Fetchers are stateless `struct` types. Domain models are `Sendable` structs/enums. Domain never imports `SwiftUI`, `UIKit`, or `Combine`.
 
@@ -46,7 +49,7 @@ No business logic there — pure wiring only. ViewModels are not constructed her
 | `@StateObject` for ViewModels | `@State private var vm: FeatureViewModel` |
 | `XCTestCase` for unit tests | Swift Testing (`@Test`, `@Suite`, `#expect`) |
 | `class` for value types | `struct` or `enum` |
-| `@Observable` on a repository | Move state into a ViewModel |
+| `@Observable` on a repository | Move state into a ViewModel or a Service |
 | ViewModel registered in `@Environment` | `@State` in the owning View |
 | Business logic in `View.body` | ViewModel method |
 | Concrete types in View inits | Repository protocol via `any FeatureRepositoryProtocol` |

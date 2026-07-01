@@ -15,9 +15,11 @@ that way.
 
 ## The MVVM Pattern (read this first, every time)
 
-The ViewModel layer is the defining feature. `@Observable` ViewModels own all
-view-facing state. Repositories are stateless — they hold no state and are never
-`@Observable`.
+The ViewModel layer is the defining feature. `@Observable` ViewModels own
+**per-screen** state. Cross-cutting, app-lifetime state (auth session, user
+preferences, feature flags) lives in `@Observable` **Services**, built once in
+`AppDependencies` and injected via `@Environment` — Services coexist with
+ViewModels. Repositories stay stateless and are never `@Observable`.
 
 **Layers:**
 
@@ -25,17 +27,18 @@ view-facing state. Repositories are stateless — they hold no state and are nev
 |---|---|---|---|
 | **Domain model** | `struct` | Sendable value type | Pure data. No behaviour beyond computed reads. |
 | **Repository** | `final class …Protocol, Sendable` | nonisolated / Sendable | **Stateless.** Sole caller of the API client + storage. Returns domain types. Never `@Observable`, never `@MainActor`. |
-| **ViewModel** | `@MainActor @Observable final class` | `@MainActor` | Owns all view-facing state; exposes intent methods; holds a repository as `any …RepositoryProtocol`. The **only** `@Observable` type in user code. |
-| **View** | `struct: View` | `@MainActor` (implicit) | Owns its ViewModel via `@State`; reads a repository from `@Environment` and passes it into the ViewModel's `init`. |
+| **ViewModel** | `@MainActor @Observable final class` | `@MainActor` | Owns **per-screen** state; exposes intent methods; holds a repository as `any …RepositoryProtocol`. `@Observable`, alongside Services. |
+| **Service** | `@MainActor @Observable final class` | `@MainActor` | Owns **cross-cutting / app-lifetime** state (auth, preferences, feature flags). Built once in `AppDependencies`, injected via `@Environment`, observed by many views. `@Observable`, like a ViewModel — but app-scoped and shared, not per-screen. |
+| **View** | `struct: View` | `@MainActor` (implicit) | Owns its ViewModel via `@State`; reads a repository or service from `@Environment`. Passes the repository into the ViewModel's `init`. |
 | **Screen wrapper** | `struct: View` | `@MainActor` | Thin: reads one or more repositories from `@Environment`, constructs the `View(repository:)`. |
-| **AppDependencies** | `struct` | `@MainActor` | Builds every **repository** once at app launch. ViewModels are **never** built here. |
+| **AppDependencies** | `struct` | `@MainActor` | Builds every **repository** and **service** once at app launch. ViewModels are **never** built here. |
 
 **Hard rules — forbidden:**
 
 - `ObservableObject` conformance (legacy MVVM — this pattern uses `@Observable`)
 - `@Published` (ditto)
-- `@Observable` on a Repository (repositories are stateless; `@Observable` belongs on ViewModels only)
-- Registering a ViewModel in `@Environment` / building ViewModels in `AppDependencies`
+- `@Observable` on a Repository (repositories are stateless; `@Observable` belongs on ViewModels and Services)
+- Registering a **ViewModel** in `@Environment` / building ViewModels in `AppDependencies` (Services, by contrast, belong there)
 - A View constructing its own Repository (`@State private var repo = FeatureRepository()`) — repositories live in `AppDependencies` and are injected via `@Environment`
 - A ViewModel calling the API client or storage layer directly — must go through a Repository
 - Business logic, networking, or persistence inside `View.body`
@@ -47,7 +50,22 @@ view-facing state. Repositories are stateless — they hold no state and are nev
 - Repositories are injected into ViewModels as `any FeatureRepositoryProtocol`
 - One protocol → two conformers: production class + `Mock…` for tests/previews
 - Every cross-isolation type is `Sendable`
+- Cross-cutting / persistent app state lives in an `@Observable` **Service** (built once in `AppDependencies`, injected via `@Environment`), not duplicated across ViewModels
 - Swift 6 strict concurrency (`SWIFT_STRICT_CONCURRENCY=complete`)
+
+**Service vs ViewModel — don't blur them.** Both are `@MainActor @Observable
+final class`. The difference is scope and lifetime, not shape:
+
+- A **Service** is app-scoped, long-lived, shared state — auth session, user
+  preferences, feature flags. Built once in `AppDependencies`, injected via
+  `@Environment`, observed by many screens. A view binds into it with `@Bindable`.
+- A **ViewModel** is per-screen state owned by one View via `@State`, constructed
+  in the View's `init(repository:)`.
+
+Screen state does not go in a Service; shared app state does not go in a ViewModel.
+Only Services (and repositories) live in `AppDependencies` / `@Environment` —
+never a ViewModel. Reach for a Service only for genuinely cross-cutting state; it
+is not a shortcut to skip the ViewModel layer for a screen.
 
 ---
 
@@ -358,7 +376,7 @@ Read `AppDependencies.swift` and the `@main App` struct. Confirm:
 - Every `*Repository` in the codebase is built in `AppDependencies` exactly once.
 - Every repository has a matching `@Entry` in `EnvironmentValues`.
 - The `@main App` injects every repository into the root view's environment.
-- No ViewModel appears anywhere in `AppDependencies` or `@Environment`.
+- No ViewModel appears anywhere in `AppDependencies` or `@Environment` (repositories and `@Observable` Services may — they are built once and injected).
 
 ### Step 4 — Report
 

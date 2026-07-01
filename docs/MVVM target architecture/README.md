@@ -33,7 +33,7 @@ Generic, project-agnostic architecture template. Copy this folder to a new proje
 
 - Dependency arrows always point **inward** toward Domain.
 - Domain never imports SwiftUI, UIKit, or Combine.
-- **ViewModels are the only `@Observable` types in user code** — repositories are stateless.
+- `@Observable` is used on **ViewModels** (per-screen state) and **Services** (cross-cutting / app-lifetime state — auth, preferences, feature flags); repositories are stateless and never `@Observable`.
 - Repositories are the **only** callers of the API client and storage layer.
 - **Views construct their own ViewModel via `@State`**; repositories come from `@Environment`.
 - ViewModels are **never** registered in `@Environment`.

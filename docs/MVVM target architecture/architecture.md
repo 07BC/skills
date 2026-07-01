@@ -38,6 +38,7 @@ AppName/
 │   ├── Logging/            ← Console / analytics sink
 │   └── Mocks/              ← DEBUG-only mock conformers (actor-based)
 ├── Repositories/           ← Sendable final class. FLAT — no subfolders.
+├── Services/               ← @MainActor @Observable. App-scoped shared state (auth, prefs, flags).
 ├── Presentation/
 │   ├── <Feature>/
 │   │   ├── <Feature>Screen.swift     ← Reads @Environment, passes repo to View
@@ -59,7 +60,8 @@ Presentation (View + ViewModel)  →  Repositories  →  Domain  ←  Infrastruc
 - `Infrastructure` implements `Domain/Protocols` — never imports `Presentation`.
 - `Repositories` import `Domain` and `Infrastructure` protocols — never import `Presentation`.
 - `ViewModels` depend on `Domain/Protocols` (repository protocols) — never construct a repository.
-- Views read their ViewModel via `@State`. They receive repositories from `@Environment` and pass them into the ViewModel's `init` only.
+- `Services` are `@MainActor @Observable`, hold cross-cutting app state, and are built once in `AppDependencies` then injected via `@Environment` — like repositories, but stateful and observed. Views bind into them with `@Bindable`.
+- Views read their ViewModel via `@State`. They receive repositories (and services) from `@Environment` and pass repositories into the ViewModel's `init`.
 
 ---
 
@@ -106,6 +108,7 @@ Rules for `AppDependencies`:
 
 - **Pure wiring only** — no business logic.
 - Every repository constructed **exactly once**.
+- `@Observable` **Services** (auth, preferences, feature flags) are constructed here once too, like repositories, and injected via `@Environment`.
 - ViewModels are **never** constructed here — they are per-screen and owned by their View.
 - Mock infrastructure swapped in DEBUG via `ProcessInfo` check:
 
@@ -128,7 +131,8 @@ extension EnvironmentValues {
 ```
 
 Use `@Entry` (Swift 5.9+). Never use the old `EnvironmentKey` boilerplate.
-ViewModels are **never** registered as `@Entry` values.
+ViewModels are **never** registered as `@Entry` values. `@Observable` Services
+**are** — the same way repositories are.
 
 ---
 
@@ -523,6 +527,51 @@ Rules:
 
 ---
 
+## 6a. Services Layer (cross-cutting state)
+
+Some state is not per-screen: the auth session, user preferences, feature flags.
+It lives in an `@Observable` **Service** — same shape as a ViewModel, but built
+once in `AppDependencies`, injected via `@Environment`, and observed by many
+screens. A view binds into it with `@Bindable`.
+
+```swift
+// Services/PreferencesService.swift
+@MainActor
+@Observable
+final class PreferencesService: PreferencesServiceProtocol {
+
+    // MARK: - State
+
+    private(set) var prefersReducedMotion = false
+
+    // MARK: - Private
+
+    private let storage: any StorageServiceProtocol
+
+    // MARK: - Init
+
+    init(storage: any StorageServiceProtocol) {
+        self.storage = storage
+    }
+
+    // MARK: - Intent
+
+    func setPrefersReducedMotion(_ on: Bool) async {
+        prefersReducedMotion = on
+        try? await storage.set(on, for: .prefersReducedMotion, mode: .standard)  // persist
+    }
+}
+```
+
+Rules:
+- `@MainActor @Observable final class` — same as a ViewModel.
+- App-scoped and shared: built once in `AppDependencies`, injected via `@Environment`. Never owned by a single View's `@State`.
+- One protocol → two conformers (production + mock), like every other injected dependency.
+- Persist through `StorageService` — never raw `UserDefaults` in the service beyond a change-observer bridge for external writes.
+- **Not** a substitute for a ViewModel: per-screen state stays in the ViewModel. Reach for a Service only for genuinely cross-cutting, app-lifetime state.
+
+---
+
 ## 7. Presentation Layer
 
 ### Screen and View anatomy
@@ -646,7 +695,7 @@ No raw `CGFloat` literals in view files — always a token.
 
 | Isolation | When |
 |-----------|------|
-| `@MainActor @Observable` | All ViewModels |
+| `@MainActor @Observable` | All ViewModels and Services |
 | `actor` | Off-main infrastructure with concurrent callers (e.g. WebSocket client, device fingerprint, token cache) |
 | `Sendable struct` | All domain models |
 | `final class … Sendable` | Stateless repositories and HTTP clients — `async` methods run off-main by default |
@@ -843,8 +892,9 @@ find . -name "*.swift" \
   -not -path "*/.build/*" -not -path "*/DerivedData/*" > /tmp/files.txt
 
 # BLOCKERS
-# Repository with @Observable state — state belongs in ViewModel
-grep -rEn '@Observable' $(cat /tmp/files.txt) | grep -v 'ViewModel\|Preview\|Mock'
+# @Observable on a Repository — state belongs in a ViewModel or a Service, never a repo
+grep -rEn '@Observable' $(cat /tmp/files.txt) | grep -v 'ViewModel\|Service\|Preview\|Mock'
+# Remaining hits should be empty or a deliberate app-scoped *Service; a @Observable *Repository is a BLOCKER.
 
 # Repository with @MainActor — repos are Sendable, not UI-bound
 grep -rEn '@MainActor.*Repository\b' $(cat /tmp/files.txt)
@@ -856,9 +906,9 @@ grep -rEn '@StateObject.*ViewModel\|@ObservedObject.*ViewModel' $(cat /tmp/files
 grep -rEn ': *ObservableObject\b|@Published\b' $(cat /tmp/files.txt)
 
 # WARNINGS
-# Verify @Observable class is a ViewModel (not a service / repository)
+# Verify each @Observable class is a ViewModel or a Service (never a repository)
 grep -rEn '@Observable' $(cat /tmp/files.txt)
-# Each hit should be a *ViewModel type or NavigationViewModel.
+# Each hit should be a *ViewModel or a *Service type. A @Observable *Repository is a BLOCKER.
 
 # ViewModel importing SwiftUI — breaks testability
 grep -rEn 'import SwiftUI' $(cat /tmp/files.txt) | grep 'ViewModel'
