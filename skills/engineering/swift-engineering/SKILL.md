@@ -50,6 +50,33 @@ it yourself; the user does not invoke it separately.
 **Common to both architectures (always forbidden):**
 `ObservableObject` conformance · `@Published` · logic or networking in `View.body`
 
+## Mirror before you write (do this before every new type)
+
+Before creating any new stateful type — a service, ViewModel, store, or a
+`Binding` into observable state — find the nearest existing analogue already in
+the project and mirror its idiom. Do not invent a shape the project doesn't use.
+
+1. Grep for the closest existing example and read it:
+   - New `@Observable` state holder → `grep -rn "@Observable" <sources>`; read the
+     two or three that most resemble what you're adding.
+   - Environment-injected dependency → find an existing `@Entry` and its
+     `AppDependencies` wiring; copy that path exactly.
+   - A `Binding` into observable state → find an existing `Binding(get:set:)` or
+     `@Bindable` use and match it.
+2. Match what you find: observation mechanism (a plain tracked `var` vs explicit
+   `access(keyPath:)` / `withMutation(keyPath:)`), isolation (`@MainActor`,
+   `nonisolated init`), persistence, and injection. **The project's real idiom
+   wins over the simplest template in this skill** — some projects use the verbose
+   manual-observation form to allow a `nonisolated init`, and a new type must be
+   mirrored on it, not "simplified".
+
+**The one rule that catches the most bugs:** never make a non-`@Observable` type
+the backing source of a `Binding`. A `Toggle`/`Slider` bound to a plain store — or
+a computed `Binding` that reads `UserDefaults` directly — *writes* the new value
+but registers no observation dependency, so the view never re-renders and the
+control snaps back. The backing property must live on an `@Observable` type. See
+**State Management → Binding into observable state** below.
+
 ## Required Companion Skills
 
 Before writing any Swift code, load these:
@@ -258,6 +285,49 @@ struct UserRow: View {
 **Forbidden in MVVM only** (see `swift-mvvm-architecture`):
 - `@Observable` on a Repository
 - ViewModels in `@Environment` or `AppDependencies`
+
+#### Binding into observable state
+
+A two-way control (`Toggle`, `Slider`, `TextField`) needs a `Binding`. The
+binding's backing property **must** live on an `@Observable` type, or the view
+never re-renders when the value changes.
+
+```swift
+// ✅ Toggle both drives and reflects @Observable state.
+@MainActor @Observable
+final class FeatureFlagService {
+    var isBetaEnabled = false        // tracked var — writes invalidate the view
+}                                    // (persist in the setter / withMutation if needed)
+
+struct DebugView: View {
+    @Environment(\.featureFlagService) private var service
+
+    var body: some View {
+        @Bindable var service = service      // two-way binding into the @Observable type
+        Toggle("Beta", isOn: $service.isBetaEnabled)
+    }
+}
+```
+
+```swift
+// ❌ The bug: a Toggle bound to a plain (non-@Observable) store.
+final class FeatureFlagStore {           // no @Observable → nothing to track
+    func isEnabled() -> Bool { UserDefaults.standard.bool(forKey: "beta") }
+    func setEnabled(_ on: Bool) { UserDefaults.standard.set(on, forKey: "beta") }
+}
+
+Toggle("Beta", isOn: Binding(
+    get: { store.isEnabled() },          // reads UserDefaults — registers NO dependency
+    set: { store.setEnabled($0) }        // writes, but nothing invalidates the view
+))
+// Flipping writes to UserDefaults; the view never re-renders; the toggle snaps back.
+// Fix: hold the flag on an @Observable service and persist through the store from
+// its setter — then bind to the service, as in the ✅ case above.
+```
+
+When the setter needs async side effects (persistence, analytics), expose a method
+and build a custom `Binding(get:set:)` in the view rather than a `didSet` — see the
+`Slider` / `setVolume` example in `swift-style` ("Avoid didSet with Side Effects").
 
 ### Environment Values
 
